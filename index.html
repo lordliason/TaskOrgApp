@@ -936,6 +936,55 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Mobile Navigation Tabs */
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            z-index: 1000;
+            padding: 0.5rem;
+            padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+        }
+
+        .mobile-nav-inner {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .mobile-nav-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .mobile-nav-btn.active {
+            background: var(--bg-hover);
+            color: var(--accent-mario);
+        }
+
+        .mobile-nav-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
         /* Responsive */
         @media (max-width: 1100px) {
             .app-container {
@@ -947,15 +996,206 @@
         }
 
         @media (max-width: 768px) {
+            .mobile-nav {
+                display: block;
+            }
+
+            .connection-status {
+                top: 0.5rem;
+                right: 0.5rem;
+                padding: 0.35rem 0.75rem;
+                font-size: 0.65rem;
+            }
+
             .app-container {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr;
+                display: block;
+                min-height: calc(100vh - 70px);
+                background: var(--bg-main);
             }
+
+            .form-panel,
+            .matrix-panel {
+                display: none;
+                min-height: calc(100vh - 70px);
+                padding-bottom: 80px;
+            }
+
+            .form-panel.active,
+            .matrix-panel.active {
+                display: flex;
+            }
+
+            .list-panel {
+                display: none !important;
+            }
+
+            /* Form Panel Mobile */
             .form-panel {
-                padding: 1.5rem;
+                padding: 1rem;
+                padding-top: 2.5rem;
             }
+
+            .logo {
+                font-size: 1.5rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .subtitle {
+                font-size: 0.75rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .form-section {
+                margin-bottom: 1.25rem;
+            }
+
+            .form-label {
+                font-size: 0.65rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .form-input {
+                padding: 0.75rem;
+                font-size: 1rem;
+            }
+
+            .assignee-btn {
+                padding: 0.625rem 0.375rem;
+                font-size: 0.75rem;
+            }
+
+            .icon-group {
+                gap: 0.25rem;
+            }
+
+            .icon-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1.1rem;
+            }
+
+            .size-btn {
+                padding: 0.5rem 0;
+                font-size: 0.7rem;
+            }
+
+            .add-btn {
+                padding: 0.875rem;
+                font-size: 0.9375rem;
+                margin-top: 1rem;
+            }
+
+            /* Matrix Panel Mobile */
             .matrix-panel {
                 padding: 1rem;
+                padding-top: 2.5rem;
+            }
+
+            .matrix-header {
+                margin-bottom: 1rem;
+            }
+
+            .matrix-title {
+                font-size: 1.25rem;
+            }
+
+            .clear-all-btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.75rem;
+            }
+
+            .matrix-top-labels {
+                grid-template-columns: 30px 1fr 1fr;
+            }
+
+            .axis-label {
+                font-size: 0.6rem;
+            }
+
+            .matrix-body {
+                grid-template-columns: 30px 1fr 1fr;
+            }
+
+            .left-label span {
+                font-size: 0.6rem;
+            }
+
+            .quadrant {
+                min-height: 140px;
+                border-radius: 12px;
+                margin: 3px;
+                padding: 0.75rem;
+            }
+
+            .quadrant-label {
+                font-size: 0.6rem;
+                top: 0.5rem;
+                left: 0.75rem;
+            }
+
+            .dots-container {
+                left: 30px;
+            }
+
+            /* Smaller dots on mobile */
+            .task-dot.xs { width: 20px; height: 20px; font-size: 0.45rem; }
+            .task-dot.s { width: 26px; height: 26px; font-size: 0.5rem; }
+            .task-dot.m { width: 34px; height: 34px; font-size: 0.6rem; }
+            .task-dot.l { width: 42px; height: 42px; font-size: 0.65rem; }
+            .task-dot.xl { width: 52px; height: 52px; font-size: 0.7rem; }
+
+            .matrix-legend {
+                gap: 1rem;
+                margin-top: 0.75rem;
+            }
+
+            .legend-item {
+                font-size: 0.6rem;
+            }
+
+            .legend-dot {
+                width: 6px;
+                height: 6px;
+            }
+
+            /* Password box mobile */
+            .password-box {
+                padding: 2rem 1.5rem;
+                border-radius: 16px;
+            }
+
+            .password-logo {
+                font-size: 1.75rem;
+            }
+
+            .password-subtitle {
+                font-size: 0.8rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .password-input {
+                padding: 0.875rem 1rem;
+            }
+
+            .password-btn {
+                padding: 0.875rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .icon-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+            }
+
+            .assignee-btn {
+                font-size: 0.65rem;
+                padding: 0.5rem 0.25rem;
+            }
+
+            .quadrant {
+                min-height: 120px;
             }
         }
     </style>
@@ -1132,6 +1372,28 @@
         <div class="tooltip-meta"></div>
     </div>
 
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav-inner">
+            <button class="mobile-nav-btn active" data-panel="form">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Task
+            </button>
+            <button class="mobile-nav-btn" data-panel="matrix">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Matrix
+            </button>
+        </div>
+    </div>
+
     <script>
         // ===========================================
         // CONFIGURATION - Your Supabase credentials
@@ -1283,6 +1545,26 @@
                     await clearAllTasks();
                 }
             });
+
+            // Mobile navigation
+            document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const panel = btn.dataset.panel;
+                    
+                    // Update nav buttons
+                    document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Show/hide panels
+                    document.querySelector('.form-panel').classList.toggle('active', panel === 'form');
+                    document.querySelector('.matrix-panel').classList.toggle('active', panel === 'matrix');
+                });
+            });
+
+            // Set initial mobile state
+            if (window.innerWidth <= 768) {
+                document.querySelector('.form-panel').classList.add('active');
+            }
         }
 
         // ===========================================
@@ -1354,6 +1636,14 @@
                 selectedIcon = null;
                 document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
                 document.querySelector('.icon-btn[data-value="none"]').classList.add('active');
+                
+                // On mobile, switch to matrix view after adding task
+                if (window.innerWidth <= 768) {
+                    document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelector('.mobile-nav-btn[data-panel="matrix"]').classList.add('active');
+                    document.querySelector('.form-panel').classList.remove('active');
+                    document.querySelector('.matrix-panel').classList.add('active');
+                }
             } catch (error) {
                 console.error('Error adding task:', error);
                 alert('Failed to add task: ' + (error.message || 'Please try again.'));
