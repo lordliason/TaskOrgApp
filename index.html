@@ -329,6 +329,42 @@
             color: var(--text-primary);
         }
 
+        /* Icon Selector */
+        .icon-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-hover);
+            transform: scale(1.05);
+        }
+
+        .icon-btn.active {
+            border-color: var(--accent-both);
+            background: rgba(167, 139, 250, 0.15);
+        }
+
+        .icon-btn[data-value="none"] {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+
         /* Toggle Switches */
         .toggle-group {
             display: flex;
@@ -585,22 +621,26 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            color: rgba(0, 0, 0, 0.4);
-            font-size: 0.625rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
             animation: popIn 0.3s ease;
             pointer-events: auto;
             transform: translate(-50%, -50%);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 2px;
         }
 
         @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            70% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            70% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
 
         .task-dot:hover {
-            transform: scale(1.15);
+            transform: translate(-50%, -50%) scale(1.15);
             z-index: 10;
         }
 
@@ -612,13 +652,27 @@
             background: white !important;
             border: 2px solid var(--border);
             color: black !important;
+            text-shadow: none;
         }
 
-        .task-dot.xs { width: 16px; height: 16px; font-size: 0; }
-        .task-dot.s { width: 24px; height: 24px; font-size: 0; }
-        .task-dot.m { width: 36px; height: 36px; }
-        .task-dot.l { width: 48px; height: 48px; font-size: 0.75rem; }
-        .task-dot.xl { width: 64px; height: 64px; font-size: 0.875rem; }
+        .task-dot.xs { width: 24px; height: 24px; font-size: 0.5rem; }
+        .task-dot.s { width: 32px; height: 32px; font-size: 0.6rem; }
+        .task-dot.m { width: 44px; height: 44px; font-size: 0.7rem; }
+        .task-dot.l { width: 56px; height: 56px; font-size: 0.8rem; }
+        .task-dot.xl { width: 72px; height: 72px; font-size: 0.9rem; }
+
+        .task-dot .dot-icon {
+            font-size: 1.2em;
+            text-shadow: none;
+        }
+
+        .task-dot .dot-text {
+            max-width: 90%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.1;
+            text-align: center;
+        }
 
         /* Tooltip */
         .tooltip {
@@ -747,17 +801,21 @@
         .task-item-dot {
             border-radius: 50%;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
         }
 
         .task-item-dot.mario { background: var(--accent-mario); }
         .task-item-dot.maria { background: var(--accent-maria); }
         .task-item-dot.both { background: var(--accent-both); }
 
-        .task-item-dot.xs { width: 8px; height: 8px; }
-        .task-item-dot.s { width: 10px; height: 10px; }
-        .task-item-dot.m { width: 12px; height: 12px; }
-        .task-item-dot.l { width: 14px; height: 14px; }
-        .task-item-dot.xl { width: 16px; height: 16px; }
+        .task-item-dot.xs { width: 20px; height: 20px; }
+        .task-item-dot.s { width: 22px; height: 22px; }
+        .task-item-dot.m { width: 24px; height: 24px; }
+        .task-item-dot.l { width: 26px; height: 26px; }
+        .task-item-dot.xl { width: 28px; height: 28px; }
 
         .task-item-content {
             flex: 1;
@@ -946,6 +1004,28 @@
             </div>
 
             <div class="form-section">
+                <label class="form-label">Icon (optional)</label>
+                <div class="icon-group">
+                    <button class="icon-btn active" data-value="none">None</button>
+                    <button class="icon-btn" data-value="🛒">🛒</button>
+                    <button class="icon-btn" data-value="🏠">🏠</button>
+                    <button class="icon-btn" data-value="💼">💼</button>
+                    <button class="icon-btn" data-value="📞">📞</button>
+                    <button class="icon-btn" data-value="✉️">✉️</button>
+                    <button class="icon-btn" data-value="💰">💰</button>
+                    <button class="icon-btn" data-value="🏥">🏥</button>
+                    <button class="icon-btn" data-value="🚗">🚗</button>
+                    <button class="icon-btn" data-value="✈️">✈️</button>
+                    <button class="icon-btn" data-value="🍽️">🍽️</button>
+                    <button class="icon-btn" data-value="🎁">🎁</button>
+                    <button class="icon-btn" data-value="📅">📅</button>
+                    <button class="icon-btn" data-value="💪">💪</button>
+                    <button class="icon-btn" data-value="📚">📚</button>
+                    <button class="icon-btn" data-value="🐕">🐕</button>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <label class="form-label">Task Size</label>
                 <div class="size-group">
                     <button class="size-btn" data-value="xs">XS</button>
@@ -1073,6 +1153,7 @@
         let selectedSize = 'm';
         let selectedUrgent = 3;
         let selectedImportant = 3;
+        let selectedIcon = null;
         let isConnected = false;
 
         // DOM Elements
@@ -1153,6 +1234,15 @@
                     document.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     selectedAssignee = btn.dataset.value;
+                });
+            });
+
+            // Icon buttons
+            document.querySelectorAll('.icon-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedIcon = btn.dataset.value === 'none' ? null : btn.dataset.value;
                 });
             });
 
@@ -1237,7 +1327,8 @@
                 size: selectedSize,
                 urgent: selectedUrgent,
                 important: selectedImportant,
-                completed: false
+                completed: false,
+                icon: selectedIcon
             };
 
             try {
@@ -1259,6 +1350,10 @@
                 // Task will be added via realtime subscription
                 taskNameInput.value = '';
                 taskNameInput.focus();
+                // Reset icon selection
+                selectedIcon = null;
+                document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+                document.querySelector('.icon-btn[data-value="none"]').classList.add('active');
             } catch (error) {
                 console.error('Error adding task:', error);
                 alert('Failed to add task: ' + (error.message || 'Please try again.'));
@@ -1398,16 +1493,20 @@
             dot.style.left = `${left}%`;
             dot.style.top = `${top}%`;
 
-            // Content: "X" if completed, otherwise size label for larger dots
+            // Content: checkmark if completed, icon if set, otherwise short name
             if (task.completed) {
                 dot.innerHTML = `
-                    <svg width="60%" height="60%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    <svg width="50%" height="50%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                 `;
-            } else if (['m', 'l', 'xl'].includes(task.size)) {
-                dot.textContent = task.size.toUpperCase();
+            } else if (task.icon) {
+                dot.innerHTML = `<span class="dot-icon">${task.icon}</span>`;
+            } else {
+                // Show truncated name based on size
+                const maxChars = { xs: 2, s: 3, m: 4, l: 5, xl: 6 };
+                const truncated = task.name.substring(0, maxChars[task.size] || 4);
+                dot.innerHTML = `<span class="dot-text">${truncated}</span>`;
             }
 
             // Tooltip events
@@ -1478,7 +1577,8 @@
                     <div class="group-label">${group.label}</div>`;
 
                 group.tasks.forEach(task => {
-                    const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both' };
+                    const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Both' };
+                    const iconDisplay = task.icon ? `<span style="margin-right: 4px">${task.icon}</span>` : '';
                     html += `
                         <div class="task-item${task.completed ? ' completed' : ''}" data-id="${task.id}">
                             <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="toggleTaskComplete('${task.id}', ${!task.completed})">
@@ -1486,9 +1586,9 @@
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </div>
-                            <div class="task-item-dot ${task.assignee} ${task.size}"></div>
+                            <div class="task-item-dot ${task.assignee} ${task.size}">${task.icon || ''}</div>
                             <div class="task-item-content">
-                                <div class="task-item-name">${escapeHtml(task.name)}</div>
+                                <div class="task-item-name">${iconDisplay}${escapeHtml(task.name)}</div>
                                 <div class="task-item-meta">${assigneeLabels[task.assignee]} • ${task.size.toUpperCase()}</div>
                             </div>
                             <button class="task-delete-btn" onclick="deleteTask('${task.id}')">

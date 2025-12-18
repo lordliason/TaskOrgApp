@@ -10,6 +10,7 @@ CREATE TABLE tasks (
     urgent INTEGER DEFAULT 3 CHECK (urgent >= 1 AND urgent <= 5),
     important INTEGER DEFAULT 3 CHECK (important >= 1 AND important <= 5),
     completed BOOLEAN DEFAULT FALSE,
+    icon TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -39,6 +40,9 @@ ALTER TABLE tasks ADD CONSTRAINT tasks_urgent_check CHECK (urgent >= 1 AND urgen
 ALTER TABLE tasks ADD CONSTRAINT tasks_important_check CHECK (important >= 1 AND important <= 5);
 ALTER TABLE tasks ALTER COLUMN urgent SET DEFAULT 3;
 ALTER TABLE tasks ALTER COLUMN important SET DEFAULT 3;
+
+-- ADD ICON COLUMN (run this if you don't have the icon column yet)
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT NULL;
 
 
 -- Enable Row Level Security (but allow all operations for public access)
