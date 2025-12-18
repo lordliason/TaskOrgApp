@@ -38,8 +38,8 @@ Your app will be live at `https://your-project.vercel.app`
 ## Using the App
 
 1. **First visit**: Enter the family password (default: `family123`)
-2. **Add tasks**: Enter name, select assignee, size, and urgency/importance
-3. **View matrix**: Tasks appear as colored dots in the correct quadrant
+2. **Add tasks**: Enter name, select assignee, size, and urgency/importance (on a scale of 1-5)
+3. **View matrix**: Tasks appear as colored dots positioned according to their priority
 4. **Real-time sync**: Changes sync instantly between devices!
 
 ## Customization
@@ -51,28 +51,22 @@ In `index.html`, find this line and change it:
 const FAMILY_PASSWORD = 'family123';
 ```
 
-### Change Assignee Names
-
-In `index.html`, find the assignee buttons and update the text:
-```html
-<button class="assignee-btn active" data-value="you">Mario</button>
-<button class="assignee-btn" data-value="wife">Sarah</button>
-```
-
 ## Color Legend
 
-- 🔵 **Blue** - You
-- 🩷 **Pink** - Wife  
-- 🟣 **Purple** - Both
+- 🔵 **Blue** - Mario
+- 🩷 **Pink** - Maria
+- 🟣 **Purple** - Mario Maria Both
 
 ## Eisenhower Matrix Quadrants
 
-| Quadrant | Urgent | Important | Action |
+The app uses a 1-5 scale for Urgency and Importance, positioning tasks continuously on the matrix.
+
+| Quadrant | Urgency | Importance | Action |
 |----------|--------|-----------|--------|
-| Do First | ✓ | ✓ | Handle immediately |
-| Schedule | ✗ | ✓ | Plan time for it |
-| Delegate | ✓ | ✗ | Consider delegating |
-| Eliminate | ✗ | ✗ | Consider dropping |
+| Do First | High (4-5) | High (4-5) | Handle immediately |
+| Schedule | Low (1-2) | High (4-5) | Plan time for it |
+| Delegate | High (4-5) | Low (1-2) | Consider delegating |
+| Eliminate | Low (1-2) | Low (1-2) | Consider dropping |
 
 ## Troubleshooting
 
