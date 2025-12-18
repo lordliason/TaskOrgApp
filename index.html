@@ -190,7 +190,7 @@
 
         .app-container {
             display: grid;
-            grid-template-columns: 380px 1fr 280px;
+            grid-template-columns: 380px 1fr 340px;
             min-height: 100vh;
             gap: 1px;
             background: var(--border);
@@ -1775,10 +1775,15 @@
             const urgentVal = typeof task.urgent === 'boolean' ? (task.urgent ? 5 : 1) : task.urgent;
             const importantVal = typeof task.important === 'boolean' ? (task.important ? 5 : 1) : task.important;
 
+            // Generate consistent small offset based on task ID to prevent exact overlaps
+            const hash = task.id ? task.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0) : 0;
+            const offsetX = ((hash % 10) - 5) * 0.8;  // -4% to +4%
+            const offsetY = ((Math.floor(hash / 10) % 10) - 5) * 0.8;
+
             // X-axis (Urgency): 5 is left (10%), 1 is right (90%)
-            const left = 10 + (5 - urgentVal) * 20;
+            const left = 10 + (5 - urgentVal) * 20 + offsetX;
             // Y-axis (Importance): 5 is top (10%), 1 is bottom (90%)
-            const top = 10 + (5 - importantVal) * 20;
+            const top = 10 + (5 - importantVal) * 20 + offsetY;
 
             dot.style.left = `${left}%`;
             dot.style.top = `${top}%`;
