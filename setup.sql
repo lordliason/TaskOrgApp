@@ -13,18 +13,15 @@ CREATE TABLE tasks (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- MIGRATION SCRIPT (Run these if you have existing data)
-/*
--- 1. Add completed column
+-- MIGRATION SCRIPT (RUN THIS IF YOU ARE GETTING TYPE ERRORS)
+-- This converts urgent/important columns from BOOLEAN to INTEGER (1-5 scale)
+
+-- 1. Add completed column if missing
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT FALSE;
 
 -- 2. Update assignee check constraint
 ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_assignee_check;
 ALTER TABLE tasks ADD CONSTRAINT tasks_assignee_check CHECK (assignee IN ('mario', 'maria', 'both'));
-
--- 2. Update existing assignee data
-UPDATE tasks SET assignee = 'mario' WHERE assignee = 'you';
-UPDATE tasks SET assignee = 'maria' WHERE assignee = 'wife';
 
 -- 3. Update urgent and important to integer
 -- First, drop defaults
@@ -32,16 +29,17 @@ ALTER TABLE tasks ALTER COLUMN urgent DROP DEFAULT;
 ALTER TABLE tasks ALTER COLUMN important DROP DEFAULT;
 
 -- Convert boolean to integer (true -> 5, false -> 1)
+-- If they are already integers, this might need adjustment, but usually they are booleans if failing.
 ALTER TABLE tasks 
-  ALTER COLUMN urgent TYPE INTEGER USING (CASE WHEN urgent THEN 5 ELSE 1 END),
-  ALTER COLUMN important TYPE INTEGER USING (CASE WHEN important THEN 5 ELSE 1 END);
+  ALTER COLUMN urgent TYPE INTEGER USING (CASE WHEN urgent::text = 'true' THEN 5 WHEN urgent::text = 'false' THEN 1 ELSE urgent::integer END),
+  ALTER COLUMN important TYPE INTEGER USING (CASE WHEN important::text = 'true' THEN 5 WHEN important::text = 'false' THEN 1 ELSE important::integer END);
 
 -- Add new check constraints and defaults
 ALTER TABLE tasks ADD CONSTRAINT tasks_urgent_check CHECK (urgent >= 1 AND urgent <= 5);
 ALTER TABLE tasks ADD CONSTRAINT tasks_important_check CHECK (important >= 1 AND important <= 5);
 ALTER TABLE tasks ALTER COLUMN urgent SET DEFAULT 3;
 ALTER TABLE tasks ALTER COLUMN important SET DEFAULT 3;
-*/
+
 
 -- Enable Row Level Security (but allow all operations for public access)
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;

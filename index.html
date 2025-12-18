@@ -1258,17 +1258,24 @@
                 const { data, error } = await supabaseClient
                     .from('tasks')
                     .insert([task])
-                    .select()
-                    .single();
+                    .select();
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase Error:', error);
+                    if (error.code === '22P02' && error.message.includes('boolean')) {
+                        alert('Database schema mismatch: The app expects 1-5 values but your database is still using old boolean columns. Please run the migration script in setup.sql.');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
 
                 // Task will be added via realtime subscription
                 taskNameInput.value = '';
                 taskNameInput.focus();
             } catch (error) {
                 console.error('Error adding task:', error);
-                alert('Failed to add task. Please try again.');
+                alert('Failed to add task: ' + (error.message || 'Please try again.'));
             }
 
             addTaskBtn.disabled = false;
