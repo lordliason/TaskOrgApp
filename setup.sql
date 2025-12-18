@@ -9,12 +9,16 @@ CREATE TABLE tasks (
     size TEXT NOT NULL CHECK (size IN ('xs', 's', 'm', 'l', 'xl')),
     urgent INTEGER DEFAULT 3 CHECK (urgent >= 1 AND urgent <= 5),
     important INTEGER DEFAULT 3 CHECK (important >= 1 AND important <= 5),
+    completed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- MIGRATION SCRIPT (Run these if you have existing data)
 /*
--- 1. Update assignee check constraint
+-- 1. Add completed column
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT FALSE;
+
+-- 2. Update assignee check constraint
 ALTER TABLE tasks DROP CONSTRAINT IF EXISTS tasks_assignee_check;
 ALTER TABLE tasks ADD CONSTRAINT tasks_assignee_check CHECK (assignee IN ('mario', 'maria', 'both'));
 

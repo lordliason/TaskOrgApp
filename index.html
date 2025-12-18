@@ -608,6 +608,12 @@
         .task-dot.maria { background: var(--accent-maria); }
         .task-dot.both { background: var(--accent-both); }
 
+        .task-dot.completed {
+            background: white !important;
+            border: 2px solid var(--border);
+            color: black !important;
+        }
+
         .task-dot.xs { width: 16px; height: 16px; font-size: 0; }
         .task-dot.s { width: 24px; height: 24px; font-size: 0; }
         .task-dot.m { width: 36px; height: 36px; }
@@ -700,6 +706,42 @@
 
         .task-item:hover {
             background: var(--bg-hover);
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-item-name {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .task-item-checkbox {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .task-item-checkbox.checked {
+            background: var(--accent-both);
+            border-color: var(--accent-both);
+        }
+
+        .task-item-checkbox svg {
+            display: none;
+            color: white;
+        }
+
+        .task-item-checkbox.checked svg {
+            display: block;
         }
 
         .task-item-dot {
@@ -1208,7 +1250,8 @@
                 assignee: selectedAssignee,
                 size: selectedSize,
                 urgent: selectedUrgent,
-                important: selectedImportant
+                important: selectedImportant,
+                completed: false
             };
 
             try {
@@ -1243,6 +1286,21 @@
             } catch (error) {
                 console.error('Error deleting task:', error);
                 alert('Failed to delete task. Please try again.');
+            }
+        }
+
+        async function toggleTaskComplete(id, completed) {
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .update({ completed })
+                    .eq('id', id);
+
+                if (error) throw error;
+                // Task will be updated via realtime subscription
+            } catch (error) {
+                console.error('Error updating task:', error);
+                alert('Failed to update task. Please try again.');
             }
         }
 
@@ -1332,7 +1390,7 @@
 
         function createTaskDot(task) {
             const dot = document.createElement('div');
-            dot.className = `task-dot ${task.assignee} ${task.size}`;
+            dot.className = `task-dot ${task.assignee} ${task.size}${task.completed ? ' completed' : ''}`;
             dot.dataset.id = task.id;
 
             // Positioning based on 1-5 scale
@@ -1347,8 +1405,15 @@
             dot.style.left = `${left}%`;
             dot.style.top = `${top}%`;
 
-            // Show size label for larger dots
-            if (['m', 'l', 'xl'].includes(task.size)) {
+            // Content: "X" if completed, otherwise size label for larger dots
+            if (task.completed) {
+                dot.innerHTML = `
+                    <svg width="60%" height="60%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                `;
+            } else if (['m', 'l', 'xl'].includes(task.size)) {
                 dot.textContent = task.size.toUpperCase();
             }
 
@@ -1422,7 +1487,12 @@
                 group.tasks.forEach(task => {
                     const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both' };
                     html += `
-                        <div class="task-item" data-id="${task.id}">
+                        <div class="task-item${task.completed ? ' completed' : ''}" data-id="${task.id}">
+                            <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="toggleTaskComplete('${task.id}', ${!task.completed})">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
                             <div class="task-item-dot ${task.assignee} ${task.size}"></div>
                             <div class="task-item-content">
                                 <div class="task-item-name">${escapeHtml(task.name)}</div>
