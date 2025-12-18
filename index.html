@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Matrix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-main: #1a1a1f;
+            --bg-card: #242429;
+            --bg-hover: #2e2e35;
+            --border: #3a3a42;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a0a0a8;
+            --text-muted: #6b6b75;
+            --accent-you: #4a9eff;
+            --accent-wife: #ff7eb3;
+            --accent-both: #a78bfa;
+            --quadrant-do: #2d4a3e;
+            --quadrant-schedule: #3d4a2d;
+            --quadrant-delegate: #4a3d2d;
+            --quadrant-eliminate: #4a2d3d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(74, 158, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 126, 179, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(167, 139, 250, 0.02) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Password Gate */
+        .password-gate {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .password-gate.hidden {
+            display: none;
+        }
+
+        .password-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+        }
+
+        .password-logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-you), var(--accent-wife));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .password-subtitle {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            text-align: center;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: var(--accent-you);
+        }
+
+        .password-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--accent-you), var(--accent-both));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .password-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(74, 158, 255, 0.3);
+        }
+
+        .password-error {
+            color: #ff6b6b;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .password-error.show {
+            display: block;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            z-index: 100;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .status-dot.connected {
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+
+        .status-dot.connecting {
+            background: #f59e0b;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 280px;
+            min-height: 100vh;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        /* Left Panel - Task Form */
+        .form-panel {
+            background: var(--bg-main);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-you), var(--accent-wife));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .form-section {
+            margin-bottom: 1.75rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.625rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-you);
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Assignee Buttons */
+        .assignee-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .assignee-btn {
+            flex: 1;
+            padding: 0.75rem 0.5rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .assignee-btn:hover {
+            background: var(--bg-hover);
+        }
+
+        .assignee-btn.active[data-value="you"] {
+            border-color: var(--accent-you);
+            background: rgba(74, 158, 255, 0.1);
+            color: var(--accent-you);
+        }
+
+        .assignee-btn.active[data-value="wife"] {
+            border-color: var(--accent-wife);
+            background: rgba(255, 126, 179, 0.1);
+            color: var(--accent-wife);
+        }
+
+        .assignee-btn.active[data-value="both"] {
+            border-color: var(--accent-both);
+            background: rgba(167, 139, 250, 0.1);
+            color: var(--accent-both);
+        }
+
+        /* Size Selector */
+        .size-group {
+            display: flex;
+            gap: 0.375rem;
+        }
+
+        .size-btn {
+            flex: 1;
+            padding: 0.625rem 0;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .size-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+        }
+
+        .size-btn.active {
+            border-color: var(--text-secondary);
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* Toggle Switches */
+        .toggle-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.875rem;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-label {
+            font-size: 0.9375rem;
+            color: var(--text-secondary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 28px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: rgba(74, 158, 255, 0.2);
+            border-color: var(--accent-you);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(24px);
+            background: var(--accent-you);
+        }
+
+        /* Add Button */
+        .add-btn {
+            width: 100%;
+            padding: 1rem;
+            margin-top: auto;
+            background: linear-gradient(135deg, var(--accent-you), var(--accent-both));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(74, 158, 255, 0.3);
+        }
+
+        .add-btn:active {
+            transform: translateY(0);
+        }
+
+        .add-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Matrix Panel */
+        .matrix-panel {
+            background: var(--bg-main);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .matrix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .matrix-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+        }
+
+        .clear-all-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .clear-all-btn:hover {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        /* Axis Labels */
+        .matrix-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .matrix-top-labels {
+            display: grid;
+            grid-template-columns: 40px 1fr 1fr;
+            margin-bottom: 0.5rem;
+        }
+
+        .axis-label {
+            text-align: center;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+
+        .matrix-body {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 40px 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+
+        .left-labels {
+            display: flex;
+            flex-direction: column;
+            grid-row: 1 / 3;
+        }
+
+        .left-label {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .left-label span {
+            transform: rotate(-90deg);
+            white-space: nowrap;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+
+        /* Quadrants */
+        .quadrant {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin: 4px;
+            padding: 1rem;
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 8px;
+            min-height: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .quadrant:hover {
+            border-color: var(--text-muted);
+        }
+
+        .quadrant-label {
+            position: absolute;
+            top: 0.75rem;
+            left: 1rem;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+        }
+
+        .quadrant.do-first {
+            background: var(--quadrant-do);
+        }
+        .quadrant.do-first .quadrant-label { color: #6ee7b7; }
+
+        .quadrant.schedule {
+            background: var(--quadrant-schedule);
+        }
+        .quadrant.schedule .quadrant-label { color: #bef264; }
+
+        .quadrant.delegate {
+            background: var(--quadrant-delegate);
+        }
+        .quadrant.delegate .quadrant-label { color: #fcd34d; }
+
+        .quadrant.eliminate {
+            background: var(--quadrant-eliminate);
+        }
+        .quadrant.eliminate .quadrant-label { color: #fca5a5; }
+
+        /* Task Dots */
+        .task-dot {
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: rgba(0, 0, 0, 0.4);
+            font-size: 0.625rem;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .task-dot:hover {
+            transform: scale(1.15);
+            z-index: 10;
+        }
+
+        .task-dot.you { background: var(--accent-you); }
+        .task-dot.wife { background: var(--accent-wife); }
+        .task-dot.both { background: var(--accent-both); }
+
+        .task-dot.xs { width: 16px; height: 16px; font-size: 0; }
+        .task-dot.s { width: 24px; height: 24px; font-size: 0; }
+        .task-dot.m { width: 36px; height: 36px; }
+        .task-dot.l { width: 48px; height: 48px; font-size: 0.75rem; }
+        .task-dot.xl { width: 64px; height: 64px; font-size: 0.875rem; }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+            max-width: 200px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        .tooltip-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .tooltip-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Right Panel - Task List */
+        .list-panel {
+            background: var(--bg-main);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .list-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .task-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            padding: 0.25rem 0.625rem;
+            border-radius: 12px;
+        }
+
+        .task-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .group-label {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.625rem;
+            padding-left: 0.25rem;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .task-item-dot {
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .task-item-dot.you { background: var(--accent-you); }
+        .task-item-dot.wife { background: var(--accent-wife); }
+        .task-item-dot.both { background: var(--accent-both); }
+
+        .task-item-dot.xs { width: 8px; height: 8px; }
+        .task-item-dot.s { width: 10px; height: 10px; }
+        .task-item-dot.m { width: 12px; height: 12px; }
+        .task-item-dot.l { width: 14px; height: 14px; }
+        .task-item-dot.xl { width: 16px; height: 16px; }
+
+        .task-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-item-name {
+            font-size: 0.8125rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .task-item-meta {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            margin-top: 0.125rem;
+        }
+
+        .task-delete-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            opacity: 0;
+        }
+
+        .task-item:hover .task-delete-btn {
+            opacity: 1;
+        }
+
+        .task-delete-btn:hover {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 0.875rem;
+        }
+
+        /* Legend */
+        .legend {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .legend-title {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .legend-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.you { background: var(--accent-you); }
+        .legend-dot.wife { background: var(--accent-wife); }
+        .legend-dot.both { background: var(--accent-both); }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 31, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-you);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1100px) {
+            .app-container {
+                grid-template-columns: 280px 1fr;
+            }
+            .list-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            .form-panel {
+                padding: 1.5rem;
+            }
+            .matrix-panel {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Password Gate -->
+    <div class="password-gate" id="passwordGate">
+        <div class="password-box">
+            <div class="password-logo">Task Matrix</div>
+            <div class="password-subtitle">Enter family password to continue</div>
+            <input type="password" class="password-input" id="passwordInput" placeholder="Password">
+            <button class="password-btn" id="passwordBtn">Enter</button>
+            <div class="password-error" id="passwordError">Incorrect password</div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="connection-status" id="connectionStatus">
+        <div class="status-dot connecting" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+    </div>
+
+    <div class="app-container">
+        <!-- Left Panel: Task Form -->
+        <div class="form-panel">
+            <div class="logo">Task Matrix</div>
+            <div class="subtitle">Organize tasks with your partner</div>
+
+            <div class="form-section">
+                <label class="form-label">Task Name</label>
+                <input type="text" id="taskName" class="form-input" placeholder="What needs to be done?">
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Assigned To</label>
+                <div class="assignee-group">
+                    <button class="assignee-btn active" data-value="you">You</button>
+                    <button class="assignee-btn" data-value="wife">Wife</button>
+                    <button class="assignee-btn" data-value="both">Both</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Task Size</label>
+                <div class="size-group">
+                    <button class="size-btn" data-value="xs">XS</button>
+                    <button class="size-btn" data-value="s">S</button>
+                    <button class="size-btn active" data-value="m">M</button>
+                    <button class="size-btn" data-value="l">L</button>
+                    <button class="size-btn" data-value="xl">XL</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Priority</label>
+                <div class="toggle-group">
+                    <div class="toggle-row">
+                        <span class="toggle-label">Urgent</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="urgentToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Important</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="importantToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="add-btn" id="addTaskBtn">Add Task</button>
+        </div>
+
+        <!-- Center: Matrix -->
+        <div class="matrix-panel">
+            <div class="matrix-header">
+                <div class="matrix-title">Eisenhower Matrix</div>
+                <button class="clear-all-btn" id="clearAllBtn">Clear All</button>
+            </div>
+
+            <div class="matrix-container">
+                <div class="matrix-top-labels">
+                    <div></div>
+                    <div class="axis-label">Urgent</div>
+                    <div class="axis-label">Not Urgent</div>
+                </div>
+
+                <div class="matrix-body">
+                    <div class="left-labels">
+                        <div class="left-label"><span>Important</span></div>
+                        <div class="left-label"><span>Not Important</span></div>
+                    </div>
+
+                    <div class="quadrant do-first" data-quadrant="do-first">
+                        <span class="quadrant-label">Do First</span>
+                    </div>
+                    <div class="quadrant schedule" data-quadrant="schedule">
+                        <span class="quadrant-label">Schedule</span>
+                    </div>
+                    <div class="quadrant delegate" data-quadrant="delegate">
+                        <span class="quadrant-label">Delegate</span>
+                    </div>
+                    <div class="quadrant eliminate" data-quadrant="eliminate">
+                        <span class="quadrant-label">Eliminate</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Task List -->
+        <div class="list-panel">
+            <div class="list-header">
+                <div class="list-title">All Tasks</div>
+                <div class="task-count" id="taskCount">0 tasks</div>
+            </div>
+
+            <div id="taskList"></div>
+
+            <div class="legend">
+                <div class="legend-title">Assignees</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-dot you"></div>
+                        <span>You</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot wife"></div>
+                        <span>Wife</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot both"></div>
+                        <span>Both</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-name"></div>
+        <div class="tooltip-meta"></div>
+    </div>
+
+    <script>
+        // ===========================================
+        // CONFIGURATION - Your Supabase credentials
+        // ===========================================
+        const SUPABASE_URL = 'https://xscocgadvdgsqhfjbnbu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_rVTtCASbj82QuftDmLP8WQ_GubnlYov';
+        
+        // Simple password for family access (change this!)
+        const FAMILY_PASSWORD = 'family123';
+
+        // ===========================================
+        // Initialize Supabase
+        // ===========================================
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // State
+        let tasks = [];
+        let selectedAssignee = 'you';
+        let selectedSize = 'm';
+        let isConnected = false;
+
+        // DOM Elements
+        const passwordGate = document.getElementById('passwordGate');
+        const passwordInput = document.getElementById('passwordInput');
+        const passwordBtn = document.getElementById('passwordBtn');
+        const passwordError = document.getElementById('passwordError');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const taskNameInput = document.getElementById('taskName');
+        const urgentToggle = document.getElementById('urgentToggle');
+        const importantToggle = document.getElementById('importantToggle');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const taskList = document.getElementById('taskList');
+        const taskCount = document.getElementById('taskCount');
+        const tooltip = document.getElementById('tooltip');
+
+        // Quadrant mapping
+        const quadrants = {
+            'do-first': document.querySelector('[data-quadrant="do-first"]'),
+            'schedule': document.querySelector('[data-quadrant="schedule"]'),
+            'delegate': document.querySelector('[data-quadrant="delegate"]'),
+            'eliminate': document.querySelector('[data-quadrant="eliminate"]')
+        };
+
+        // ===========================================
+        // Password Gate
+        // ===========================================
+        function checkPassword() {
+            const savedPassword = localStorage.getItem('taskMatrixAuth');
+            if (savedPassword === FAMILY_PASSWORD) {
+                passwordGate.classList.add('hidden');
+                init();
+            }
+        }
+
+        function handlePasswordSubmit() {
+            if (passwordInput.value === FAMILY_PASSWORD) {
+                localStorage.setItem('taskMatrixAuth', FAMILY_PASSWORD);
+                passwordGate.classList.add('hidden');
+                passwordError.classList.remove('show');
+                init();
+            } else {
+                passwordError.classList.add('show');
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        passwordBtn.addEventListener('click', handlePasswordSubmit);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handlePasswordSubmit();
+        });
+
+        // Check if already authenticated
+        checkPassword();
+
+        // ===========================================
+        // Initialize App
+        // ===========================================
+        async function init() {
+            setupEventListeners();
+            await loadTasks();
+            setupRealtimeSubscription();
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // ===========================================
+        // Event Listeners
+        // ===========================================
+        function setupEventListeners() {
+            // Assignee buttons
+            document.querySelectorAll('.assignee-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedAssignee = btn.dataset.value;
+                });
+            });
+
+            // Size buttons
+            document.querySelectorAll('.size-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedSize = btn.dataset.value;
+                });
+            });
+
+            // Add task
+            addTaskBtn.addEventListener('click', addTask);
+            taskNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addTask();
+            });
+
+            // Clear all
+            clearAllBtn.addEventListener('click', async () => {
+                if (tasks.length === 0) return;
+                if (confirm('Are you sure you want to delete all tasks?')) {
+                    await clearAllTasks();
+                }
+            });
+        }
+
+        // ===========================================
+        // Supabase Operations
+        // ===========================================
+        async function loadTasks() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('tasks')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                tasks = data || [];
+                render();
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                updateConnectionStatus(false);
+                // Fall back to localStorage
+                const saved = localStorage.getItem('taskMatrixBackup');
+                if (saved) {
+                    tasks = JSON.parse(saved);
+                    render();
+                }
+            }
+        }
+
+        async function addTask() {
+            const name = taskNameInput.value.trim();
+            if (!name) {
+                taskNameInput.focus();
+                return;
+            }
+
+            addTaskBtn.disabled = true;
+
+            const task = {
+                name: name,
+                assignee: selectedAssignee,
+                size: selectedSize,
+                urgent: urgentToggle.checked,
+                important: importantToggle.checked
+            };
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('tasks')
+                    .insert([task])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Task will be added via realtime subscription
+                taskNameInput.value = '';
+                taskNameInput.focus();
+            } catch (error) {
+                console.error('Error adding task:', error);
+                alert('Failed to add task. Please try again.');
+            }
+
+            addTaskBtn.disabled = false;
+        }
+
+        async function deleteTask(id) {
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                // Task will be removed via realtime subscription
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                alert('Failed to delete task. Please try again.');
+            }
+        }
+
+        async function clearAllTasks() {
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+                if (error) throw error;
+                // Tasks will be removed via realtime subscription
+            } catch (error) {
+                console.error('Error clearing tasks:', error);
+                alert('Failed to clear tasks. Please try again.');
+            }
+        }
+
+        // ===========================================
+        // Real-time Subscription
+        // ===========================================
+        function setupRealtimeSubscription() {
+            const channel = supabaseClient
+                .channel('tasks-channel')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'tasks' },
+                    (payload) => {
+                        console.log('Realtime update:', payload);
+                        
+                        if (payload.eventType === 'INSERT') {
+                            tasks.unshift(payload.new);
+                        } else if (payload.eventType === 'DELETE') {
+                            tasks = tasks.filter(t => t.id !== payload.old.id);
+                        } else if (payload.eventType === 'UPDATE') {
+                            const index = tasks.findIndex(t => t.id === payload.new.id);
+                            if (index !== -1) {
+                                tasks[index] = payload.new;
+                            }
+                        }
+                        
+                        render();
+                        // Backup to localStorage
+                        localStorage.setItem('taskMatrixBackup', JSON.stringify(tasks));
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('Subscription status:', status);
+                    updateConnectionStatus(status === 'SUBSCRIBED');
+                });
+        }
+
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            statusDot.className = 'status-dot ' + (connected ? 'connected' : 'connecting');
+            statusText.textContent = connected ? 'Synced' : 'Connecting...';
+        }
+
+        // ===========================================
+        // Rendering
+        // ===========================================
+        function getQuadrant(task) {
+            if (task.urgent && task.important) return 'do-first';
+            if (!task.urgent && task.important) return 'schedule';
+            if (task.urgent && !task.important) return 'delegate';
+            return 'eliminate';
+        }
+
+        function render() {
+            renderMatrix();
+            renderTaskList();
+            updateTaskCount();
+        }
+
+        function renderMatrix() {
+            // Clear quadrants (keep labels)
+            Object.values(quadrants).forEach(q => {
+                const label = q.querySelector('.quadrant-label');
+                q.innerHTML = '';
+                q.appendChild(label);
+            });
+
+            // Add task dots
+            tasks.forEach(task => {
+                const quadrant = getQuadrant(task);
+                const dot = createTaskDot(task);
+                quadrants[quadrant].appendChild(dot);
+            });
+        }
+
+        function createTaskDot(task) {
+            const dot = document.createElement('div');
+            dot.className = `task-dot ${task.assignee} ${task.size}`;
+            dot.dataset.id = task.id;
+
+            // Show size label for larger dots
+            if (['m', 'l', 'xl'].includes(task.size)) {
+                dot.textContent = task.size.toUpperCase();
+            }
+
+            // Tooltip events
+            dot.addEventListener('mouseenter', (e) => showTooltip(e, task));
+            dot.addEventListener('mousemove', moveTooltip);
+            dot.addEventListener('mouseleave', hideTooltip);
+
+            // Click to delete
+            dot.addEventListener('click', () => {
+                if (confirm(`Delete "${task.name}"?`)) {
+                    deleteTask(task.id);
+                }
+            });
+
+            return dot;
+        }
+
+        function showTooltip(e, task) {
+            const assigneeLabels = { you: 'You', wife: 'Wife', both: 'Both' };
+            const sizeLabels = { xs: 'Extra Small', s: 'Small', m: 'Medium', l: 'Large', xl: 'Extra Large' };
+
+            tooltip.querySelector('.tooltip-name').textContent = task.name;
+            tooltip.querySelector('.tooltip-meta').textContent = 
+                `${assigneeLabels[task.assignee]} • ${sizeLabels[task.size]}`;
+
+            tooltip.classList.add('visible');
+            moveTooltip(e);
+        }
+
+        function moveTooltip(e) {
+            tooltip.style.left = (e.clientX + 12) + 'px';
+            tooltip.style.top = (e.clientY + 12) + 'px';
+        }
+
+        function hideTooltip() {
+            tooltip.classList.remove('visible');
+        }
+
+        function renderTaskList() {
+            const groups = {
+                'do-first': { label: 'Do First', tasks: [] },
+                'schedule': { label: 'Schedule', tasks: [] },
+                'delegate': { label: 'Delegate', tasks: [] },
+                'eliminate': { label: 'Eliminate', tasks: [] }
+            };
+
+            tasks.forEach(task => {
+                const quadrant = getQuadrant(task);
+                groups[quadrant].tasks.push(task);
+            });
+
+            if (tasks.length === 0) {
+                taskList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">○</div>
+                        <div class="empty-text">No tasks yet.<br>Add your first task!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            Object.entries(groups).forEach(([key, group]) => {
+                if (group.tasks.length === 0) return;
+
+                html += `<div class="task-group">
+                    <div class="group-label">${group.label}</div>`;
+
+                group.tasks.forEach(task => {
+                    const assigneeLabels = { you: 'You', wife: 'Wife', both: 'Both' };
+                    html += `
+                        <div class="task-item" data-id="${task.id}">
+                            <div class="task-item-dot ${task.assignee} ${task.size}"></div>
+                            <div class="task-item-content">
+                                <div class="task-item-name">${escapeHtml(task.name)}</div>
+                                <div class="task-item-meta">${assigneeLabels[task.assignee]} • ${task.size.toUpperCase()}</div>
+                            </div>
+                            <button class="task-delete-btn" onclick="deleteTask('${task.id}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 6L6 18M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            });
+
+            taskList.innerHTML = html;
+        }
+
+        function updateTaskCount() {
+            const count = tasks.length;
+            taskCount.textContent = `${count} task${count !== 1 ? 's' : ''}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
