@@ -527,6 +527,71 @@
             margin-top: 0.25rem;
         }
 
+        .score-display {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .score-section {
+            display: flex;
+            gap: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .score-player {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .score-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .score-player.mario .score-avatar {
+            background: var(--accent-mario);
+        }
+
+        .score-player.maria .score-avatar {
+            background: var(--accent-maria);
+        }
+
+        .score-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .score-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            margin-bottom: 0.125rem;
+        }
+
+        .score-points {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .score-tasks {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
         .header-actions {
             display: flex;
             gap: 0.5rem;
@@ -1202,6 +1267,64 @@
             flex-shrink: 0;
         }
 
+        .task-option-group {
+            margin-bottom: 0.5rem;
+        }
+
+        .task-option-group-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            padding: 0 1.5rem;
+        }
+
+        .task-option-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .task-option-icon.mario {
+            background: var(--accent-mario);
+        }
+
+        .task-option-icon.maria {
+            background: var(--accent-maria);
+        }
+
+        .task-option-icon.both {
+            background: linear-gradient(135deg, var(--accent-mario) 50%, var(--accent-maria) 50%);
+        }
+
+        .completion-indicator {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            line-height: 1;
+        }
+
+        .completion-indicator.mario {
+            background: var(--accent-mario);
+        }
+
+        .completion-indicator.maria {
+            background: var(--accent-maria);
+        }
+
+        .completion-indicator.both {
+            background: linear-gradient(135deg, var(--accent-mario) 50%, var(--accent-maria) 50%);
+        }
+
         /* Loading Overlay */
         .loading-overlay {
             position: fixed;
@@ -1448,6 +1571,33 @@
 
             .matrix-date {
                 font-size: 0.75rem;
+            }
+
+            .score-section {
+                gap: 1.5rem;
+                padding: 0.75rem 1rem;
+            }
+
+            .score-player {
+                gap: 0.5rem;
+            }
+
+            .score-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.875rem;
+            }
+
+            .score-name {
+                font-size: 0.75rem;
+            }
+
+            .score-points {
+                font-size: 1rem;
+            }
+
+            .score-tasks {
+                font-size: 0.675rem;
             }
 
             .header-actions {
@@ -1747,6 +1897,26 @@
                     <div class="matrix-title">Mario & Maria Daily Planner</div>
                     <div class="matrix-date" id="todayDate"></div>
                 </div>
+                <div class="score-display" id="scoreDisplay">
+                    <div class="score-section">
+                        <div class="score-player mario">
+                            <div class="score-avatar">M</div>
+                            <div class="score-info">
+                                <div class="score-name">Mario</div>
+                                <div class="score-points" id="marioScore">0 pts</div>
+                                <div class="score-tasks" id="marioTasks">0 tasks</div>
+                            </div>
+                        </div>
+                        <div class="score-player maria">
+                            <div class="score-avatar">A</div>
+                            <div class="score-info">
+                                <div class="score-name">Maria</div>
+                                <div class="score-points" id="mariaScore">0 pts</div>
+                                <div class="score-tasks" id="mariaTasks">0 tasks</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <button class="reset-day-btn" id="resetDayBtn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1848,12 +2018,21 @@
                 <button class="task-options-close" id="taskOptionsClose">&times;</button>
             </div>
             <div class="task-options-body">
-                <button class="task-option-btn complete" id="markCompleteBtn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    Mark Complete
-                </button>
+                <div class="task-option-group">
+                    <div class="task-option-group-title">Mark Complete</div>
+                    <button class="task-option-btn complete" id="markCompleteMarioBtn">
+                        <div class="task-option-icon mario"></div>
+                        Mario
+                    </button>
+                    <button class="task-option-btn complete" id="markCompleteMariaBtn">
+                        <div class="task-option-icon maria"></div>
+                        Maria
+                    </button>
+                    <button class="task-option-btn complete" id="markCompleteBothBtn">
+                        <div class="task-option-icon both"></div>
+                        Both
+                    </button>
+                </div>
                 <button class="task-option-btn bank" id="moveToBankBtn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -2088,7 +2267,9 @@
         // Task options menu
         const taskOptionsMenu = document.getElementById('taskOptionsMenu');
         const taskOptionsClose = document.getElementById('taskOptionsClose');
-        const markCompleteBtn = document.getElementById('markCompleteBtn');
+        const markCompleteMarioBtn = document.getElementById('markCompleteMarioBtn');
+        const markCompleteMariaBtn = document.getElementById('markCompleteMariaBtn');
+        const markCompleteBothBtn = document.getElementById('markCompleteBothBtn');
         const moveToBankBtn = document.getElementById('moveToBankBtn');
         const deleteTaskBtn = document.getElementById('deleteTaskBtn');
         let selectedTaskForOptions = null;
@@ -2100,6 +2281,10 @@
 
         // Task bank state (stored in localStorage)
         let bankedTasks = JSON.parse(localStorage.getItem('taskMatrixBank') || '[]');
+
+        // Scoring system
+        const TASK_POINTS = { xs: 2, s: 4, m: 6, l: 8, xl: 10 };
+        let currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
 
         // Quadrant mapping
         const quadrants = {
@@ -2148,6 +2333,7 @@
             updateTodayDate();
             setupEventListeners();
             await loadTasks();
+            await loadTodayScores();
             setupRealtimeSubscription();
             renderTaskBank();
             loadingOverlay.classList.add('hidden');
@@ -2157,6 +2343,78 @@
             const today = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             todayDateEl.textContent = today.toLocaleDateString('en-US', options);
+        }
+
+        // ===========================================
+        // Score Management
+        // ===========================================
+
+        async function loadTodayScores() {
+            try {
+                const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+                const { data, error } = await supabaseClient
+                    .from('scores')
+                    .select('player, points, tasks_completed')
+                    .eq('date', today);
+
+                if (error) throw error;
+
+                // Reset scores
+                currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
+
+                // Load existing scores
+                data.forEach(score => {
+                    currentScores[score.player] = {
+                        points: score.points,
+                        tasks: score.tasks_completed
+                    };
+                });
+
+                updateScoreDisplay();
+            } catch (error) {
+                console.error('Error loading scores:', error);
+            }
+        }
+
+        async function updatePlayerScore(player, pointsToAdd, tasksToAdd = 1) {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+
+                // Update current scores
+                currentScores[player].points += pointsToAdd;
+                currentScores[player].tasks += tasksToAdd;
+
+                // Update database
+                const { error } = await supabaseClient
+                    .from('scores')
+                    .upsert({
+                        player: player,
+                        date: today,
+                        points: currentScores[player].points,
+                        tasks_completed: currentScores[player].tasks,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'player,date'
+                    });
+
+                if (error) throw error;
+
+                updateScoreDisplay();
+            } catch (error) {
+                console.error('Error updating score:', error);
+                alert('Failed to update score. Please try again.');
+            }
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('marioScore').textContent = `${currentScores.mario.points} pts`;
+            document.getElementById('marioTasks').textContent = `${currentScores.mario.tasks} tasks`;
+            document.getElementById('mariaScore').textContent = `${currentScores.maria.points} pts`;
+            document.getElementById('mariaTasks').textContent = `${currentScores.maria.tasks} tasks`;
+        }
+
+        function getTaskPoints(size) {
+            return TASK_POINTS[size] || 0;
         }
 
         // ===========================================
@@ -2269,9 +2527,23 @@
                 }
             });
 
-            markCompleteBtn.addEventListener('click', () => {
+            markCompleteMarioBtn.addEventListener('click', () => {
                 if (selectedTaskForOptions) {
-                    toggleTaskComplete(selectedTaskForOptions.id, true);
+                    toggleTaskComplete(selectedTaskForOptions.id, true, 'mario');
+                    closeTaskOptionsMenu();
+                }
+            });
+
+            markCompleteMariaBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    toggleTaskComplete(selectedTaskForOptions.id, true, 'maria');
+                    closeTaskOptionsMenu();
+                }
+            });
+
+            markCompleteBothBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    toggleTaskComplete(selectedTaskForOptions.id, true, 'both');
                     closeTaskOptionsMenu();
                 }
             });
@@ -2483,14 +2755,34 @@
             }
         }
 
-        async function toggleTaskComplete(id, completed) {
+        async function toggleTaskComplete(id, completed, completedBy = null) {
             try {
+                const updateData = { completed };
+                if (completed && completedBy) {
+                    updateData.completed_by = completedBy;
+                } else if (!completed) {
+                    updateData.completed_by = null;
+                }
+
                 const { error } = await supabaseClient
                     .from('tasks')
-                    .update({ completed })
+                    .update(updateData)
                     .eq('id', id);
 
                 if (error) throw error;
+
+                // Award points when task is completed
+                if (completed && completedBy) {
+                    // Get task details to calculate points
+                    const task = tasks.find(t => t.id === id);
+                    if (task) {
+                        const points = getTaskPoints(task.size);
+                        if (points > 0) {
+                            await updatePlayerScore(completedBy, points);
+                        }
+                    }
+                }
+
                 // Task will be updated via realtime subscription
             } catch (error) {
                 console.error('Error updating task:', error);
@@ -2698,11 +2990,20 @@
 
             // Content: checkmark if completed, icon if set, otherwise short name
             if (task.completed) {
-                dot.innerHTML = `
-                    <svg width="50%" height="50%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                `;
+                if (task.completed_by === 'mario') {
+                    dot.innerHTML = `<div class="completion-indicator mario">✓</div>`;
+                } else if (task.completed_by === 'maria') {
+                    dot.innerHTML = `<div class="completion-indicator maria">✓</div>`;
+                } else if (task.completed_by === 'both') {
+                    dot.innerHTML = `<div class="completion-indicator both">✓</div>`;
+                } else {
+                    // Fallback for tasks completed before this feature
+                    dot.innerHTML = `
+                        <svg width="50%" height="50%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    `;
+                }
             } else if (task.icon) {
                 dot.innerHTML = `<span class="dot-icon">${task.icon}</span>`;
             } else {
@@ -2728,11 +3029,15 @@
 
         function showTooltip(e, task) {
             const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both' };
-            const sizeLabels = { xs: 'Extra Small', s: 'Small', m: 'Medium', l: 'Large', xl: 'Extra Large' };
+            const sizeLabels = { xs: '1 (1-10 mins)', s: '2 (10-30 mins)', m: '3 (30min-1hr)', l: '4 (1-2hrs)', xl: '5 (2hrs+)' };
+            const completedByLabels = { mario: 'Completed by Mario', maria: 'Completed by Maria', both: 'Completed by Both' };
 
             tooltip.querySelector('.tooltip-name').textContent = task.name;
-            tooltip.querySelector('.tooltip-meta').textContent = 
-                `${assigneeLabels[task.assignee]} • ${sizeLabels[task.size]}`;
+            let metaText = `${assigneeLabels[task.assignee]} • ${sizeLabels[task.size]}`;
+            if (task.completed && task.completed_by) {
+                metaText += ` • ${completedByLabels[task.completed_by]}`;
+            }
+            tooltip.querySelector('.tooltip-meta').textContent = metaText;
 
             tooltip.classList.add('visible');
             moveTooltip(e);

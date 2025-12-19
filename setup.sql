@@ -10,6 +10,7 @@ CREATE TABLE tasks (
     urgent INTEGER DEFAULT 3 CHECK (urgent >= 1 AND urgent <= 5),
     important INTEGER DEFAULT 3 CHECK (important >= 1 AND important <= 5),
     completed BOOLEAN DEFAULT FALSE,
+    completed_by TEXT CHECK (completed_by IS NULL OR completed_by IN ('mario', 'maria', 'both')),
     icon TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -43,6 +44,38 @@ ALTER TABLE tasks ALTER COLUMN important SET DEFAULT 3;
 
 -- ADD ICON COLUMN (run this if you don't have the icon column yet)
 -- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT NULL;
+
+-- ADD COMPLETED_BY COLUMN (run this to add who completed the task)
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_by TEXT;
+-- ALTER TABLE tasks ADD CONSTRAINT tasks_completed_by_check CHECK (completed_by IS NULL OR completed_by IN ('mario', 'maria', 'both'));
+
+-- CREATE SCORES TABLE (run this to add scoring system)
+CREATE TABLE IF NOT EXISTS scores (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    player TEXT NOT NULL CHECK (player IN ('mario', 'maria')),
+    date DATE NOT NULL,
+    points INTEGER NOT NULL DEFAULT 0,
+    tasks_completed INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(player, date)
+);
+
+-- Enable Row Level Security
+ALTER TABLE scores ENABLE ROW LEVEL SECURITY;
+
+-- Create policy to allow all operations
+CREATE POLICY "Allow all operations on scores" ON scores
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Enable realtime for the scores table
+ALTER PUBLICATION supabase_realtime ADD TABLE scores;
+
+-- Create index for faster queries
+CREATE INDEX idx_scores_player_date ON scores(player, date DESC);
+CREATE INDEX idx_scores_date ON scores(date DESC);
 
 
 -- Enable Row Level Security (but allow all operations for public access)
