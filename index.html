@@ -351,7 +351,7 @@
 
         .size-btn {
             flex: 1;
-            padding: 0.625rem 0;
+            padding: 0.625rem 0.5rem;
             border: 2px solid var(--border);
             border-radius: 8px;
             background: var(--bg-card);
@@ -361,6 +361,8 @@
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: inherit;
+            white-space: nowrap;
+            text-align: center;
         }
 
         .size-btn:hover {
@@ -2821,24 +2823,24 @@
             </div>
 
             <div class="form-section">
-                <label class="form-label">Urgency (1-5)</label>
+                <label class="form-label">Urgency</label>
                 <div class="priority-group" id="modalUrgentGroup">
-                    <button class="size-btn" data-value="1">1</button>
-                    <button class="size-btn" data-value="2">2</button>
-                    <button class="size-btn active" data-value="3">3</button>
-                    <button class="size-btn" data-value="4">4</button>
-                    <button class="size-btn" data-value="5">5</button>
+                    <button class="size-btn" data-value="1">No Rush</button>
+                    <button class="size-btn" data-value="2">Low Priority</button>
+                    <button class="size-btn active" data-value="3">Normal</button>
+                    <button class="size-btn" data-value="4">Do Soon</button>
+                    <button class="size-btn" data-value="5">Urgent Now</button>
                 </div>
             </div>
 
             <div class="form-section">
-                <label class="form-label">Importance (1-5)</label>
+                <label class="form-label">Importance</label>
                 <div class="priority-group" id="modalImportantGroup">
-                    <button class="size-btn" data-value="1">1</button>
-                    <button class="size-btn" data-value="2">2</button>
-                    <button class="size-btn active" data-value="3">3</button>
-                    <button class="size-btn" data-value="4">4</button>
-                    <button class="size-btn" data-value="5">5</button>
+                    <button class="size-btn" data-value="1">Low Value</button>
+                    <button class="size-btn" data-value="2">Minor</button>
+                    <button class="size-btn active" data-value="3">Normal</button>
+                    <button class="size-btn" data-value="4">High Value</button>
+                    <button class="size-btn" data-value="5">Essential</button>
                 </div>
             </div>
 
