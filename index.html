@@ -347,10 +347,12 @@
         .size-group, .priority-group {
             display: flex;
             gap: 0.375rem;
+            width: 100%;
         }
 
         .size-btn {
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0;
             padding: 0.625rem 0.5rem;
             border: 2px solid var(--border);
             border-radius: 8px;
@@ -363,6 +365,9 @@
             font-family: inherit;
             white-space: nowrap;
             text-align: center;
+            box-sizing: border-box;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .size-btn:hover {
@@ -2837,9 +2842,9 @@
                 <label class="form-label">Importance</label>
                 <div class="priority-group" id="modalImportantGroup">
                     <button class="size-btn" data-value="1">Optional</button>
-                    <button class="size-btn" data-value="2">Small Help</button>
-                    <button class="size-btn active" data-value="3">Keeps Us on Track</button>
-                    <button class="size-btn" data-value="4">Matters a Lot</button>
+                    <button class="size-btn" data-value="2">Nice to Have</button>
+                    <button class="size-btn active" data-value="3">Keeps us on track</button>
+                    <button class="size-btn" data-value="4">Matters a lot</button>
                     <button class="size-btn" data-value="5">Critical</button>
                 </div>
             </div>
