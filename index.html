@@ -2892,9 +2892,26 @@
         const FAMILY_PASSWORD = 'family123';
 
         // ===========================================
-        // Initialize Supabase
+        // Wait for Supabase library and DOM to be ready
         // ===========================================
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabaseClient = null;
+        let passwordGate, passwordInput, passwordBtn, passwordError, loadingOverlay;
+        let connectionStatus, statusDot, statusText, clearAllBtn, taskList, taskCount, tooltip;
+        let dotsContainer, resetPointsBtn, resetDayBtn, todayDateEl;
+        let taskBankHeader, taskBankList, bankToggle, bankCount;
+        let leaderboardToggleBtn;
+        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn;
+        let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
+        let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
+        let undoCompleteBtn, moveToBankBtn, deleteTaskBtn;
+        let selectedTaskForOptions = null;
+        let resizeHandle;
+        let isResizing = false;
+        let startX, startWidth;
+        let bankedTasks = JSON.parse(localStorage.getItem('taskMatrixBank') || '[]');
+        const TASK_POINTS = { xs: 2, s: 4, m: 6, l: 8, xl: 10 };
+        let currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
+        let quadrants = {};
 
         // State
         let tasks = [];
@@ -2905,114 +2922,177 @@
         let selectedIcon = null;
         let isConnected = false;
 
-        // DOM Elements
-        const passwordGate = document.getElementById('passwordGate');
-        const passwordInput = document.getElementById('passwordInput');
-        const passwordBtn = document.getElementById('passwordBtn');
-        const passwordError = document.getElementById('passwordError');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const connectionStatus = document.getElementById('connectionStatus');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
-        const clearAllBtn = document.getElementById('clearAllBtn');
-        const taskList = document.getElementById('taskList');
-        const taskCount = document.getElementById('taskCount');
-        const tooltip = document.getElementById('tooltip');
+        // Function to initialize Supabase client
+        function initSupabase() {
+            if (window.supabase && window.supabase.createClient) {
+                try {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    return true;
+                } catch (error) {
+                    console.error('Error initializing Supabase:', error);
+                    return false;
+                }
+            }
+            return false;
+        }
 
-        const dotsContainer = document.getElementById('dotsContainer');
-        const resetPointsBtn = document.getElementById('resetPointsBtn');
-        const resetDayBtn = document.getElementById('resetDayBtn');
-        const todayDateEl = document.getElementById('todayDate');
-        const taskBankHeader = document.getElementById('taskBankHeader');
-        const taskBankList = document.getElementById('taskBankList');
-        const bankToggle = document.getElementById('bankToggle');
-        const bankCount = document.getElementById('bankCount');
+        // Function to get DOM elements
+        function initDOMElements() {
+            passwordGate = document.getElementById('passwordGate');
+            passwordInput = document.getElementById('passwordInput');
+            passwordBtn = document.getElementById('passwordBtn');
+            passwordError = document.getElementById('passwordError');
+            loadingOverlay = document.getElementById('loadingOverlay');
+            connectionStatus = document.getElementById('connectionStatus');
+            statusDot = document.getElementById('statusDot');
+            statusText = document.getElementById('statusText');
+            clearAllBtn = document.getElementById('clearAllBtn');
+            taskList = document.getElementById('taskList');
+            taskCount = document.getElementById('taskCount');
+            tooltip = document.getElementById('tooltip');
+            dotsContainer = document.getElementById('dotsContainer');
+            resetPointsBtn = document.getElementById('resetPointsBtn');
+            resetDayBtn = document.getElementById('resetDayBtn');
+            todayDateEl = document.getElementById('todayDate');
+            taskBankHeader = document.getElementById('taskBankHeader');
+            taskBankList = document.getElementById('taskBankList');
+            bankToggle = document.getElementById('bankToggle');
+            bankCount = document.getElementById('bankCount');
+            leaderboardToggleBtn = document.getElementById('leaderboardToggleBtn');
+            floatingAddBtn = document.getElementById('floatingAddBtn');
+            addTaskModal = document.getElementById('addTaskModal');
+            modalClose = document.getElementById('modalClose');
+            modalTaskName = document.getElementById('modalTaskName');
+            modalAddTaskBtn = document.getElementById('modalAddTaskBtn');
+            taskOptionsMenu = document.getElementById('taskOptionsMenu');
+            taskOptionsClose = document.getElementById('taskOptionsClose');
+            markCompleteGroup = document.getElementById('markCompleteGroup');
+            markCompleteMarioBtn = document.getElementById('markCompleteMarioBtn');
+            markCompleteMariaBtn = document.getElementById('markCompleteMariaBtn');
+            markCompleteBothBtn = document.getElementById('markCompleteBothBtn');
+            undoCompleteBtn = document.getElementById('undoCompleteBtn');
+            moveToBankBtn = document.getElementById('moveToBankBtn');
+            deleteTaskBtn = document.getElementById('deleteTaskBtn');
+            resizeHandle = document.getElementById('resizeHandle');
 
-        // Leaderboard toggle
-        const leaderboardToggleBtn = document.getElementById('leaderboardToggleBtn');
+            // Quadrant mapping
+            quadrants = {
+                'do-first': document.querySelector('[data-quadrant="do-first"]'),
+                'schedule': document.querySelector('[data-quadrant="schedule"]'),
+                'delegate': document.querySelector('[data-quadrant="delegate"]'),
+                'eliminate': document.querySelector('[data-quadrant="eliminate"]')
+            };
 
-        // Modal elements
-        const floatingAddBtn = document.getElementById('floatingAddBtn');
-        const addTaskModal = document.getElementById('addTaskModal');
-        const modalClose = document.getElementById('modalClose');
-        const modalTaskName = document.getElementById('modalTaskName');
-        const modalAddTaskBtn = document.getElementById('modalAddTaskBtn');
+            return passwordGate && passwordInput && passwordBtn;
+        }
 
-        // Task options menu
-        const taskOptionsMenu = document.getElementById('taskOptionsMenu');
-        const taskOptionsClose = document.getElementById('taskOptionsClose');
-        const markCompleteGroup = document.getElementById('markCompleteGroup');
-        const markCompleteMarioBtn = document.getElementById('markCompleteMarioBtn');
-        const markCompleteMariaBtn = document.getElementById('markCompleteMariaBtn');
-        const markCompleteBothBtn = document.getElementById('markCompleteBothBtn');
-        const undoCompleteBtn = document.getElementById('undoCompleteBtn');
-        const moveToBankBtn = document.getElementById('moveToBankBtn');
-        const deleteTaskBtn = document.getElementById('deleteTaskBtn');
-        let selectedTaskForOptions = null;
+        // Function to wait for Supabase to load
+        function waitForSupabase(callback, maxAttempts = 50) {
+            let attempts = 0;
+            const checkSupabase = () => {
+                attempts++;
+                if (initSupabase()) {
+                    callback();
+                } else if (attempts < maxAttempts) {
+                    setTimeout(checkSupabase, 100);
+                } else {
+                    console.error('Failed to load Supabase library after', maxAttempts, 'attempts');
+                    if (loadingOverlay) {
+                        loadingOverlay.innerHTML = '<div style="color: var(--text-primary); text-align: center;"><p>Failed to load. Please refresh the page.</p></div>';
+                    }
+                }
+            };
+            checkSupabase();
+        }
 
-        // Resize handle
-        const resizeHandle = document.getElementById('resizeHandle');
-        let isResizing = false;
-        let startX, startWidth;
+        // Initialize app when everything is ready
+        function initializeApp() {
+            if (!initDOMElements()) {
+                // DOM not ready yet, try again
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initializeApp);
+                } else {
+                    setTimeout(initializeApp, 100);
+                }
+                return;
+            }
 
-        // Task bank state (stored in localStorage)
-        let bankedTasks = JSON.parse(localStorage.getItem('taskMatrixBank') || '[]');
-
-        // Scoring system
-        const TASK_POINTS = { xs: 2, s: 4, m: 6, l: 8, xl: 10 };
-        let currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
-
-        // Quadrant mapping
-        const quadrants = {
-            'do-first': document.querySelector('[data-quadrant="do-first"]'),
-            'schedule': document.querySelector('[data-quadrant="schedule"]'),
-            'delegate': document.querySelector('[data-quadrant="delegate"]'),
-            'eliminate': document.querySelector('[data-quadrant="eliminate"]')
-        };
+            // Wait for Supabase to load
+            waitForSupabase(() => {
+                setupPasswordGate();
+            });
+        }
 
         // ===========================================
         // Password Gate
         // ===========================================
-        function checkPassword() {
-            const savedPassword = localStorage.getItem('taskMatrixAuth');
-            if (savedPassword === FAMILY_PASSWORD) {
-                passwordGate.classList.add('hidden');
-                init();
+        function setupPasswordGate() {
+            function checkPassword() {
+                const savedPassword = localStorage.getItem('taskMatrixAuth');
+                if (savedPassword === FAMILY_PASSWORD) {
+                    passwordGate.classList.add('hidden');
+                    init();
+                }
             }
+
+            function handlePasswordSubmit() {
+                if (passwordInput.value === FAMILY_PASSWORD) {
+                    localStorage.setItem('taskMatrixAuth', FAMILY_PASSWORD);
+                    passwordGate.classList.add('hidden');
+                    passwordError.classList.remove('show');
+                    init();
+                } else {
+                    passwordError.classList.add('show');
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            }
+
+            passwordBtn.addEventListener('click', handlePasswordSubmit);
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handlePasswordSubmit();
+            });
+
+            // Check if already authenticated
+            checkPassword();
         }
 
-        function handlePasswordSubmit() {
-            if (passwordInput.value === FAMILY_PASSWORD) {
-                localStorage.setItem('taskMatrixAuth', FAMILY_PASSWORD);
-                passwordGate.classList.add('hidden');
-                passwordError.classList.remove('show');
-                init();
-            } else {
-                passwordError.classList.add('show');
-                passwordInput.value = '';
-                passwordInput.focus();
-            }
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
         }
-
-        passwordBtn.addEventListener('click', handlePasswordSubmit);
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handlePasswordSubmit();
-        });
-
-        // Check if already authenticated
-        checkPassword();
 
         // ===========================================
         // Initialize App
         // ===========================================
         async function init() {
-            updateTodayDate();
-            setupEventListeners();
-            await loadTasks();
-            await loadTodayScores();
-            setupRealtimeSubscription();
-            renderTaskBank();
-            loadingOverlay.classList.add('hidden');
+            // Safety check: ensure Supabase is initialized
+            if (!supabaseClient) {
+                console.error('Supabase client not initialized');
+                if (loadingOverlay) {
+                    loadingOverlay.innerHTML = '<div style="color: var(--text-primary); text-align: center; padding: 2rem;"><p>Failed to initialize. Please refresh the page.</p></div>';
+                }
+                return;
+            }
+
+            try {
+                updateTodayDate();
+                setupEventListeners();
+                await loadTasks();
+                await loadTodayScores();
+                setupRealtimeSubscription();
+                renderTaskBank();
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                if (loadingOverlay) {
+                    loadingOverlay.innerHTML = '<div style="color: var(--text-primary); text-align: center; padding: 2rem;"><p>Error loading app. Please refresh the page.</p><p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem;">' + error.message + '</p></div>';
+                }
+            }
         }
 
         function updateTodayDate() {
