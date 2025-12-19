@@ -190,10 +190,50 @@
 
         .app-container {
             display: grid;
-            grid-template-columns: 380px 1fr 340px;
+            grid-template-columns: 380px 1fr 8px 340px;
             min-height: 100vh;
-            gap: 1px;
+            gap: 0;
             background: var(--border);
+        }
+
+        .resize-handle {
+            background: var(--border);
+            cursor: col-resize;
+            position: relative;
+            z-index: 10;
+            transition: background-color 0.2s ease;
+        }
+
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background: var(--accent-mario);
+        }
+
+        .resize-handle::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 2px;
+            height: 40px;
+            background: var(--text-muted);
+            border-radius: 1px;
+            opacity: 0.5;
+            transition: opacity 0.2s ease;
+        }
+
+        .resize-handle:hover::before,
+        .resize-handle.dragging::before {
+            opacity: 1;
+        }
+
+        /* Prevent text selection during resize */
+        .resize-handle.dragging {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         /* Left Panel - Task Form */
@@ -1128,13 +1168,112 @@
             height: 20px;
         }
 
+        /* Floating Add Task Button */
+        .floating-add-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 1rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-mario), var(--accent-both));
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(74, 158, 255, 0.4);
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .floating-add-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 30px rgba(74, 158, 255, 0.6);
+        }
+
+        .floating-add-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Add Task Modal */
+        .add-task-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 31, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .add-task-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .add-task-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .add-task-modal.show .add-task-modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            color: var(--accent-mario);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
         /* Responsive */
-        @media (max-width: 1100px) {
+        @media (max-width: 1024px) {
             .app-container {
-                grid-template-columns: 340px 1fr;
+                grid-template-columns: 1fr 8px 320px;
             }
-            .list-panel {
+            .form-panel {
                 display: none;
+            }
+            .floating-add-btn {
+                display: block;
             }
         }
 
@@ -1156,76 +1295,25 @@
                 background: var(--bg-main);
             }
 
-            .form-panel,
-            .matrix-panel {
+            .resize-handle {
+                display: none;
+            }
+
+            .matrix-panel,
+            .list-panel {
                 display: none;
                 min-height: calc(100vh - 70px);
                 padding-bottom: 80px;
             }
 
-            .form-panel.active,
-            .matrix-panel.active {
+            .matrix-panel.active,
+            .list-panel.active {
                 display: flex;
             }
 
-            .list-panel {
-                display: none !important;
-            }
-
-            /* Form Panel Mobile */
-            .form-panel {
-                padding: 1rem;
-                padding-top: 2.5rem;
-            }
-
-            .logo {
-                font-size: 1.5rem;
-                margin-bottom: 0.25rem;
-            }
-
-            .subtitle {
-                font-size: 0.75rem;
-                margin-bottom: 1.5rem;
-            }
-
-            .form-section {
-                margin-bottom: 1.25rem;
-            }
-
-            .form-label {
-                font-size: 0.65rem;
-                margin-bottom: 0.5rem;
-            }
-
-            .form-input {
-                padding: 0.75rem;
-                font-size: 1rem;
-            }
-
-            .assignee-btn {
-                padding: 0.625rem 0.375rem;
-                font-size: 0.75rem;
-            }
-
-            .icon-group {
-                gap: 0.25rem;
-            }
-
-            .icon-btn {
-                width: 36px;
-                height: 36px;
-                font-size: 1.1rem;
-            }
-
-            .size-btn {
-                padding: 0.5rem 0;
-                font-size: 0.7rem;
-            }
-
-            .add-btn {
-                padding: 0.875rem;
-                font-size: 0.9375rem;
-                margin-top: 1rem;
+            .floating-add-btn {
+                bottom: 90px;
+                right: 1rem;
             }
 
             /* Matrix Panel Mobile */
@@ -1317,6 +1405,24 @@
                 height: 6px;
             }
 
+            /* Task List Mobile */
+            .list-panel {
+                padding: 1rem;
+                padding-top: 2.5rem;
+            }
+
+            .list-header {
+                margin-bottom: 1rem;
+            }
+
+            .list-title {
+                font-size: 0.8rem;
+            }
+
+            .task-count {
+                font-size: 0.7rem;
+            }
+
             /* Password box mobile */
             .password-box {
                 padding: 2rem 1.5rem;
@@ -1342,19 +1448,15 @@
         }
 
         @media (max-width: 380px) {
-            .icon-btn {
-                width: 32px;
-                height: 32px;
-                font-size: 1rem;
-            }
-
-            .assignee-btn {
-                font-size: 0.65rem;
-                padding: 0.5rem 0.25rem;
-            }
-
             .quadrant {
                 min-height: 120px;
+            }
+
+            .floating-add-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+                right: 0.75rem;
             }
         }
     </style>
@@ -1496,13 +1598,13 @@
                         <span class="quadrant-label">Do First</span>
                     </div>
                     <div class="quadrant schedule" data-quadrant="schedule">
-                        <span class="quadrant-label">Schedule</span>
+                        <span class="quadrant-label">Delegate or do second</span>
                     </div>
                     <div class="quadrant delegate" data-quadrant="delegate">
-                        <span class="quadrant-label">Delegate</span>
+                        <span class="quadrant-label">Schedule or do third</span>
                     </div>
                     <div class="quadrant eliminate" data-quadrant="eliminate">
-                        <span class="quadrant-label">Eliminate</span>
+                        <span class="quadrant-label">Do last or Eliminate</span>
                     </div>
 
                     <div id="dotsContainer" class="dots-container"></div>
@@ -1525,6 +1627,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Resize Handle -->
+        <div class="resize-handle" id="resizeHandle"></div>
 
         <!-- Right Panel: Task List -->
         <div class="list-panel">
@@ -1557,17 +1662,94 @@
         <div class="tooltip-meta"></div>
     </div>
 
+    <!-- Floating Add Task Button -->
+    <button class="floating-add-btn" id="floatingAddBtn">+</button>
+
+    <!-- Add Task Modal -->
+    <div class="add-task-modal" id="addTaskModal">
+        <div class="add-task-modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Add Task</div>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Task Name</label>
+                <input type="text" id="modalTaskName" class="form-input" placeholder="What needs to be done?">
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Assigned To</label>
+                <div class="assignee-group">
+                    <button class="assignee-btn active" data-value="mario">Mario</button>
+                    <button class="assignee-btn" data-value="maria">Maria</button>
+                    <button class="assignee-btn" data-value="both">Mario Maria Both</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Icon (optional)</label>
+                <div class="icon-group">
+                    <button class="icon-btn active" data-value="none">None</button>
+                    <button class="icon-btn" data-value="🛒">🛒</button>
+                    <button class="icon-btn" data-value="🏠">🏠</button>
+                    <button class="icon-btn" data-value="💼">💼</button>
+                    <button class="icon-btn" data-value="📞">📞</button>
+                    <button class="icon-btn" data-value="✉️">✉️</button>
+                    <button class="icon-btn" data-value="💰">💰</button>
+                    <button class="icon-btn" data-value="🏥">🏥</button>
+                    <button class="icon-btn" data-value="🚗">🚗</button>
+                    <button class="icon-btn" data-value="✈️">✈️</button>
+                    <button class="icon-btn" data-value="🍽️">🍽️</button>
+                    <button class="icon-btn" data-value="🎁">🎁</button>
+                    <button class="icon-btn" data-value="📅">📅</button>
+                    <button class="icon-btn" data-value="💪">💪</button>
+                    <button class="icon-btn" data-value="📚">📚</button>
+                    <button class="icon-btn" data-value="🐕">🐕</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Task Size</label>
+                <div class="size-group">
+                    <button class="size-btn" data-value="xs">XS</button>
+                    <button class="size-btn" data-value="s">S</button>
+                    <button class="size-btn active" data-value="m">M</button>
+                    <button class="size-btn" data-value="l">L</button>
+                    <button class="size-btn" data-value="xl">XL</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Urgency (1-5)</label>
+                <div class="priority-group" id="modalUrgentGroup">
+                    <button class="size-btn" data-value="1">1</button>
+                    <button class="size-btn" data-value="2">2</button>
+                    <button class="size-btn active" data-value="3">3</button>
+                    <button class="size-btn" data-value="4">4</button>
+                    <button class="size-btn" data-value="5">5</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Importance (1-5)</label>
+                <div class="priority-group" id="modalImportantGroup">
+                    <button class="size-btn" data-value="1">1</button>
+                    <button class="size-btn" data-value="2">2</button>
+                    <button class="size-btn active" data-value="3">3</button>
+                    <button class="size-btn" data-value="4">4</button>
+                    <button class="size-btn" data-value="5">5</button>
+                </div>
+            </div>
+
+            <button class="add-btn" id="modalAddTaskBtn">Add Task</button>
+        </div>
+    </div>
+
     <!-- Mobile Navigation -->
     <div class="mobile-nav" id="mobileNav">
         <div class="mobile-nav-inner">
-            <button class="mobile-nav-btn active" data-panel="form">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Add Task
-            </button>
-            <button class="mobile-nav-btn" data-panel="matrix">
+            <button class="mobile-nav-btn active" data-panel="matrix">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="7" height="7"></rect>
                     <rect x="14" y="3" width="7" height="7"></rect>
@@ -1575,6 +1757,17 @@
                     <rect x="3" y="14" width="7" height="7"></rect>
                 </svg>
                 Matrix
+            </button>
+            <button class="mobile-nav-btn" data-panel="list">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                Tasks
             </button>
         </div>
     </div>
@@ -1626,6 +1819,18 @@
         const taskBankList = document.getElementById('taskBankList');
         const bankToggle = document.getElementById('bankToggle');
         const bankCount = document.getElementById('bankCount');
+
+        // Modal elements
+        const floatingAddBtn = document.getElementById('floatingAddBtn');
+        const addTaskModal = document.getElementById('addTaskModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalTaskName = document.getElementById('modalTaskName');
+        const modalAddTaskBtn = document.getElementById('modalAddTaskBtn');
+
+        // Resize handle
+        const resizeHandle = document.getElementById('resizeHandle');
+        let isResizing = false;
+        let startX, startWidth;
 
         // Task bank state (stored in localStorage)
         let bankedTasks = JSON.parse(localStorage.getItem('taskMatrixBank') || '[]');
@@ -1771,24 +1976,110 @@
                 taskBankList.classList.toggle('open');
             });
 
+            // Floating add button
+            floatingAddBtn.addEventListener('click', () => {
+                openAddTaskModal();
+            });
+
+            // Modal events
+            modalClose.addEventListener('click', () => {
+                closeAddTaskModal();
+            });
+
+            addTaskModal.addEventListener('click', (e) => {
+                if (e.target === addTaskModal) {
+                    closeAddTaskModal();
+                }
+            });
+
+            modalAddTaskBtn.addEventListener('click', () => {
+                addTaskFromModal();
+            });
+
+            modalTaskName.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addTaskFromModal();
+                }
+            });
+
+            // Modal form controls
+            addTaskModal.querySelectorAll('.assignee-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    addTaskModal.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedAssignee = btn.dataset.value;
+                });
+            });
+
+            addTaskModal.querySelectorAll('.icon-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    addTaskModal.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedIcon = btn.dataset.value === 'none' ? null : btn.dataset.value;
+                });
+            });
+
+            addTaskModal.querySelectorAll('.size-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.parentElement.classList.contains('size-group')) {
+                        addTaskModal.querySelectorAll('.size-group .size-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        selectedSize = btn.dataset.value;
+                    }
+                    else if (btn.parentElement.id === 'modalUrgentGroup') {
+                        document.querySelectorAll('#modalUrgentGroup .size-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        selectedUrgent = parseInt(btn.dataset.value);
+                    }
+                    else if (btn.parentElement.id === 'modalImportantGroup') {
+                        document.querySelectorAll('#modalImportantGroup .size-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        selectedImportant = parseInt(btn.dataset.value);
+                    }
+                });
+            });
+
             // Mobile navigation
             document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const panel = btn.dataset.panel;
-                    
+
                     // Update nav buttons
                     document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    
+
                     // Show/hide panels
-                    document.querySelector('.form-panel').classList.toggle('active', panel === 'form');
                     document.querySelector('.matrix-panel').classList.toggle('active', panel === 'matrix');
+                    document.querySelector('.list-panel').classList.toggle('active', panel === 'list');
                 });
+            });
+
+            // Resize handle functionality
+            resizeHandle.addEventListener('mousedown', startResize);
+            resizeHandle.addEventListener('touchstart', startResize, { passive: false });
+
+            // Window resize handler to reset grid columns
+            window.addEventListener('resize', () => {
+                const appContainer = document.querySelector('.app-container');
+                appContainer.style.gridTemplateColumns = ''; // Reset to CSS defaults
+
+                // Reset mobile state if needed
+                if (window.innerWidth <= 768) {
+                    document.querySelector('.matrix-panel').classList.add('active');
+                    document.querySelector('.list-panel').classList.remove('active');
+                    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.panel === 'matrix');
+                    });
+                } else {
+                    // Reset to default state on larger screens
+                    document.querySelector('.matrix-panel').classList.remove('active');
+                    document.querySelector('.list-panel').classList.remove('active');
+                }
             });
 
             // Set initial mobile state
             if (window.innerWidth <= 768) {
-                document.querySelector('.form-panel').classList.add('active');
+                document.querySelector('.matrix-panel').classList.add('active');
             }
         }
 
@@ -2161,9 +2452,9 @@
         function renderTaskList() {
             const groups = {
                 'do-first': { label: 'Do First', tasks: [] },
-                'schedule': { label: 'Schedule', tasks: [] },
-                'delegate': { label: 'Delegate', tasks: [] },
-                'eliminate': { label: 'Eliminate', tasks: [] }
+                'schedule': { label: 'Delegate or do second', tasks: [] },
+                'delegate': { label: 'Schedule or do third', tasks: [] },
+                'eliminate': { label: 'Do last or Eliminate', tasks: [] }
             };
 
             tasks.forEach(task => {
@@ -2227,6 +2518,179 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // ===========================================
+        // Resize Functions
+        // ===========================================
+        function startResize(e) {
+            isResizing = true;
+            resizeHandle.classList.add('dragging');
+
+            startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+
+            // Get current widths
+            const appContainer = document.querySelector('.app-container');
+            const matrixPanel = document.querySelector('.matrix-panel');
+            const taskListPanel = document.querySelector('.list-panel');
+
+            // For desktop: matrix (1st column), resize handle (3rd), task list (4th)
+            // For tablet: matrix (1st column), resize handle (2nd), task list (3rd)
+            const isTablet = window.innerWidth <= 1024;
+            const matrixIndex = isTablet ? 0 : 1; // 0-indexed in grid
+            const taskListIndex = isTablet ? 2 : 3;
+
+            // Get current grid template columns
+            const computedStyle = getComputedStyle(appContainer);
+            const gridColumns = computedStyle.gridTemplateColumns.split(' ');
+
+            startWidth = {
+                matrix: parseFloat(gridColumns[matrixIndex]),
+                taskList: parseFloat(gridColumns[taskListIndex])
+            };
+
+            // Add global event listeners
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('touchmove', resize, { passive: false });
+            document.addEventListener('mouseup', stopResize);
+            document.addEventListener('touchend', stopResize);
+
+            e.preventDefault();
+        }
+
+        function resize(e) {
+            if (!isResizing) return;
+
+            const clientX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+            const deltaX = clientX - startX;
+
+            const appContainer = document.querySelector('.app-container');
+            const isTablet = window.innerWidth <= 1024;
+
+            // Calculate new widths
+            let newMatrixWidth = startWidth.matrix + deltaX;
+            let newTaskListWidth = startWidth.taskList - deltaX;
+
+            // Set minimum widths
+            const minWidth = 250;
+            const maxWidth = window.innerWidth - minWidth - 8; // 8px for resize handle
+
+            newMatrixWidth = Math.max(minWidth, Math.min(maxWidth, newMatrixWidth));
+            newTaskListWidth = Math.max(minWidth, Math.min(maxWidth, newTaskListWidth));
+
+            // Update grid template columns
+            if (isTablet) {
+                // Tablet layout: matrix | handle | task list
+                appContainer.style.gridTemplateColumns = `${newMatrixWidth}px 8px ${newTaskListWidth}px`;
+            } else {
+                // Desktop layout: form | matrix | handle | task list
+                const formWidth = getComputedStyle(appContainer).gridTemplateColumns.split(' ')[0];
+                appContainer.style.gridTemplateColumns = `${formWidth} ${newMatrixWidth}px 8px ${newTaskListWidth}px`;
+            }
+
+            e.preventDefault();
+        }
+
+        function stopResize() {
+            if (!isResizing) return;
+
+            isResizing = false;
+            resizeHandle.classList.remove('dragging');
+
+            // Remove global event listeners
+            document.removeEventListener('mousemove', resize);
+            document.removeEventListener('touchmove', resize);
+            document.removeEventListener('mouseup', stopResize);
+            document.removeEventListener('touchend', stopResize);
+        }
+
+        // ===========================================
+        // Modal Functions
+        // ===========================================
+        function openAddTaskModal() {
+            addTaskModal.classList.add('show');
+            modalTaskName.focus();
+
+            // Sync modal state with current selections
+            syncModalState();
+        }
+
+        function closeAddTaskModal() {
+            addTaskModal.classList.remove('show');
+            modalTaskName.value = '';
+        }
+
+        function syncModalState() {
+            // Sync assignee
+            addTaskModal.querySelectorAll('.assignee-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.value === selectedAssignee);
+            });
+
+            // Sync icon
+            const iconValue = selectedIcon || 'none';
+            addTaskModal.querySelectorAll('.icon-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.value === iconValue);
+            });
+
+            // Sync size
+            addTaskModal.querySelectorAll('.size-group .size-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.value === selectedSize);
+            });
+
+            // Sync urgent
+            document.querySelectorAll('#modalUrgentGroup .size-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.value) === selectedUrgent);
+            });
+
+            // Sync important
+            document.querySelectorAll('#modalImportantGroup .size-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.value) === selectedImportant);
+            });
+        }
+
+        async function addTaskFromModal() {
+            const name = modalTaskName.value.trim();
+            if (!name) {
+                modalTaskName.focus();
+                return;
+            }
+
+            modalAddTaskBtn.disabled = true;
+
+            const task = {
+                name: name,
+                assignee: selectedAssignee,
+                size: selectedSize,
+                urgent: selectedUrgent,
+                important: selectedImportant,
+                completed: false,
+                icon: selectedIcon
+            };
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('tasks')
+                    .insert([task])
+                    .select();
+
+                if (error) {
+                    console.error('Supabase Error:', error);
+                    if (error.code === '22P02' && error.message.includes('boolean')) {
+                        alert('Database schema mismatch: The app expects 1-5 values but your database is still using old boolean columns. Please run the migration script in setup.sql.');
+                    } else {
+                        throw error;
+                    }
+                    return;
+                }
+
+                closeAddTaskModal();
+                modalTaskName.focus();
+            } catch (error) {
+                console.error('Error adding task:', error);
+                alert('Failed to add task: ' + (error.message || 'Please try again.'));
+            }
+
+            modalAddTaskBtn.disabled = false;
         }
     </script>
 </body>
