@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>Task Matrix</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +37,14 @@
             background: var(--bg-main);
             color: var(--text-primary);
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* iOS Safari height fix */
+        html {
+            height: -webkit-fill-available;
         }
 
         /* Background pattern */
@@ -192,6 +199,7 @@
             display: grid;
             grid-template-columns: 380px 1fr 8px 340px;
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             gap: 0;
             background: var(--border);
         }
@@ -634,6 +642,36 @@
         .clear-all-btn:hover {
             border-color: #ff6b6b;
             color: #ff6b6b;
+        }
+
+        /* Panel Switcher (for tablet landscape) */
+        .panel-switcher {
+            display: none;
+            gap: 0.5rem;
+            margin-right: auto;
+        }
+
+        .panel-switch-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .panel-switch-btn:hover {
+            background: var(--bg-hover);
+        }
+
+        .panel-switch-btn.active {
+            background: var(--accent-mario);
+            color: white;
+            border-color: var(--accent-mario);
         }
 
         /* Task Bank */
@@ -1657,10 +1695,8 @@
         }
 
         /* Responsive */
-        @media (max-width: 1024px) {
-            .app-container {
-                grid-template-columns: 1fr 8px 320px;
-            }
+        /* General tablet/small screen - hide left form panel */
+        @media (max-width: 1200px) {
             .form-panel {
                 display: none;
             }
@@ -1669,118 +1705,120 @@
             }
         }
 
-        /* Tablet Portrait / Small Landscape (769px - 900px) */
-        @media (min-width: 769px) and (max-width: 900px) {
+        /* Older iPad Landscape (1024px exactly) + Similar devices */
+        @media (min-width: 1001px) and (max-width: 1100px) {
             .app-container {
-                grid-template-columns: 1fr;
-                grid-template-rows: 1fr auto;
-            }
-
-            .form-panel {
-                display: none;
+                display: grid !important;
+                grid-template-columns: 1fr 8px 280px;
+                grid-template-rows: 1fr;
+                min-height: 100vh;
+                min-height: -webkit-fill-available;
             }
 
             .resize-handle {
-                display: none;
+                grid-column: 2;
+                display: block;
             }
 
-            /* Make panels full width on small tablet */
-            .matrix-panel,
-            .list-panel,
-            .leaderboard-panel {
+            .matrix-panel {
+                display: flex !important;
                 grid-column: 1;
-                border-left: none;
-                border-right: none;
-                width: 100%;
-                max-width: 100%;
+                padding: 1.25rem;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
-            /* Show floating add button on small tablet */
+            .list-panel {
+                grid-column: 3;
+                width: 280px;
+                max-width: 280px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 1rem;
+            }
+
+            .list-panel.active {
+                display: flex !important;
+            }
+
+            .list-panel:not(.active) {
+                display: none !important;
+            }
+
+            .leaderboard-panel {
+                grid-column: 3;
+                width: 280px;
+                max-width: 280px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 1rem;
+            }
+
+            .leaderboard-panel.active {
+                display: flex !important;
+            }
+
+            .leaderboard-panel:not(.active) {
+                display: none !important;
+            }
+
             .floating-add-btn {
                 display: block;
-                bottom: 100px;
-                right: 1.5rem;
+                bottom: 1.5rem;
+                right: 300px;
                 z-index: 150;
             }
 
-            /* Modal behavior on small tablet */
-            .add-task-modal .add-task-modal-content {
-                max-width: 480px;
-                margin: 2rem auto;
-                border-radius: 16px;
-            }
-
-            /* Adjust header for small tablet */
             .matrix-header {
-                flex-direction: row;
-                align-items: center;
-                gap: 1.5rem;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
             }
 
             .score-display {
-                flex: 1;
+                width: 100%;
                 justify-content: center;
             }
 
+            .score-section {
+                gap: 1.5rem;
+                padding: 0.75rem 1rem;
+            }
+
             .header-actions {
-                display: flex;
+                justify-content: center;
                 gap: 0.5rem;
             }
 
-            /* Small tablet navigation */
+            .quadrant {
+                min-height: 140px;
+            }
+
+            .add-task-modal .add-task-modal-content {
+                max-width: 500px;
+                margin: 2rem auto;
+            }
+
             .tablet-nav {
-                display: none;
-                position: fixed;
-                top: 1rem;
-                right: 1rem;
-                background: var(--bg-card);
-                border: 1px solid var(--border);
-                border-radius: 12px;
-                padding: 0.5rem;
-                z-index: 100;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                backdrop-filter: blur(8px);
-            }
-
-            .tablet-nav.show {
-                display: flex;
-                gap: 0.25rem;
-            }
-
-            .tablet-nav-btn {
-                padding: 0.5rem 0.75rem;
-                border: none;
-                border-radius: 8px;
-                background: transparent;
-                color: var(--text-primary);
-                font-size: 0.8rem;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-
-            .tablet-nav-btn:hover {
-                background: var(--bg-hover);
-            }
-
-            .tablet-nav-btn.active {
-                background: var(--accent-mario);
-                color: white;
+                display: none !important;
             }
         }
 
-        /* iPad Landscape / Large Tablet (901px - 1200px) */
-        @media (min-width: 901px) and (max-width: 1200px) {
+        /* iPad Landscape / Large Tablet (1101px - 1200px) */
+        @media (min-width: 1101px) and (max-width: 1200px) {
             .app-container {
-                grid-template-columns: 1fr 12px 420px;
+                display: grid !important;
+                grid-template-columns: 1fr 10px 340px;
                 grid-template-rows: 1fr;
             }
 
-            .form-panel {
-                display: none;
-            }
-
-            /* Adjust resize handle for large tablet */
             .resize-handle {
                 grid-column: 2;
                 cursor: col-resize;
@@ -1792,110 +1830,275 @@
                 background: var(--accent-mario);
             }
 
-            /* Matrix panel takes most space */
             .matrix-panel {
+                display: flex !important;
                 grid-column: 1;
                 border-right: 1px solid var(--border);
+                padding: 1.5rem;
             }
 
-            /* Task/Leaderboard panels on the right */
-            .list-panel,
+            .list-panel {
+                grid-column: 3;
+                border-left: 1px solid var(--border);
+                width: 340px;
+                max-width: 340px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .list-panel.active {
+                display: flex !important;
+            }
+
+            .list-panel:not(.active) {
+                display: none !important;
+            }
+
             .leaderboard-panel {
                 grid-column: 3;
                 border-left: 1px solid var(--border);
-                width: 420px;
-                max-width: 420px;
+                width: 340px;
+                max-width: 340px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
-            /* Show floating add button */
+            .leaderboard-panel.active {
+                display: flex !important;
+            }
+
+            .leaderboard-panel:not(.active) {
+                display: none !important;
+            }
+
             .floating-add-btn {
                 display: block;
                 bottom: 2rem;
-                right: 2rem;
+                right: 360px;
                 z-index: 150;
             }
 
-            /* Optimize matrix for landscape tablet */
             .matrix-container {
                 max-width: 100%;
-                padding: 0 1rem;
+                padding: 0 0.5rem;
             }
 
-            /* Better quadrant sizing for landscape */
             .quadrant {
-                min-height: 160px;
+                min-height: 150px;
             }
 
-            /* Task list and leaderboard height management */
-            .list-panel,
-            .leaderboard-panel {
-                height: 100vh;
-                max-height: 100vh;
-                overflow-y: auto;
-            }
-
-            /* Modal behavior on landscape tablet */
             .add-task-modal .add-task-modal-content {
                 max-width: 550px;
-                margin: 3rem auto;
+                margin: 2rem auto;
                 border-radius: 20px;
             }
 
-            /* Header adjustments */
             .matrix-header {
                 flex-direction: row;
                 align-items: center;
-                gap: 2rem;
-                margin-bottom: 2rem;
+                gap: 1.5rem;
+                margin-bottom: 1.5rem;
             }
 
             .score-display {
                 flex: 1;
                 justify-content: center;
-                max-width: 400px;
+                max-width: 350px;
             }
 
             .header-actions {
                 display: flex;
-                gap: 0.75rem;
-            }
-
-            /* Panel switching buttons in header for landscape tablet */
-            .panel-switcher {
-                display: flex;
                 gap: 0.5rem;
-                margin-left: auto;
             }
 
-            .panel-switch-btn {
-                padding: 0.5rem 1rem;
-                border: 1px solid var(--border);
-                border-radius: 8px;
-                background: var(--bg-card);
-                color: var(--text-primary);
-                font-size: 0.875rem;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-
-            .panel-switch-btn:hover {
-                background: var(--bg-hover);
-            }
-
-            .panel-switch-btn.active {
-                background: var(--accent-mario);
-                color: white;
-                border-color: var(--accent-mario);
-            }
-
-            /* Navigation - hide tablet nav on landscape, use panels directly */
             .tablet-nav {
                 display: none !important;
             }
         }
 
-        @media (max-width: 768px) {
+        /* Smaller tablets and iPad portrait (768px - 1000px) */
+        @media (min-width: 768px) and (max-width: 1000px) {
+            .app-container {
+                display: grid !important;
+                grid-template-columns: 1fr 8px 260px;
+                grid-template-rows: 1fr;
+                min-height: 100vh;
+                min-height: -webkit-fill-available;
+            }
+
+            .resize-handle {
+                grid-column: 2;
+                display: block;
+            }
+
+            .matrix-panel {
+                display: flex !important;
+                grid-column: 1;
+                padding: 1rem;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .list-panel {
+                grid-column: 3;
+                border-left: 1px solid var(--border);
+                width: 260px;
+                max-width: 260px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 1rem;
+            }
+
+            .list-panel.active {
+                display: flex !important;
+            }
+
+            .list-panel:not(.active) {
+                display: none !important;
+            }
+
+            .leaderboard-panel {
+                grid-column: 3;
+                border-left: 1px solid var(--border);
+                width: 260px;
+                max-width: 260px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 1rem;
+            }
+
+            .leaderboard-panel.active {
+                display: flex !important;
+            }
+
+            .leaderboard-panel:not(.active) {
+                display: none !important;
+            }
+
+            .floating-add-btn {
+                display: block;
+                bottom: 1.5rem;
+                right: 280px;
+                z-index: 150;
+            }
+
+            .add-task-modal .add-task-modal-content {
+                max-width: 450px;
+                margin: 1.5rem auto;
+                border-radius: 16px;
+            }
+
+            .matrix-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+            }
+
+            .score-display {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .score-section {
+                gap: 1rem;
+                padding: 0.625rem 0.875rem;
+            }
+
+            .score-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+
+            .score-name {
+                font-size: 0.75rem;
+            }
+
+            .score-points {
+                font-size: 0.9rem;
+            }
+
+            .score-tasks {
+                font-size: 0.65rem;
+            }
+
+            .header-actions {
+                justify-content: center;
+                gap: 0.5rem;
+            }
+
+            .reset-day-btn,
+            .clear-all-btn {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.7rem;
+            }
+
+            .quadrant {
+                min-height: 120px;
+            }
+
+            .quadrant-label {
+                font-size: 0.6rem;
+            }
+
+            .axis-label {
+                font-size: 0.6rem;
+            }
+
+            .left-label span {
+                font-size: 0.6rem;
+            }
+
+            .matrix-top-labels {
+                grid-template-columns: 32px 1fr 1fr;
+            }
+
+            .matrix-body {
+                grid-template-columns: 32px 1fr 1fr;
+            }
+
+            .dots-container {
+                left: 32px;
+            }
+
+            /* Smaller task dots for tablet portrait */
+            .task-dot.xs { width: 20px; height: 20px; font-size: 0.45rem; }
+            .task-dot.s { width: 28px; height: 28px; font-size: 0.5rem; }
+            .task-dot.m { width: 38px; height: 38px; font-size: 0.6rem; }
+            .task-dot.l { width: 48px; height: 48px; font-size: 0.7rem; }
+            .task-dot.xl { width: 60px; height: 60px; font-size: 0.8rem; }
+
+            .list-header {
+                margin-bottom: 0.75rem;
+            }
+
+            .list-title {
+                font-size: 0.8rem;
+            }
+
+            .task-count {
+                font-size: 0.7rem;
+            }
+
+            .tablet-nav {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767px) {
             .mobile-nav {
                 display: block;
             }
@@ -1910,6 +2113,7 @@
             .app-container {
                 display: block;
                 min-height: calc(100vh - 70px);
+                min-height: calc(-webkit-fill-available - 70px);
                 background: var(--bg-main);
             }
 
@@ -1922,7 +2126,9 @@
             .leaderboard-panel {
                 display: none;
                 min-height: calc(100vh - 70px);
+                min-height: calc(-webkit-fill-available - 70px);
                 padding-bottom: 80px;
+                -webkit-overflow-scrolling: touch;
             }
 
             .matrix-panel.active,
@@ -2134,6 +2340,70 @@
 
             .password-btn {
                 padding: 0.875rem;
+            }
+        }
+
+        /* iPad landscape orientation fix - handles older iPad dimensions */
+        @media (min-width: 700px) and (max-width: 1100px) and (orientation: landscape) {
+            .app-container {
+                height: 100vh;
+                height: -webkit-fill-available;
+                overflow: hidden;
+            }
+
+            .matrix-panel {
+                height: 100%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .list-panel,
+            .leaderboard-panel {
+                height: 100%;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Ensure panels don't overflow */
+            .matrix-container {
+                flex: 1;
+                min-height: 0;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Compact header for landscape */
+            .matrix-header {
+                flex-shrink: 0;
+            }
+
+            /* Hide mobile nav on tablet landscape */
+            .mobile-nav {
+                display: none !important;
+            }
+
+            /* Ensure floating button is visible */
+            .floating-add-btn {
+                display: block;
+            }
+        }
+
+        /* iPad portrait orientation fix */
+        @media (min-width: 700px) and (max-width: 1100px) and (orientation: portrait) {
+            .app-container {
+                height: 100vh;
+                height: -webkit-fill-available;
+            }
+
+            .matrix-panel,
+            .list-panel,
+            .leaderboard-panel {
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Hide mobile nav on tablet portrait */
+            .mobile-nav {
+                display: none !important;
             }
         }
 
@@ -3241,7 +3511,7 @@
                 appContainer.style.gridTemplateColumns = ''; // Reset to CSS defaults
 
                 // Handle different screen sizes
-                if (window.innerWidth <= 768) {
+                if (window.innerWidth <= 767) {
                     // Mobile: show bottom navigation
                     document.querySelector('.mobile-nav').style.display = 'block';
                     document.querySelector('.tablet-nav').classList.remove('show');
@@ -3252,19 +3522,8 @@
                     document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
                         btn.classList.toggle('active', btn.dataset.panel === 'matrix');
                     });
-                } else if (window.innerWidth <= 900) {
-                    // Small tablet (portrait iPad): show tablet nav, show matrix by default
-                    document.querySelector('.mobile-nav').style.display = 'none';
-                    document.querySelector('.tablet-nav').classList.add('show');
-                    document.querySelector('.panel-switcher').style.display = 'none';
-                    document.querySelector('.matrix-panel').classList.add('active');
-                    document.querySelector('.list-panel').classList.remove('active');
-                    document.querySelector('.leaderboard-panel').classList.remove('active');
-                    document.querySelectorAll('.tablet-nav-btn').forEach(btn => {
-                        btn.classList.toggle('active', btn.dataset.panel === 'matrix');
-                    });
                 } else if (window.innerWidth <= 1200) {
-                    // Large tablet (landscape iPad): show panel switcher, show list by default
+                    // Tablet (all sizes from 769px to 1200px): show panel switcher, show matrix + list
                     document.querySelector('.mobile-nav').style.display = 'none';
                     document.querySelector('.tablet-nav').classList.remove('show');
                     document.querySelector('.panel-switcher').style.display = 'flex';
@@ -3286,16 +3545,12 @@
             });
 
             // Set initial state based on screen size
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 767) {
                 // Mobile: show bottom navigation
                 document.querySelector('.mobile-nav').style.display = 'block';
                 document.querySelector('.matrix-panel').classList.add('active');
-            } else if (window.innerWidth <= 900) {
-                // Small tablet: show tablet navigation, display matrix
-                document.querySelector('.tablet-nav').classList.add('show');
-                document.querySelector('.matrix-panel').classList.add('active');
             } else if (window.innerWidth <= 1200) {
-                // Large tablet: show panel switcher, display matrix + list
+                // Tablet (all sizes): show panel switcher, display matrix + list
                 document.querySelector('.panel-switcher').style.display = 'flex';
                 document.querySelector('.matrix-panel').classList.add('active');
                 document.querySelector('.list-panel').classList.add('active');
