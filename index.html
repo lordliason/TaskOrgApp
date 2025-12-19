@@ -2795,11 +2795,11 @@
             <div class="form-section">
                 <label class="form-label">Task Size</label>
                 <div class="size-group">
-                    <button class="size-btn" data-value="xs">XS</button>
-                    <button class="size-btn" data-value="s">S</button>
-                    <button class="size-btn active" data-value="m">M</button>
-                    <button class="size-btn" data-value="l">L</button>
-                    <button class="size-btn" data-value="xl">XL</button>
+                    <button class="size-btn" data-value="xs">5-10min</button>
+                    <button class="size-btn" data-value="s">10-30min</button>
+                    <button class="size-btn active" data-value="m">30min-1hr</button>
+                    <button class="size-btn" data-value="l">1-2hrs</button>
+                    <button class="size-btn" data-value="xl">2hrs+</button>
                 </div>
             </div>
 
@@ -4031,6 +4031,7 @@
 
                 group.tasks.forEach(task => {
                     const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Both' };
+                    const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
                     const iconDisplay = task.icon ? `<span style="margin-right: 4px">${task.icon}</span>` : '';
                     html += `
                         <div class="task-item${task.completed ? ' completed' : ''}" data-id="${task.id}">
@@ -4042,7 +4043,7 @@
                             <div class="task-item-dot ${task.assignee} ${task.size}">${task.icon || ''}</div>
                             <div class="task-item-content">
                                 <div class="task-item-name">${iconDisplay}${escapeHtml(task.name)}</div>
-                                <div class="task-item-meta">${assigneeLabels[task.assignee]} • ${task.size.toUpperCase()}</div>
+                                <div class="task-item-meta">${assigneeLabels[task.assignee]} • ${sizeLabels[task.size] || task.size}</div>
                             </div>
                             <button class="task-delete-btn" onclick="deleteTask('${task.id}')">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
