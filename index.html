@@ -472,13 +472,46 @@
         .matrix-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 1.5rem;
         }
 
         .matrix-title {
             font-family: 'DM Serif Display', serif;
             font-size: 1.5rem;
+        }
+
+        .matrix-date {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .reset-day-btn {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--accent-mario), var(--accent-both));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .reset-day-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
         }
 
         .clear-all-btn {
@@ -495,6 +528,116 @@
 
         .clear-all-btn:hover {
             border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        /* Task Bank */
+        .task-bank {
+            margin-top: 1rem;
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+        }
+
+        .task-bank-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 0.5rem 0;
+        }
+
+        .task-bank-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .task-bank-count {
+            background: var(--bg-hover);
+            padding: 0.125rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.6875rem;
+        }
+
+        .task-bank-toggle {
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+
+        .task-bank-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .task-bank-list {
+            display: none;
+            flex-direction: column;
+            gap: 0.375rem;
+            margin-top: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .task-bank-list.open {
+            display: flex;
+        }
+
+        .bank-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+            font-size: 0.75rem;
+        }
+
+        .bank-item-icon {
+            font-size: 0.875rem;
+        }
+
+        .bank-item-name {
+            flex: 1;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bank-restore-btn {
+            padding: 0.25rem 0.5rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 0.625rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .bank-restore-btn:hover {
+            border-color: var(--accent-mario);
+            color: var(--accent-mario);
+        }
+
+        .bank-delete-btn {
+            padding: 0.25rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bank-delete-btn:hover {
             color: #ff6b6b;
         }
 
@@ -1093,10 +1236,26 @@
 
             .matrix-header {
                 margin-bottom: 1rem;
+                flex-direction: column;
+                gap: 0.75rem;
             }
 
             .matrix-title {
-                font-size: 1.25rem;
+                font-size: 1.125rem;
+            }
+
+            .matrix-date {
+                font-size: 0.75rem;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .reset-day-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
             }
 
             .clear-all-btn {
@@ -1304,8 +1463,20 @@
         <!-- Center: Matrix -->
         <div class="matrix-panel">
             <div class="matrix-header">
-                <div class="matrix-title">Mario & Maria Daily Planner</div>
-                <button class="clear-all-btn" id="clearAllBtn">Clear All</button>
+                <div>
+                    <div class="matrix-title">Mario & Maria Daily Planner</div>
+                    <div class="matrix-date" id="todayDate"></div>
+                </div>
+                <div class="header-actions">
+                    <button class="reset-day-btn" id="resetDayBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                            <path d="M3 3v5h5"/>
+                        </svg>
+                        Reset Day
+                    </button>
+                    <button class="clear-all-btn" id="clearAllBtn">Clear All</button>
+                </div>
             </div>
 
             <div class="matrix-container">
@@ -1358,11 +1529,25 @@
         <!-- Right Panel: Task List -->
         <div class="list-panel">
             <div class="list-header">
-                <div class="list-title">All Tasks</div>
+                <div class="list-title">Today's Tasks</div>
                 <div class="task-count" id="taskCount">0 tasks</div>
             </div>
 
             <div id="taskList"></div>
+
+            <!-- Task Bank -->
+            <div class="task-bank" id="taskBank">
+                <div class="task-bank-header" id="taskBankHeader">
+                    <div class="task-bank-title">
+                        <span>📦 Task Bank</span>
+                        <span class="task-bank-count" id="bankCount">0</span>
+                    </div>
+                    <svg class="task-bank-toggle" id="bankToggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="task-bank-list" id="taskBankList"></div>
+            </div>
         </div>
     </div>
 
@@ -1435,6 +1620,15 @@
         const tooltip = document.getElementById('tooltip');
 
         const dotsContainer = document.getElementById('dotsContainer');
+        const resetDayBtn = document.getElementById('resetDayBtn');
+        const todayDateEl = document.getElementById('todayDate');
+        const taskBankHeader = document.getElementById('taskBankHeader');
+        const taskBankList = document.getElementById('taskBankList');
+        const bankToggle = document.getElementById('bankToggle');
+        const bankCount = document.getElementById('bankCount');
+
+        // Task bank state (stored in localStorage)
+        let bankedTasks = JSON.parse(localStorage.getItem('taskMatrixBank') || '[]');
 
         // Quadrant mapping
         const quadrants = {
@@ -1480,10 +1674,18 @@
         // Initialize App
         // ===========================================
         async function init() {
+            updateTodayDate();
             setupEventListeners();
             await loadTasks();
             setupRealtimeSubscription();
+            renderTaskBank();
             loadingOverlay.classList.add('hidden');
+        }
+
+        function updateTodayDate() {
+            const today = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            todayDateEl.textContent = today.toLocaleDateString('en-US', options);
         }
 
         // ===========================================
@@ -1544,6 +1746,29 @@
                 if (confirm('Are you sure you want to delete all tasks?')) {
                     await clearAllTasks();
                 }
+            });
+
+            // Reset day - moves incomplete to bank, clears completed
+            resetDayBtn.addEventListener('click', async () => {
+                if (tasks.length === 0) return;
+                const incompleteTasks = tasks.filter(t => !t.completed);
+                const completedTasks = tasks.filter(t => t.completed);
+                
+                if (incompleteTasks.length === 0 && completedTasks.length === 0) return;
+                
+                const message = incompleteTasks.length > 0 
+                    ? `Reset day?\n\n• ${incompleteTasks.length} incomplete task(s) will be moved to the Task Bank\n• ${completedTasks.length} completed task(s) will be cleared`
+                    : `Reset day?\n\n• ${completedTasks.length} completed task(s) will be cleared`;
+                
+                if (confirm(message)) {
+                    await resetDay(incompleteTasks, completedTasks);
+                }
+            });
+
+            // Task bank toggle
+            taskBankHeader.addEventListener('click', () => {
+                bankToggle.classList.toggle('open');
+                taskBankList.classList.toggle('open');
             });
 
             // Mobile navigation
@@ -1694,6 +1919,98 @@
             } catch (error) {
                 console.error('Error clearing tasks:', error);
                 alert('Failed to clear tasks. Please try again.');
+            }
+        }
+
+        async function resetDay(incompleteTasks, completedTasks) {
+            try {
+                // Add incomplete tasks to the bank
+                if (incompleteTasks.length > 0) {
+                    const bankedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    incompleteTasks.forEach(task => {
+                        bankedTasks.unshift({
+                            ...task,
+                            bankedDate: bankedDate
+                        });
+                    });
+                    localStorage.setItem('taskMatrixBank', JSON.stringify(bankedTasks));
+                    renderTaskBank();
+                }
+
+                // Delete all tasks from database
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .delete()
+                    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+                if (error) throw error;
+            } catch (error) {
+                console.error('Error resetting day:', error);
+                alert('Failed to reset day. Please try again.');
+            }
+        }
+
+        // ===========================================
+        // Task Bank
+        // ===========================================
+        function renderTaskBank() {
+            bankCount.textContent = bankedTasks.length;
+            
+            if (bankedTasks.length === 0) {
+                taskBankList.innerHTML = '<div class="bank-item" style="color: var(--text-muted); justify-content: center;">No banked tasks</div>';
+                return;
+            }
+
+            taskBankList.innerHTML = bankedTasks.map((task, index) => `
+                <div class="bank-item">
+                    <span class="bank-item-icon">${task.icon || '📌'}</span>
+                    <span class="bank-item-name" title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
+                    <span style="font-size: 0.6rem; color: var(--text-muted)">${task.bankedDate || ''}</span>
+                    <button class="bank-restore-btn" onclick="restoreFromBank(${index})">Restore</button>
+                    <button class="bank-delete-btn" onclick="deleteFromBank(${index})">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function restoreFromBank(index) {
+            const task = bankedTasks[index];
+            if (!task) return;
+
+            try {
+                // Add task back to database
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .insert([{
+                        name: task.name,
+                        assignee: task.assignee,
+                        size: task.size,
+                        urgent: task.urgent,
+                        important: task.important,
+                        completed: false,
+                        icon: task.icon
+                    }]);
+
+                if (error) throw error;
+
+                // Remove from bank
+                bankedTasks.splice(index, 1);
+                localStorage.setItem('taskMatrixBank', JSON.stringify(bankedTasks));
+                renderTaskBank();
+            } catch (error) {
+                console.error('Error restoring task:', error);
+                alert('Failed to restore task. Please try again.');
+            }
+        }
+
+        function deleteFromBank(index) {
+            if (confirm('Delete this task from the bank?')) {
+                bankedTasks.splice(index, 1);
+                localStorage.setItem('taskMatrixBank', JSON.stringify(bankedTasks));
+                renderTaskBank();
             }
         }
 
