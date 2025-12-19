@@ -3071,10 +3071,11 @@
         }
 
         function updateScoreDisplay() {
-            document.getElementById('marioScore').textContent = `${currentScores.mario.points} pts`;
-            document.getElementById('marioTasks').textContent = `${currentScores.mario.tasks} tasks`;
-            document.getElementById('mariaScore').textContent = `${currentScores.maria.points} pts`;
-            document.getElementById('mariaTasks').textContent = `${currentScores.maria.tasks} tasks`;
+            const marioScoreEl = document.getElementById('marioScore');
+            const mariaScoreEl = document.getElementById('mariaScore');
+            
+            if (marioScoreEl) marioScoreEl.textContent = currentScores.mario.points;
+            if (mariaScoreEl) mariaScoreEl.textContent = currentScores.maria.points;
         }
 
         function getTaskPoints(size) {
