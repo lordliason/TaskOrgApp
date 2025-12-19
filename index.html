@@ -3540,6 +3540,13 @@
 
         async function toggleTaskComplete(id, completed, completedBy = null) {
             try {
+                // Get task details first
+                const task = tasks.find(t => t.id === id);
+                if (!task) {
+                    console.error('Task not found:', id);
+                    return;
+                }
+
                 const updateData = { completed };
                 if (completed && completedBy) {
                     updateData.completed_by = completedBy;
@@ -3547,29 +3554,41 @@
                     updateData.completed_by = null;
                 }
 
+                console.log('Updating task:', id, updateData);
+
                 const { error } = await supabaseClient
                     .from('tasks')
                     .update(updateData)
                     .eq('id', id);
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Supabase error:', error);
+                    // If error is about completed_by column, try without it
+                    if (error.message && error.message.includes('completed_by')) {
+                        console.log('Retrying without completed_by column...');
+                        const { error: retryError } = await supabaseClient
+                            .from('tasks')
+                            .update({ completed })
+                            .eq('id', id);
+                        if (retryError) throw retryError;
+                    } else {
+                        throw error;
+                    }
+                }
 
                 // Award points when task is completed
                 if (completed && completedBy) {
-                    // Get task details to calculate points
-                    const task = tasks.find(t => t.id === id);
-                    if (task) {
-                        const points = getTaskPoints(task.size);
-                        if (points > 0) {
-                            await updatePlayerScore(completedBy, points);
-                        }
+                    const points = getTaskPoints(task.size);
+                    console.log('Awarding points:', completedBy, points);
+                    if (points > 0) {
+                        await updatePlayerScore(completedBy, points);
                     }
                 }
 
                 // Task will be updated via realtime subscription
             } catch (error) {
                 console.error('Error updating task:', error);
-                alert('Failed to update task. Please try again.');
+                alert('Failed to update task: ' + (error.message || 'Please try again.'));
             }
         }
 
@@ -3868,9 +3887,14 @@
                 group.tasks.forEach(task => {
                     const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Both' };
                     const iconDisplay = task.icon ? `<span style="margin-right: 4px">${task.icon}</span>` : '';
+                    // If task is completed, clicking checkbox will uncomplete it
+                    // If task is not completed, clicking checkbox will open options menu to choose who completed it
+                    const checkboxAction = task.completed 
+                        ? `toggleTaskComplete('${task.id}', false)` 
+                        : `showTaskOptionsMenuById('${task.id}')`;
                     html += `
                         <div class="task-item${task.completed ? ' completed' : ''}" data-id="${task.id}">
-                            <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="toggleTaskComplete('${task.id}', ${!task.completed})">
+                            <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="${checkboxAction}">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
@@ -4085,6 +4109,13 @@
         function showTaskOptionsMenu(task) {
             selectedTaskForOptions = task;
             taskOptionsMenu.classList.add('show');
+        }
+
+        function showTaskOptionsMenuById(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                showTaskOptionsMenu(task);
+            }
         }
 
         function closeTaskOptionsMenu() {
