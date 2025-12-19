@@ -2531,6 +2531,12 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button class="reset-day-btn" id="resetPointsBtn" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                        Reset Points
+                    </button>
                     <button class="reset-day-btn" id="resetDayBtn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -2914,6 +2920,7 @@
         const tooltip = document.getElementById('tooltip');
 
         const dotsContainer = document.getElementById('dotsContainer');
+        const resetPointsBtn = document.getElementById('resetPointsBtn');
         const resetDayBtn = document.getElementById('resetDayBtn');
         const todayDateEl = document.getElementById('todayDate');
         const taskBankHeader = document.getElementById('taskBankHeader');
@@ -3042,6 +3049,36 @@
                 updateScoreDisplay();
             } catch (error) {
                 console.error('Error loading scores:', error);
+            }
+        }
+
+        async function resetScores() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                
+                // Reset local scores
+                currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
+                
+                // Update database for both players
+                const players = ['mario', 'maria'];
+                for (const player of players) {
+                    await supabaseClient
+                        .from('scores')
+                        .upsert({
+                            player: player,
+                            date: today,
+                            points: 0,
+                            tasks_completed: 0,
+                            updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'player,date'
+                        });
+                }
+                
+                updateScoreDisplay();
+                console.log('Scores reset for today');
+            } catch (error) {
+                console.error('Error resetting scores:', error);
             }
         }
 
@@ -3252,6 +3289,11 @@
                 if (confirm(message)) {
                     await resetDay(incompleteTasks, completedTasks);
                 }
+            });
+
+            // Reset points and tasks
+            resetPointsBtn.addEventListener('click', async () => {
+                await resetPointsAndTasks();
             });
 
             // Task bank toggle
@@ -3564,12 +3606,29 @@
 
         async function deleteTask(id) {
             try {
+                // Get task details first to check if it was completed
+                const task = tasks.find(t => t.id === id);
+                
                 const { error } = await supabaseClient
                     .from('tasks')
                     .delete()
                     .eq('id', id);
 
                 if (error) throw error;
+
+                // Subtract points if the task was completed
+                if (task && task.completed && task.completed_by) {
+                    const points = getTaskPoints(task.size);
+                    if (points > 0) {
+                        if (task.completed_by === 'both') {
+                            await subtractPlayerScore('mario', points);
+                            await subtractPlayerScore('maria', points);
+                        } else {
+                            await subtractPlayerScore(task.completed_by, points);
+                        }
+                    }
+                }
+                
                 // Task will be removed via realtime subscription
             } catch (error) {
                 console.error('Error deleting task:', error);
@@ -3583,6 +3642,12 @@
                 const task = tasks.find(t => t.id === id);
                 if (!task) {
                     console.error('Task not found:', id);
+                    return;
+                }
+
+                // Don't do anything if completion status hasn't changed
+                if (task.completed === completed) {
+                    console.log('Task completion status unchanged');
                     return;
                 }
 
@@ -3645,10 +3710,40 @@
                     .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
 
                 if (error) throw error;
+                
+                // Reset scores when clearing all tasks
+                await resetScores();
+                
                 // Tasks will be removed via realtime subscription
             } catch (error) {
                 console.error('Error clearing tasks:', error);
                 alert('Failed to clear tasks. Please try again.');
+            }
+        }
+
+        async function resetPointsAndTasks() {
+            try {
+                if (confirm('Reset all points to 0 and mark all tasks as incomplete?')) {
+                    // 1. Reset scores in DB
+                    await resetScores();
+
+                    // 2. Mark all tasks as incomplete in DB
+                    const { error } = await supabaseClient
+                        .from('tasks')
+                        .update({ 
+                            completed: false, 
+                            completed_by: null,
+                            updated_at: new Date().toISOString()
+                        })
+                        .neq('id', '00000000-0000-0000-0000-000000000000'); // Update all tasks
+
+                    if (error) throw error;
+                    
+                    console.log('Points reset and tasks marked incomplete');
+                }
+            } catch (error) {
+                console.error('Error resetting points and tasks:', error);
+                alert('Failed to reset. Please try again.');
             }
         }
 
@@ -3660,7 +3755,9 @@
                     incompleteTasks.forEach(task => {
                         bankedTasks.unshift({
                             ...task,
-                            bankedDate: bankedDate
+                            bankedDate: bankedDate,
+                            completed: false,
+                            completed_by: null
                         });
                     });
                     localStorage.setItem('taskMatrixBank', JSON.stringify(bankedTasks));
@@ -3674,6 +3771,9 @@
                     .neq('id', '00000000-0000-0000-0000-000000000000');
 
                 if (error) throw error;
+                
+                // Reset scores when resetting the day
+                await resetScores();
             } catch (error) {
                 console.error('Error resetting day:', error);
                 alert('Failed to reset day. Please try again.');
@@ -4248,11 +4348,26 @@
 
         async function moveTaskToBank(task) {
             try {
+                // If task was completed, subtract points
+                if (task.completed && task.completed_by) {
+                    const points = getTaskPoints(task.size);
+                    if (points > 0) {
+                        if (task.completed_by === 'both') {
+                            await subtractPlayerScore('mario', points);
+                            await subtractPlayerScore('maria', points);
+                        } else {
+                            await subtractPlayerScore(task.completed_by, points);
+                        }
+                    }
+                }
+
                 // Add task to the bank
                 const bankedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const bankedTask = {
                     ...task,
-                    bankedDate: bankedDate
+                    bankedDate: bankedDate,
+                    completed: false, // Ensure it's not completed when in bank
+                    completed_by: null
                 };
 
                 bankedTasks.unshift(bankedTask);
