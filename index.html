@@ -1497,6 +1497,15 @@
             color: #ff6b6b;
         }
 
+        .task-option-btn.edit {
+            color: var(--text-primary);
+        }
+
+        .task-option-btn.edit:hover {
+            background: rgba(74, 158, 255, 0.1);
+            color: var(--accent-mario);
+        }
+
         .task-option-btn.undo {
             color: #f59e0b;
         }
@@ -2679,6 +2688,13 @@
                     </svg>
                     Undo Completion (−points)
                 </button>
+                <button class="task-option-btn edit" id="editTaskBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit Task
+                </button>
                 <button class="task-option-btn bank" id="moveToBankBtn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -2706,7 +2722,7 @@
     <div class="add-task-modal" id="addTaskModal">
         <div class="add-task-modal-content">
             <div class="modal-header">
-                <div class="modal-title">Add Task</div>
+                <div class="modal-title" id="modalTitle">Add Task</div>
                 <button class="modal-close" id="modalClose">&times;</button>
             </div>
 
@@ -2900,11 +2916,12 @@
         let dotsContainer, resetPointsBtn, resetDayBtn, todayDateEl;
         let taskBankHeader, taskBankList, bankToggle, bankCount;
         let leaderboardToggleBtn;
-        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn;
+        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle;
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
-        let undoCompleteBtn, moveToBankBtn, deleteTaskBtn;
+        let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn;
         let selectedTaskForOptions = null;
+        let editingTaskId = null;
         let resizeHandle;
         let isResizing = false;
         let startX, startWidth;
@@ -2973,7 +2990,9 @@
             undoCompleteBtn = document.getElementById('undoCompleteBtn');
             moveToBankBtn = document.getElementById('moveToBankBtn');
             deleteTaskBtn = document.getElementById('deleteTaskBtn');
+            editTaskBtn = document.getElementById('editTaskBtn');
             resizeHandle = document.getElementById('resizeHandle');
+            modalTitle = document.getElementById('modalTitle');
 
             // Quadrant mapping
             quadrants = {
@@ -3472,13 +3491,28 @@
                 }
             });
 
+            editTaskBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    openEditTaskModal(selectedTaskForOptions);
+                    closeTaskOptionsMenu();
+                }
+            });
+
             modalAddTaskBtn.addEventListener('click', () => {
-                addTaskFromModal();
+                if (editingTaskId) {
+                    updateTaskFromModal();
+                } else {
+                    addTaskFromModal();
+                }
             });
 
             modalTaskName.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    addTaskFromModal();
+                    if (editingTaskId) {
+                        updateTaskFromModal();
+                    } else {
+                        addTaskFromModal();
+                    }
                 }
             });
 
@@ -4144,17 +4178,17 @@
                     const iconDisplay = task.icon ? `<span style="margin-right: 4px">${task.icon}</span>` : '';
                     html += `
                         <div class="task-item${task.completed ? ' completed' : ''}" data-id="${task.id}">
-                            <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="showTaskOptionsMenuById('${task.id}')">
+                            <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="event.stopPropagation(); showTaskOptionsMenuById('${task.id}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </div>
                             <div class="task-item-dot ${task.assignee} ${task.size}">${task.icon || ''}</div>
-                            <div class="task-item-content">
+                            <div class="task-item-content" onclick="openEditTaskModalById('${task.id}')" style="cursor: pointer; flex: 1;">
                                 <div class="task-item-name">${iconDisplay}${escapeHtml(task.name)}</div>
                                 <div class="task-item-meta">${assigneeLabels[task.assignee]} • ${sizeLabels[task.size] || task.size}</div>
                             </div>
-                            <button class="task-delete-btn" onclick="deleteTask('${task.id}')">
+                            <button class="task-delete-btn" onclick="event.stopPropagation(); deleteTask('${task.id}')">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M18 6L6 18M6 6l12 12"/>
                                 </svg>
@@ -4268,6 +4302,10 @@
         // Modal Functions
         // ===========================================
         function openAddTaskModal() {
+            editingTaskId = null;
+            if (modalTitle) modalTitle.textContent = 'Add Task';
+            modalAddTaskBtn.textContent = 'Add Task';
+            modalTaskName.value = '';
             addTaskModal.classList.add('show');
             modalTaskName.focus();
 
@@ -4275,8 +4313,38 @@
             syncModalState();
         }
 
+        function openEditTaskModal(task) {
+            editingTaskId = task.id;
+            if (modalTitle) modalTitle.textContent = 'Edit Task';
+            modalAddTaskBtn.textContent = 'Save Changes';
+            
+            // Populate modal with task data
+            modalTaskName.value = task.name || '';
+            selectedAssignee = task.assignee || 'mario';
+            selectedSize = task.size || 'm';
+            selectedUrgent = task.urgent || 3;
+            selectedImportant = task.important || 3;
+            selectedIcon = task.icon || null;
+            
+            // Sync modal state
+            syncModalState();
+            
+            addTaskModal.classList.add('show');
+            modalTaskName.focus();
+        }
+
+        function openEditTaskModalById(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                openEditTaskModal(task);
+            }
+        }
+
         function closeAddTaskModal() {
             addTaskModal.classList.remove('show');
+            editingTaskId = null;
+            if (modalTitle) modalTitle.textContent = 'Add Task';
+            modalAddTaskBtn.textContent = 'Add Task';
             modalTaskName.value = '';
         }
 
@@ -4348,6 +4416,49 @@
             } catch (error) {
                 console.error('Error adding task:', error);
                 alert('Failed to add task: ' + (error.message || 'Please try again.'));
+            }
+
+            modalAddTaskBtn.disabled = false;
+        }
+
+        async function updateTaskFromModal() {
+            const name = modalTaskName.value.trim();
+            if (!name) {
+                modalTaskName.focus();
+                return;
+            }
+
+            if (!editingTaskId) {
+                console.error('No task ID for editing');
+                return;
+            }
+
+            modalAddTaskBtn.disabled = true;
+
+            const updateData = {
+                name: name,
+                assignee: selectedAssignee,
+                size: selectedSize,
+                urgent: selectedUrgent,
+                important: selectedImportant,
+                icon: selectedIcon
+            };
+
+            try {
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .update(updateData)
+                    .eq('id', editingTaskId);
+
+                if (error) {
+                    console.error('Supabase Error:', error);
+                    throw error;
+                }
+
+                closeAddTaskModal();
+            } catch (error) {
+                console.error('Error updating task:', error);
+                alert('Failed to update task: ' + (error.message || 'Please try again.'));
             }
 
             modalAddTaskBtn.disabled = false;
