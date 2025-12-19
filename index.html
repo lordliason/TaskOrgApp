@@ -3029,11 +3029,19 @@
 
         async function updatePlayerScore(player, pointsToAdd, tasksToAdd = 1) {
             try {
+                // Only allow mario or maria as players
+                if (player !== 'mario' && player !== 'maria') {
+                    console.warn('Invalid player for score:', player);
+                    return;
+                }
+
                 const today = new Date().toISOString().split('T')[0];
 
                 // Update current scores
                 currentScores[player].points += pointsToAdd;
                 currentScores[player].tasks += tasksToAdd;
+
+                console.log('Updating score for', player, ':', currentScores[player]);
 
                 // Update database
                 const { error } = await supabaseClient
@@ -3048,12 +3056,17 @@
                         onConflict: 'player,date'
                     });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Score upsert error:', error);
+                    // Don't throw - scores table might not exist yet
+                    // Just update local display
+                }
 
                 updateScoreDisplay();
             } catch (error) {
                 console.error('Error updating score:', error);
-                alert('Failed to update score. Please try again.');
+                // Don't alert for score errors - task was still completed
+                updateScoreDisplay();
             }
         }
 
@@ -3581,7 +3594,13 @@
                     const points = getTaskPoints(task.size);
                     console.log('Awarding points:', completedBy, points);
                     if (points > 0) {
-                        await updatePlayerScore(completedBy, points);
+                        // If both completed, award points to both players
+                        if (completedBy === 'both') {
+                            await updatePlayerScore('mario', points);
+                            await updatePlayerScore('maria', points);
+                        } else {
+                            await updatePlayerScore(completedBy, points);
+                        }
                     }
                 }
 
