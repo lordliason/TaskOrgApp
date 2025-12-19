@@ -960,6 +960,161 @@
             overflow-y: auto;
         }
 
+        .leaderboard-panel {
+            background: var(--bg-main);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .leaderboard-header {
+            margin-bottom: 2rem;
+        }
+
+        .leaderboard-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .leaderboard-period-selector {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .period-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .period-btn:hover {
+            background: var(--bg-hover);
+        }
+
+        .period-btn.active {
+            background: var(--accent-mario);
+            color: white;
+            border-color: var(--accent-mario);
+        }
+
+        .leaderboard-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .leaderboard-entry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .leaderboard-rank {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.125rem;
+        }
+
+        .leaderboard-rank.gold {
+            background: linear-gradient(135deg, #ffd700, #ffb347);
+            color: #8b4513;
+        }
+
+        .leaderboard-rank.silver {
+            background: linear-gradient(135deg, #c0c0c0, #a8a8a8);
+            color: #4a4a4a;
+        }
+
+        .leaderboard-rank.bronze {
+            background: linear-gradient(135deg, #cd7f32, #a0522d);
+            color: white;
+        }
+
+        .leaderboard-rank.normal {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .leaderboard-player {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .leaderboard-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.25rem;
+            color: white;
+        }
+
+        .leaderboard-avatar.mario {
+            background: var(--accent-mario);
+        }
+
+        .leaderboard-avatar.maria {
+            background: var(--accent-maria);
+        }
+
+        .leaderboard-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .leaderboard-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 0.125rem;
+        }
+
+        .leaderboard-stats {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .leaderboard-score {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .leaderboard-empty {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
         .list-header {
             display: flex;
             justify-content: space-between;
@@ -1537,14 +1692,16 @@
             }
 
             .matrix-panel,
-            .list-panel {
+            .list-panel,
+            .leaderboard-panel {
                 display: none;
                 min-height: calc(100vh - 70px);
                 padding-bottom: 80px;
             }
 
             .matrix-panel.active,
-            .list-panel.active {
+            .list-panel.active,
+            .leaderboard-panel.active {
                 display: flex;
             }
 
@@ -1598,6 +1755,44 @@
 
             .score-tasks {
                 font-size: 0.675rem;
+            }
+
+            .leaderboard-period-selector {
+                gap: 0.25rem;
+            }
+
+            .period-btn {
+                padding: 0.4rem 0.75rem;
+                font-size: 0.8rem;
+            }
+
+            .leaderboard-entry {
+                padding: 0.75rem;
+                gap: 0.75rem;
+            }
+
+            .leaderboard-rank {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+
+            .leaderboard-avatar {
+                width: 42px;
+                height: 42px;
+                font-size: 1.125rem;
+            }
+
+            .leaderboard-name {
+                font-size: 0.875rem;
+            }
+
+            .leaderboard-stats {
+                font-size: 0.75rem;
+            }
+
+            .leaderboard-score {
+                font-size: 1.125rem;
             }
 
             .header-actions {
@@ -1671,6 +1866,11 @@
 
             /* Task List Mobile */
             .list-panel {
+                padding: 1rem;
+                padding-top: 2.5rem;
+            }
+
+            .leaderboard-panel {
                 padding: 1rem;
                 padding-top: 2.5rem;
             }
@@ -2002,6 +2202,23 @@
                 <div class="task-bank-list" id="taskBankList"></div>
             </div>
         </div>
+
+        <!-- Right Panel: Leaderboard -->
+        <div class="leaderboard-panel">
+            <div class="leaderboard-header">
+                <div class="leaderboard-title">🏆 Leaderboard</div>
+                <div class="leaderboard-period-selector">
+                    <button class="period-btn active" data-period="today">Today</button>
+                    <button class="period-btn" data-period="week">This Week</button>
+                    <button class="period-btn" data-period="month">This Month</button>
+                    <button class="period-btn" data-period="year">This Year</button>
+                </div>
+            </div>
+
+            <div class="leaderboard-content" id="leaderboardContent">
+                <!-- Leaderboard entries will be populated here -->
+            </div>
+        </div>
     </div>
 
     <!-- Tooltip -->
@@ -2205,6 +2422,25 @@
                     <line x1="3" y1="18" x2="3.01" y2="18"></line>
                 </svg>
                 Tasks
+            </button>
+            <button class="mobile-nav-btn" data-panel="leaderboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 4h.01"></path>
+                    <path d="M16 20h.01"></path>
+                    <path d="M8 4h.01"></path>
+                    <path d="M8 20h.01"></path>
+                    <path d="M12 4h.01"></path>
+                    <path d="M12 20h.01"></path>
+                    <path d="M2 4h2c.6 0 1 .4 1 1v14c0 .6-.4 1-1 1H2"></path>
+                    <path d="M22 4h-2c-.6 0-1 .4-1 1v14c0 .6.4 1 1 1h2"></path>
+                    <path d="M6 8h4"></path>
+                    <path d="M6 12h4"></path>
+                    <path d="M6 16h4"></path>
+                    <path d="M14 8h4"></path>
+                    <path d="M14 12h4"></path>
+                    <path d="M14 16h4"></path>
+                </svg>
+                Leaderboard
             </button>
         </div>
     </div>
@@ -2417,6 +2653,131 @@
             return TASK_POINTS[size] || 0;
         }
 
+        // Leaderboard functions
+        function getDateRange(period) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            switch (period) {
+                case 'today':
+                    return {
+                        start: today.toISOString().split('T')[0],
+                        end: today.toISOString().split('T')[0]
+                    };
+                case 'week':
+                    const weekStart = new Date(today);
+                    weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+                    return {
+                        start: weekStart.toISOString().split('T')[0],
+                        end: today.toISOString().split('T')[0]
+                    };
+                case 'month':
+                    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                    return {
+                        start: monthStart.toISOString().split('T')[0],
+                        end: today.toISOString().split('T')[0]
+                    };
+                case 'year':
+                    const yearStart = new Date(today.getFullYear(), 0, 1);
+                    return {
+                        start: yearStart.toISOString().split('T')[0],
+                        end: today.toISOString().split('T')[0]
+                    };
+                default:
+                    return {
+                        start: today.toISOString().split('T')[0],
+                        end: today.toISOString().split('T')[0]
+                    };
+            }
+        }
+
+        async function loadLeaderboard(period = 'today') {
+            try {
+                const { start, end } = getDateRange(period);
+
+                const { data, error } = await supabaseClient
+                    .from('scores')
+                    .select('player, points, tasks_completed, date')
+                    .gte('date', start)
+                    .lte('date', end);
+
+                if (error) throw error;
+
+                // Aggregate scores by player
+                const aggregatedScores = {};
+                data.forEach(score => {
+                    if (!aggregatedScores[score.player]) {
+                        aggregatedScores[score.player] = {
+                            points: 0,
+                            tasks: 0,
+                            days: 0
+                        };
+                    }
+                    aggregatedScores[score.player].points += score.points;
+                    aggregatedScores[score.player].tasks += score.tasks_completed;
+                    aggregatedScores[score.player].days += 1;
+                });
+
+                // Convert to array and sort by points
+                const leaderboardData = Object.entries(aggregatedScores)
+                    .map(([player, stats]) => ({
+                        player,
+                        points: stats.points,
+                        tasks: stats.tasks,
+                        days: stats.days,
+                        avgPoints: Math.round(stats.points / stats.days)
+                    }))
+                    .sort((a, b) => b.points - a.points);
+
+                displayLeaderboard(leaderboardData, period);
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('leaderboardContent').innerHTML =
+                    '<div class="leaderboard-empty">Unable to load leaderboard data</div>';
+            }
+        }
+
+        function displayLeaderboard(data, period) {
+            const container = document.getElementById('leaderboardContent');
+
+            if (data.length === 0) {
+                container.innerHTML = '<div class="leaderboard-empty">No scores yet for this period</div>';
+                return;
+            }
+
+            const periodLabels = {
+                today: 'Today',
+                week: 'This Week',
+                month: 'This Month',
+                year: 'This Year'
+            };
+
+            container.innerHTML = data.map((entry, index) => {
+                const rank = index + 1;
+                let rankClass = 'normal';
+                if (rank === 1) rankClass = 'gold';
+                else if (rank === 2) rankClass = 'silver';
+                else if (rank === 3) rankClass = 'bronze';
+
+                const playerNames = { mario: 'Mario', maria: 'Maria' };
+                const playerName = playerNames[entry.player] || entry.player;
+
+                return `
+                    <div class="leaderboard-entry">
+                        <div class="leaderboard-rank ${rankClass}">${rank}</div>
+                        <div class="leaderboard-player">
+                            <div class="leaderboard-avatar ${entry.player}">${entry.player === 'mario' ? 'M' : 'A'}</div>
+                            <div class="leaderboard-info">
+                                <div class="leaderboard-name">${playerName}</div>
+                                <div class="leaderboard-stats">${entry.tasks} tasks • ${entry.days} day${entry.days !== 1 ? 's' : ''}</div>
+                            </div>
+                        </div>
+                        <div class="leaderboard-score">${entry.points} pts</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         // ===========================================
         // Event Listeners
         // ===========================================
@@ -2623,6 +2984,13 @@
                     // Show/hide panels
                     document.querySelector('.matrix-panel').classList.toggle('active', panel === 'matrix');
                     document.querySelector('.list-panel').classList.toggle('active', panel === 'list');
+                    document.querySelector('.leaderboard-panel').classList.toggle('active', panel === 'leaderboard');
+
+                    // Load leaderboard data when switching to leaderboard tab
+                    if (panel === 'leaderboard') {
+                        const activePeriod = document.querySelector('.period-btn.active').dataset.period;
+                        loadLeaderboard(activePeriod);
+                    }
                 });
             });
 
@@ -2646,6 +3014,7 @@
                     // Reset to default state on larger screens
                     document.querySelector('.matrix-panel').classList.remove('active');
                     document.querySelector('.list-panel').classList.remove('active');
+                    document.querySelector('.leaderboard-panel').classList.remove('active');
                 }
             });
 
@@ -2653,6 +3022,19 @@
             if (window.innerWidth <= 768) {
                 document.querySelector('.matrix-panel').classList.add('active');
             }
+
+            // Leaderboard period selector
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update active state
+                    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Load leaderboard for selected period
+                    const period = btn.dataset.period;
+                    loadLeaderboard(period);
+                });
+            });
         }
 
         // ===========================================
