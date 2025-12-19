@@ -1497,6 +1497,15 @@
             color: #ff6b6b;
         }
 
+        .task-option-btn.undo {
+            color: #f59e0b;
+        }
+
+        .task-option-btn.undo:hover {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
         .task-option-btn svg {
             flex-shrink: 0;
         }
@@ -2642,7 +2651,7 @@
                 <button class="task-options-close" id="taskOptionsClose">&times;</button>
             </div>
             <div class="task-options-body">
-                <div class="task-option-group">
+                <div class="task-option-group" id="markCompleteGroup">
                     <div class="task-option-group-title">Mark Complete</div>
                     <button class="task-option-btn complete" id="markCompleteMarioBtn">
                         <div class="task-option-icon mario"></div>
@@ -2657,6 +2666,13 @@
                         Both
                     </button>
                 </div>
+                <button class="task-option-btn undo" id="undoCompleteBtn" style="display: none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    Undo Completion (−points)
+                </button>
                 <button class="task-option-btn bank" id="moveToBankBtn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -2918,9 +2934,11 @@
         // Task options menu
         const taskOptionsMenu = document.getElementById('taskOptionsMenu');
         const taskOptionsClose = document.getElementById('taskOptionsClose');
+        const markCompleteGroup = document.getElementById('markCompleteGroup');
         const markCompleteMarioBtn = document.getElementById('markCompleteMarioBtn');
         const markCompleteMariaBtn = document.getElementById('markCompleteMariaBtn');
         const markCompleteBothBtn = document.getElementById('markCompleteBothBtn');
+        const undoCompleteBtn = document.getElementById('undoCompleteBtn');
         const moveToBankBtn = document.getElementById('moveToBankBtn');
         const deleteTaskBtn = document.getElementById('deleteTaskBtn');
         let selectedTaskForOptions = null;
@@ -3321,6 +3339,13 @@
                     if (confirm(`Delete "${selectedTaskForOptions.name}"?`)) {
                         deleteTask(selectedTaskForOptions.id);
                     }
+                    closeTaskOptionsMenu();
+                }
+            });
+
+            undoCompleteBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    undoTaskCompletion(selectedTaskForOptions);
                     closeTaskOptionsMenu();
                 }
             });
@@ -3907,14 +3932,9 @@
                 group.tasks.forEach(task => {
                     const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Both' };
                     const iconDisplay = task.icon ? `<span style="margin-right: 4px">${task.icon}</span>` : '';
-                    // If task is completed, clicking checkbox will uncomplete it
-                    // If task is not completed, clicking checkbox will open options menu to choose who completed it
-                    const checkboxAction = task.completed 
-                        ? `toggleTaskComplete('${task.id}', false)` 
-                        : `showTaskOptionsMenuById('${task.id}')`;
                     html += `
                         <div class="task-item${task.completed ? ' completed' : ''}" data-id="${task.id}">
-                            <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="${checkboxAction}">
+                            <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="showTaskOptionsMenuById('${task.id}')">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
@@ -4128,6 +4148,18 @@
         // ===========================================
         function showTaskOptionsMenu(task) {
             selectedTaskForOptions = task;
+            
+            // Show/hide buttons based on task completion status
+            if (task.completed) {
+                // Task is completed - show undo button, hide complete buttons
+                markCompleteGroup.style.display = 'none';
+                undoCompleteBtn.style.display = 'flex';
+            } else {
+                // Task is not completed - show complete buttons, hide undo
+                markCompleteGroup.style.display = 'block';
+                undoCompleteBtn.style.display = 'none';
+            }
+            
             taskOptionsMenu.classList.add('show');
         }
 
@@ -4141,6 +4173,77 @@
         function closeTaskOptionsMenu() {
             taskOptionsMenu.classList.remove('show');
             selectedTaskForOptions = null;
+        }
+
+        async function undoTaskCompletion(task) {
+            try {
+                const points = getTaskPoints(task.size);
+                const completedBy = task.completed_by;
+                
+                console.log('Undoing task completion:', task.name, 'completed by:', completedBy);
+                
+                // Update task in database
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .update({ completed: false, completed_by: null })
+                    .eq('id', task.id);
+
+                if (error) throw error;
+
+                // Subtract points from whoever completed the task
+                if (completedBy && points > 0) {
+                    if (completedBy === 'both') {
+                        await subtractPlayerScore('mario', points);
+                        await subtractPlayerScore('maria', points);
+                    } else {
+                        await subtractPlayerScore(completedBy, points);
+                    }
+                }
+
+                // Task will be updated via realtime subscription
+            } catch (error) {
+                console.error('Error undoing task completion:', error);
+                alert('Failed to undo completion: ' + (error.message || 'Please try again.'));
+            }
+        }
+
+        async function subtractPlayerScore(player, pointsToSubtract, tasksToSubtract = 1) {
+            try {
+                if (player !== 'mario' && player !== 'maria') {
+                    console.warn('Invalid player for score:', player);
+                    return;
+                }
+
+                const today = new Date().toISOString().split('T')[0];
+
+                // Update current scores (don't go below 0)
+                currentScores[player].points = Math.max(0, currentScores[player].points - pointsToSubtract);
+                currentScores[player].tasks = Math.max(0, currentScores[player].tasks - tasksToSubtract);
+
+                console.log('Subtracting score for', player, ':', currentScores[player]);
+
+                // Update database
+                const { error } = await supabaseClient
+                    .from('scores')
+                    .upsert({
+                        player: player,
+                        date: today,
+                        points: currentScores[player].points,
+                        tasks_completed: currentScores[player].tasks,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'player,date'
+                    });
+
+                if (error) {
+                    console.error('Score upsert error:', error);
+                }
+
+                updateScoreDisplay();
+            } catch (error) {
+                console.error('Error subtracting score:', error);
+                updateScoreDisplay();
+            }
         }
 
         async function moveTaskToBank(task) {
