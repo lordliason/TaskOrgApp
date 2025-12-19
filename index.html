@@ -538,23 +538,25 @@
         .score-display {
             flex: 1;
             display: flex;
+            align-items: center;
             justify-content: center;
-        }
-
-        .score-section {
-            display: flex;
-            gap: 2rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            gap: 1rem;
         }
 
         .score-player {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .score-divider {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
         }
 
         .score-avatar {
@@ -579,14 +581,8 @@
 
         .score-info {
             display: flex;
-            flex-direction: column;
-        }
-
-        .score-name {
-            font-weight: 600;
-            font-size: 0.875rem;
-            color: var(--text-primary);
-            margin-bottom: 0.125rem;
+            align-items: baseline;
+            gap: 0.25rem;
         }
 
         .score-points {
@@ -595,15 +591,56 @@
             color: var(--text-primary);
         }
 
-        .score-tasks {
+        .score-label {
             font-size: 0.75rem;
             color: var(--text-muted);
+            font-weight: 500;
         }
 
         .header-actions {
             display: flex;
             gap: 0.5rem;
             align-items: center;
+        }
+
+        /* Leaderboard Toggle in Form Panel */
+        .leaderboard-toggle-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .leaderboard-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .leaderboard-toggle-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .leaderboard-toggle-btn.active {
+            background: var(--accent-mario);
+            color: white;
+            border-color: var(--accent-mario);
+        }
+
+        .toggle-icon {
+            font-size: 1rem;
+        }
+
+        .toggle-text {
+            font-weight: 500;
         }
 
         .reset-day-btn {
@@ -2468,6 +2505,14 @@
             <div class="logo">Task Matrix</div>
             <div class="subtitle">Organize tasks with your partner</div>
 
+            <!-- Leaderboard Toggle -->
+            <div class="leaderboard-toggle-container">
+                <button class="leaderboard-toggle-btn" id="leaderboardToggleBtn">
+                    <span class="toggle-icon">🏆</span>
+                    <span class="toggle-text">Leaderboard</span>
+                </button>
+            </div>
+
             <div class="form-section">
                 <label class="form-label">Task Name</label>
                 <input type="text" id="taskName" class="form-input" placeholder="What needs to be done?">
@@ -2594,30 +2639,23 @@
                     <div class="matrix-date" id="todayDate"></div>
                 </div>
                 <div class="score-display" id="scoreDisplay">
-                    <div class="score-section">
-                        <div class="score-player mario">
-                            <div class="score-avatar">M</div>
-                            <div class="score-info">
-                                <div class="score-name">Mario</div>
-                                <div class="score-points" id="marioScore">0 pts</div>
-                                <div class="score-tasks" id="marioTasks">0 tasks</div>
-                            </div>
+                    <div class="score-player mario">
+                        <div class="score-avatar">M</div>
+                        <div class="score-info">
+                            <div class="score-points" id="marioScore">0</div>
+                            <div class="score-label">pts</div>
                         </div>
-                        <div class="score-player maria">
-                            <div class="score-avatar">A</div>
-                            <div class="score-info">
-                                <div class="score-name">Maria</div>
-                                <div class="score-points" id="mariaScore">0 pts</div>
-                                <div class="score-tasks" id="mariaTasks">0 tasks</div>
-                            </div>
+                    </div>
+                    <div class="score-divider">vs</div>
+                    <div class="score-player maria">
+                        <div class="score-avatar">A</div>
+                        <div class="score-info">
+                            <div class="score-points" id="mariaScore">0</div>
+                            <div class="score-label">pts</div>
                         </div>
                     </div>
                 </div>
                 <div class="header-actions">
-                    <div class="panel-switcher" id="panelSwitcher">
-                        <button class="panel-switch-btn active" data-panel="list">Tasks</button>
-                        <button class="panel-switch-btn" data-panel="leaderboard">🏆 Leaderboard</button>
-                    </div>
                     <button class="reset-day-btn" id="resetDayBtn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -3000,6 +3038,9 @@
         const bankToggle = document.getElementById('bankToggle');
         const bankCount = document.getElementById('bankCount');
 
+        // Leaderboard toggle
+        const leaderboardToggleBtn = document.getElementById('leaderboardToggleBtn');
+
         // Modal elements
         const floatingAddBtn = document.getElementById('floatingAddBtn');
         const addTaskModal = document.getElementById('addTaskModal');
@@ -3371,6 +3412,25 @@
             // Floating add button
             floatingAddBtn.addEventListener('click', () => {
                 openAddTaskModal();
+            });
+
+            // Leaderboard toggle
+            leaderboardToggleBtn.addEventListener('click', () => {
+                const isActive = leaderboardToggleBtn.classList.contains('active');
+                if (isActive) {
+                    // Switch back to tasks
+                    leaderboardToggleBtn.classList.remove('active');
+                    document.querySelector('.list-panel').classList.add('active');
+                    document.querySelector('.leaderboard-panel').classList.remove('active');
+                } else {
+                    // Switch to leaderboard
+                    leaderboardToggleBtn.classList.add('active');
+                    document.querySelector('.list-panel').classList.remove('active');
+                    document.querySelector('.leaderboard-panel').classList.add('active');
+                    // Load leaderboard data
+                    const activePeriod = document.querySelector('.period-btn.active').dataset.period;
+                    loadLeaderboard(activePeriod);
+                }
             });
 
             // Modal events
