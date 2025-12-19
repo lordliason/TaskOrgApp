@@ -197,7 +197,7 @@
 
         .app-container {
             display: grid;
-            grid-template-columns: 380px 1fr 8px 340px;
+            grid-template-columns: 1fr 8px 340px;
             min-height: 100vh;
             min-height: -webkit-fill-available;
             gap: 0;
@@ -244,12 +244,9 @@
             -ms-user-select: none;
         }
 
-        /* Left Panel - Task Form */
+        /* Left Panel - Task Form (hidden, using floating button instead) */
         .form-panel {
-            background: var(--bg-main);
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
+            display: none;
         }
 
         .logo {
@@ -603,22 +600,17 @@
             align-items: center;
         }
 
-        /* Leaderboard Toggle in Form Panel */
-        .leaderboard-toggle-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-        }
-
+        /* Leaderboard Toggle Button */
         .leaderboard-toggle-btn {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: var(--bg-card);
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            background: transparent;
             border: 1px solid var(--border);
-            border-radius: 20px;
-            color: var(--text-secondary);
+            border-radius: 8px;
             font-size: 0.875rem;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -626,13 +618,19 @@
 
         .leaderboard-toggle-btn:hover {
             background: var(--bg-hover);
-            color: var(--text-primary);
+            border-color: var(--accent-mario);
         }
 
         .leaderboard-toggle-btn.active {
             background: var(--accent-mario);
-            color: white;
             border-color: var(--accent-mario);
+        }
+
+        /* Hide leaderboard toggle on tablets/mobile (they have nav buttons) */
+        @media (max-width: 1200px) {
+            .leaderboard-toggle-btn {
+                display: none;
+            }
         }
 
         .toggle-icon {
@@ -1197,6 +1195,12 @@
             margin-bottom: 1.25rem;
         }
 
+        .list-header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
         .list-title {
             font-size: 0.875rem;
             font-weight: 600;
@@ -1638,8 +1642,8 @@
         /* Floating Add Task Button */
         .floating-add-btn {
             position: fixed;
-            bottom: 100px;
-            right: 1rem;
+            bottom: 2rem;
+            right: 360px;
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -1651,7 +1655,9 @@
             z-index: 100;
             box-shadow: 0 4px 20px rgba(74, 158, 255, 0.4);
             transition: all 0.3s ease;
-            display: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .floating-add-btn:hover {
@@ -1732,15 +1738,6 @@
         }
 
         /* Responsive */
-        /* General tablet/small screen - hide left form panel */
-        @media (max-width: 1200px) {
-            .form-panel {
-                display: none;
-            }
-            .floating-add-btn {
-                display: block;
-            }
-        }
 
         /* Older iPad Landscape (1024px exactly) + Similar devices */
         @media (min-width: 1001px) and (max-width: 1100px) {
@@ -1806,7 +1803,7 @@
             }
 
             .floating-add-btn {
-                display: block;
+                display: flex;
                 bottom: 1.5rem;
                 right: 300px;
                 z-index: 150;
@@ -1915,7 +1912,7 @@
             }
 
             .floating-add-btn {
-                display: block;
+                display: flex;
                 bottom: 2rem;
                 right: 360px;
                 z-index: 150;
@@ -2025,7 +2022,7 @@
             }
 
             .floating-add-btn {
-                display: block;
+                display: flex;
                 bottom: 1.5rem;
                 right: 280px;
                 z-index: 150;
@@ -2421,7 +2418,7 @@
 
             /* Ensure floating button is visible */
             .floating-add-btn {
-                display: block;
+                display: flex;
             }
         }
 
@@ -2500,137 +2497,6 @@
     </div>
 
     <div class="app-container">
-        <!-- Left Panel: Task Form -->
-        <div class="form-panel">
-            <div class="logo">Task Matrix</div>
-            <div class="subtitle">Organize tasks with your partner</div>
-
-            <!-- Leaderboard Toggle -->
-            <div class="leaderboard-toggle-container">
-                <button class="leaderboard-toggle-btn" id="leaderboardToggleBtn">
-                    <span class="toggle-icon">🏆</span>
-                    <span class="toggle-text">Leaderboard</span>
-                </button>
-            </div>
-
-            <div class="form-section">
-                <label class="form-label">Task Name</label>
-                <input type="text" id="taskName" class="form-input" placeholder="What needs to be done?">
-            </div>
-
-            <div class="form-section">
-                <label class="form-label">Assigned To</label>
-                <div class="assignee-group">
-                    <button class="assignee-btn active" data-value="mario">Mario</button>
-                    <button class="assignee-btn" data-value="maria">Maria</button>
-                    <button class="assignee-btn" data-value="both">Mario Maria Both</button>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <label class="form-label">Icon (optional)</label>
-                <div class="icon-group">
-                    <button class="icon-btn active" data-value="none">None</button>
-                    <!-- Shopping & Errands -->
-                    <button class="icon-btn" data-value="🛒">🛒</button>
-                    <button class="icon-btn" data-value="🏪">🏪</button>
-                    <button class="icon-btn" data-value="🏥">🏥</button>
-                    <!-- House & Home -->
-                    <button class="icon-btn" data-value="🏠">🏠</button>
-                    <button class="icon-btn" data-value="🧹">🧹</button>
-                    <button class="icon-btn" data-value="🧽">🧽</button>
-                    <button class="icon-btn" data-value="🧼">🧼</button>
-                    <button class="icon-btn" data-value="🛁">🛁</button>
-                    <button class="icon-btn" data-value="🗑️">🗑️</button>
-                    <button class="icon-btn" data-value="🧺">🧺</button>
-                    <button class="icon-btn" data-value="🌱">🌱</button>
-                    <button class="icon-btn" data-value="🪴">🪴</button>
-                    <!-- Art & Study -->
-                    <button class="icon-btn" data-value="🎨">🎨</button>
-                    <button class="icon-btn" data-value="🖌️">🖌️</button>
-                    <button class="icon-btn" data-value="📝">📝</button>
-                    <button class="icon-btn" data-value="✏️">✏️</button>
-                    <button class="icon-btn" data-value="📖">📖</button>
-                    <button class="icon-btn" data-value="📚">📚</button>
-                    <button class="icon-btn" data-value="🎵">🎵</button>
-                    <button class="icon-btn" data-value="🎹">🎹</button>
-                    <!-- Work & Communication -->
-                    <button class="icon-btn" data-value="💼">💼</button>
-                    <button class="icon-btn" data-value="📞">📞</button>
-                    <button class="icon-btn" data-value="✉️">✉️</button>
-                    <button class="icon-btn" data-value="💻">💻</button>
-                    <!-- Money & Finance -->
-                    <button class="icon-btn" data-value="💰">💰</button>
-                    <button class="icon-btn" data-value="💳">💳</button>
-                    <button class="icon-btn" data-value="🏦">🏦</button>
-                    <!-- Transportation -->
-                    <button class="icon-btn" data-value="🚗">🚗</button>
-                    <button class="icon-btn" data-value="🚲">🚲</button>
-                    <button class="icon-btn" data-value="✈️">✈️</button>
-                    <!-- Food & Dining -->
-                    <button class="icon-btn" data-value="🍽️">🍽️</button>
-                    <button class="icon-btn" data-value="🥘">🥘</button>
-                    <button class="icon-btn" data-value="☕">☕</button>
-                    <!-- Personal Care -->
-                    <button class="icon-btn" data-value="💪">💪</button>
-                    <button class="icon-btn" data-value="🏃">🏃</button>
-                    <button class="icon-btn" data-value="🧘">🧘</button>
-                    <!-- Pets & Family -->
-                    <button class="icon-btn" data-value="🐕">🐕</button>
-                    <button class="icon-btn" data-value="🐱">🐱</button>
-                    <button class="icon-btn" data-value="👨‍👩‍👧‍👦">👨‍👩‍👧‍👦</button>
-                    <!-- Tools & Maintenance -->
-                    <button class="icon-btn" data-value="🔧">🔧</button>
-                    <button class="icon-btn" data-value="🛠️">🛠️</button>
-                    <button class="icon-btn" data-value="💡">💡</button>
-                    <button class="icon-btn" data-value="🔌">🔌</button>
-                    <!-- Time & Planning -->
-                    <button class="icon-btn" data-value="📅">📅</button>
-                    <button class="icon-btn" data-value="⏰">⏰</button>
-                    <button class="icon-btn" data-value="🎯">🎯</button>
-                    <!-- Celebrations & Gifts -->
-                    <button class="icon-btn" data-value="🎁">🎁</button>
-                    <button class="icon-btn" data-value="🎉">🎉</button>
-                    <button class="icon-btn" data-value="🎂">🎂</button>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <label class="form-label">Task Size</label>
-                <div class="size-group">
-                    <button class="size-btn" data-value="xs">XS</button>
-                    <button class="size-btn" data-value="s">S</button>
-                    <button class="size-btn active" data-value="m">M</button>
-                    <button class="size-btn" data-value="l">L</button>
-                    <button class="size-btn" data-value="xl">XL</button>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <label class="form-label">Urgency (1-5)</label>
-                <div class="priority-group" id="urgentGroup">
-                    <button class="size-btn" data-value="1">1</button>
-                    <button class="size-btn" data-value="2">2</button>
-                    <button class="size-btn active" data-value="3">3</button>
-                    <button class="size-btn" data-value="4">4</button>
-                    <button class="size-btn" data-value="5">5</button>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <label class="form-label">Importance (1-5)</label>
-                <div class="priority-group" id="importantGroup">
-                    <button class="size-btn" data-value="1">1</button>
-                    <button class="size-btn" data-value="2">2</button>
-                    <button class="size-btn active" data-value="3">3</button>
-                    <button class="size-btn" data-value="4">4</button>
-                    <button class="size-btn" data-value="5">5</button>
-                </div>
-            </div>
-
-            <button class="add-btn" id="addTaskBtn">Add Task</button>
-        </div>
-
         <!-- Center: Matrix -->
         <div class="matrix-panel">
             <div class="matrix-header">
@@ -2721,7 +2587,10 @@
         <div class="list-panel">
             <div class="list-header">
                 <div class="list-title">Today's Tasks</div>
-                <div class="task-count" id="taskCount">0 tasks</div>
+                <div class="list-header-right">
+                    <div class="task-count" id="taskCount">0 tasks</div>
+                    <button class="leaderboard-toggle-btn" id="leaderboardToggleBtn" title="Leaderboard">🏆</button>
+                </div>
             </div>
 
             <div id="taskList"></div>
@@ -3023,8 +2892,6 @@
         const connectionStatus = document.getElementById('connectionStatus');
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
-        const taskNameInput = document.getElementById('taskName');
-        const addTaskBtn = document.getElementById('addTaskBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
         const taskList = document.getElementById('taskList');
         const taskCount = document.getElementById('taskCount');
@@ -3330,54 +3197,6 @@
         // Event Listeners
         // ===========================================
         function setupEventListeners() {
-            // Assignee buttons
-            document.querySelectorAll('.assignee-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    selectedAssignee = btn.dataset.value;
-                });
-            });
-
-            // Icon buttons
-            document.querySelectorAll('.icon-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    selectedIcon = btn.dataset.value === 'none' ? null : btn.dataset.value;
-                });
-            });
-
-            // Size buttons
-            document.querySelectorAll('.size-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    // Only handle if it's in size-group
-                    if (btn.parentElement.classList.contains('size-group')) {
-                        document.querySelectorAll('.size-group .size-btn').forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        selectedSize = btn.dataset.value;
-                    } 
-                    // Handle urgent priority buttons
-                    else if (btn.parentElement.id === 'urgentGroup') {
-                        document.querySelectorAll('#urgentGroup .size-btn').forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        selectedUrgent = parseInt(btn.dataset.value);
-                    }
-                    // Handle important priority buttons
-                    else if (btn.parentElement.id === 'importantGroup') {
-                        document.querySelectorAll('#importantGroup .size-btn').forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        selectedImportant = parseInt(btn.dataset.value);
-                    }
-                });
-            });
-
-            // Add task
-            addTaskBtn.addEventListener('click', addTask);
-            taskNameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') addTask();
-            });
-
             // Clear all
             clearAllBtn.addEventListener('click', async () => {
                 if (tasks.length === 0) return;
@@ -3702,64 +3521,6 @@
                     render();
                 }
             }
-        }
-
-        async function addTask() {
-            const name = taskNameInput.value.trim();
-            if (!name) {
-                taskNameInput.focus();
-                return;
-            }
-
-            addTaskBtn.disabled = true;
-
-            const task = {
-                name: name,
-                assignee: selectedAssignee,
-                size: selectedSize,
-                urgent: selectedUrgent,
-                important: selectedImportant,
-                completed: false,
-                icon: selectedIcon
-            };
-
-            try {
-                const { data, error } = await supabaseClient
-                    .from('tasks')
-                    .insert([task])
-                    .select();
-
-                if (error) {
-                    console.error('Supabase Error:', error);
-                    if (error.code === '22P02' && error.message.includes('boolean')) {
-                        alert('Database schema mismatch: The app expects 1-5 values but your database is still using old boolean columns. Please run the migration script in setup.sql.');
-                    } else {
-                        throw error;
-                    }
-                    return;
-                }
-
-                // Task will be added via realtime subscription
-                taskNameInput.value = '';
-                taskNameInput.focus();
-                // Reset icon selection
-                selectedIcon = null;
-                document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
-                document.querySelector('.icon-btn[data-value="none"]').classList.add('active');
-                
-                // On mobile, switch to matrix view after adding task
-                if (window.innerWidth <= 768) {
-                    document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelector('.mobile-nav-btn[data-panel="matrix"]').classList.add('active');
-                    document.querySelector('.form-panel').classList.remove('active');
-                    document.querySelector('.matrix-panel').classList.add('active');
-                }
-            } catch (error) {
-                console.error('Error adding task:', error);
-                alert('Failed to add task: ' + (error.message || 'Please try again.'));
-            }
-
-            addTaskBtn.disabled = false;
         }
 
         async function deleteTask(id) {
