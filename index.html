@@ -1669,6 +1669,138 @@
             }
         }
 
+        /* iPad/Tablet Layout (769px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+
+            .form-panel {
+                display: none;
+            }
+
+            .resize-handle {
+                display: none;
+            }
+
+            /* Make panels full width on tablet */
+            .matrix-panel,
+            .list-panel,
+            .leaderboard-panel {
+                grid-column: 1;
+                border-left: none;
+                border-right: none;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            /* Show floating add button on tablet */
+            .floating-add-btn {
+                display: block;
+                bottom: 100px;
+                right: 1.5rem;
+                z-index: 150; /* Above tablet nav but below modals */
+            }
+
+            /* Ensure modals work properly on tablet */
+            .add-task-modal {
+                z-index: 2000; /* Above floating button */
+            }
+
+            /* Optimize matrix for tablet */
+            .matrix-container {
+                max-width: 100%;
+                margin: 0 auto;
+            }
+
+            /* Adjust quadrant sizing for tablet */
+            .quadrant {
+                min-height: 140px;
+            }
+
+            /* Optimize task list for tablet */
+            .list-panel {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+
+            /* Leaderboard optimizations for tablet */
+            .leaderboard-panel {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+
+            .leaderboard-entry {
+                padding: 1.25rem;
+            }
+
+            /* Modal behavior on tablet */
+            .add-task-modal .add-task-modal-content {
+                max-width: 500px;
+                margin: 2rem auto;
+                border-radius: 16px;
+            }
+
+            /* Adjust header for tablet */
+            .matrix-header {
+                flex-direction: row;
+                align-items: center;
+                gap: 2rem;
+            }
+
+            .score-display {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .header-actions {
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            /* Add tablet navigation */
+            .tablet-nav {
+                display: none;
+                position: fixed;
+                top: 1rem;
+                right: 1rem;
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 0.5rem;
+                z-index: 100;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                backdrop-filter: blur(8px);
+            }
+
+            .tablet-nav.show {
+                display: flex;
+                gap: 0.25rem;
+            }
+
+            .tablet-nav-btn {
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: 8px;
+                background: transparent;
+                color: var(--text-primary);
+                font-size: 0.875rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .tablet-nav-btn:hover {
+                background: var(--bg-hover);
+            }
+
+            .tablet-nav-btn.active {
+                background: var(--accent-mario);
+                color: white;
+            }
+        }
+
         @media (max-width: 768px) {
             .mobile-nav {
                 display: block;
@@ -2401,6 +2533,13 @@
     </div>
 
     <!-- Mobile Navigation -->
+    <!-- Tablet Navigation -->
+    <div class="tablet-nav" id="tabletNav">
+        <button class="tablet-nav-btn active" data-panel="matrix">Matrix</button>
+        <button class="tablet-nav-btn" data-panel="list">Tasks</button>
+        <button class="tablet-nav-btn" data-panel="leaderboard">🏆</button>
+    </div>
+
     <div class="mobile-nav" id="mobileNav">
         <div class="mobile-nav-inner">
             <button class="mobile-nav-btn active" data-panel="matrix">
@@ -3003,25 +3142,71 @@
                 const appContainer = document.querySelector('.app-container');
                 appContainer.style.gridTemplateColumns = ''; // Reset to CSS defaults
 
-                // Reset mobile state if needed
+                // Handle different screen sizes
                 if (window.innerWidth <= 768) {
+                    // Mobile: show bottom navigation
+                    document.querySelector('.mobile-nav').style.display = 'block';
                     document.querySelector('.matrix-panel').classList.add('active');
                     document.querySelector('.list-panel').classList.remove('active');
+                    document.querySelector('.leaderboard-panel').classList.remove('active');
                     document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
                         btn.classList.toggle('active', btn.dataset.panel === 'matrix');
                     });
+                } else if (window.innerWidth <= 1024) {
+                    // Tablet: hide bottom navigation, show tablet nav, show matrix by default
+                    document.querySelector('.mobile-nav').style.display = 'none';
+                    document.querySelector('.tablet-nav').classList.add('show');
+                    document.querySelector('.matrix-panel').classList.add('active');
+                    document.querySelector('.list-panel').classList.remove('active');
+                    document.querySelector('.leaderboard-panel').classList.remove('active');
+                    document.querySelectorAll('.tablet-nav-btn').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.panel === 'matrix');
+                    });
                 } else {
-                    // Reset to default state on larger screens
+                    // Desktop: reset to default state
+                    document.querySelector('.mobile-nav').style.display = 'none';
+                    document.querySelector('.tablet-nav').classList.remove('show');
                     document.querySelector('.matrix-panel').classList.remove('active');
                     document.querySelector('.list-panel').classList.remove('active');
                     document.querySelector('.leaderboard-panel').classList.remove('active');
                 }
             });
 
-            // Set initial mobile state
+            // Set initial state based on screen size
             if (window.innerWidth <= 768) {
+                // Mobile: show bottom navigation
+                document.querySelector('.mobile-nav').style.display = 'block';
                 document.querySelector('.matrix-panel').classList.add('active');
+            } else if (window.innerWidth <= 1024) {
+                // Tablet: show tablet navigation, display matrix
+                document.querySelector('.tablet-nav').classList.add('show');
+                document.querySelector('.matrix-panel').classList.add('active');
+            } else {
+                // Desktop: hide both navigations
+                document.querySelector('.mobile-nav').style.display = 'none';
             }
+
+            // Tablet navigation
+            document.querySelectorAll('.tablet-nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const panel = btn.dataset.panel;
+
+                    // Update nav buttons
+                    document.querySelectorAll('.tablet-nav-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Show/hide panels
+                    document.querySelector('.matrix-panel').classList.toggle('active', panel === 'matrix');
+                    document.querySelector('.list-panel').classList.toggle('active', panel === 'list');
+                    document.querySelector('.leaderboard-panel').classList.toggle('active', panel === 'leaderboard');
+
+                    // Load leaderboard data when switching to leaderboard tab
+                    if (panel === 'leaderboard') {
+                        const activePeriod = document.querySelector('.period-btn.active').dataset.period;
+                        loadLeaderboard(activePeriod);
+                    }
+                });
+            });
 
             // Leaderboard period selector
             document.querySelectorAll('.period-btn').forEach(btn => {
