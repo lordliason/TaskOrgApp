@@ -3529,14 +3529,20 @@
                     btn.classList.add('active');
 
                     // Show/hide panels
-                    document.querySelector('.matrix-panel').classList.toggle('active', panel === 'matrix');
-                    document.querySelector('.list-panel').classList.toggle('active', panel === 'list');
-                    document.querySelector('.leaderboard-panel').classList.toggle('active', panel === 'leaderboard');
+                    const matrixPanel = document.querySelector('.matrix-panel');
+                    const listPanel = document.querySelector('.list-panel');
+                    const leaderboardPanel = document.querySelector('.leaderboard-panel');
+                    if (matrixPanel) matrixPanel.classList.toggle('active', panel === 'matrix');
+                    if (listPanel) listPanel.classList.toggle('active', panel === 'list');
+                    if (leaderboardPanel) leaderboardPanel.classList.toggle('active', panel === 'leaderboard');
 
                     // Load leaderboard data when switching to leaderboard tab
                     if (panel === 'leaderboard') {
-                        const activePeriod = document.querySelector('.period-btn.active').dataset.period;
-                        loadLeaderboard(activePeriod);
+                        const activePeriodBtn = document.querySelector('.period-btn.active');
+                        if (activePeriodBtn) {
+                            const activePeriod = activePeriodBtn.dataset.period;
+                            loadLeaderboard(activePeriod);
+                        }
                     }
                 });
             });
@@ -3548,56 +3554,71 @@
             // Window resize handler to reset grid columns
             window.addEventListener('resize', () => {
                 const appContainer = document.querySelector('.app-container');
-                appContainer.style.gridTemplateColumns = ''; // Reset to CSS defaults
+                if (appContainer) {
+                    appContainer.style.gridTemplateColumns = ''; // Reset to CSS defaults
+                }
+
+                const mobileNav = document.querySelector('.mobile-nav');
+                const tabletNav = document.querySelector('.tablet-nav');
+                const panelSwitcher = document.querySelector('.panel-switcher');
+                const matrixPanel = document.querySelector('.matrix-panel');
+                const listPanel = document.querySelector('.list-panel');
+                const leaderboardPanel = document.querySelector('.leaderboard-panel');
 
                 // Handle different screen sizes
                 if (window.innerWidth <= 767) {
                     // Mobile: show bottom navigation
-                    document.querySelector('.mobile-nav').style.display = 'block';
-                    document.querySelector('.tablet-nav').classList.remove('show');
-                    document.querySelector('.panel-switcher').style.display = 'none';
-                    document.querySelector('.matrix-panel').classList.add('active');
-                    document.querySelector('.list-panel').classList.remove('active');
-                    document.querySelector('.leaderboard-panel').classList.remove('active');
+                    if (mobileNav) mobileNav.style.display = 'block';
+                    if (tabletNav) tabletNav.classList.remove('show');
+                    if (panelSwitcher) panelSwitcher.style.display = 'none';
+                    if (matrixPanel) matrixPanel.classList.add('active');
+                    if (listPanel) listPanel.classList.remove('active');
+                    if (leaderboardPanel) leaderboardPanel.classList.remove('active');
                     document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
                         btn.classList.toggle('active', btn.dataset.panel === 'matrix');
                     });
                 } else if (window.innerWidth <= 1200) {
                     // Tablet (all sizes from 769px to 1200px): show panel switcher, show matrix + list
-                    document.querySelector('.mobile-nav').style.display = 'none';
-                    document.querySelector('.tablet-nav').classList.remove('show');
-                    document.querySelector('.panel-switcher').style.display = 'flex';
-                    document.querySelector('.matrix-panel').classList.add('active');
-                    document.querySelector('.list-panel').classList.add('active');
-                    document.querySelector('.leaderboard-panel').classList.remove('active');
+                    if (mobileNav) mobileNav.style.display = 'none';
+                    if (tabletNav) tabletNav.classList.remove('show');
+                    if (panelSwitcher) panelSwitcher.style.display = 'flex';
+                    if (matrixPanel) matrixPanel.classList.add('active');
+                    if (listPanel) listPanel.classList.add('active');
+                    if (leaderboardPanel) leaderboardPanel.classList.remove('active');
                     document.querySelectorAll('.panel-switch-btn').forEach(btn => {
                         btn.classList.toggle('active', btn.dataset.panel === 'list');
                     });
                 } else {
                     // Desktop: reset to default state
-                    document.querySelector('.mobile-nav').style.display = 'none';
-                    document.querySelector('.tablet-nav').classList.remove('show');
-                    document.querySelector('.panel-switcher').style.display = 'none';
-                    document.querySelector('.matrix-panel').classList.remove('active');
-                    document.querySelector('.list-panel').classList.remove('active');
-                    document.querySelector('.leaderboard-panel').classList.remove('active');
+                    if (mobileNav) mobileNav.style.display = 'none';
+                    if (tabletNav) tabletNav.classList.remove('show');
+                    if (panelSwitcher) panelSwitcher.style.display = 'none';
+                    if (matrixPanel) matrixPanel.classList.remove('active');
+                    if (listPanel) listPanel.classList.remove('active');
+                    if (leaderboardPanel) leaderboardPanel.classList.remove('active');
                 }
             });
 
             // Set initial state based on screen size
+            const mobileNav = document.querySelector('.mobile-nav');
+            const panelSwitcher = document.querySelector('.panel-switcher');
+            const matrixPanel = document.querySelector('.matrix-panel');
+            const listPanel = document.querySelector('.list-panel');
+            const listPanelBtn = document.querySelector('.panel-switch-btn[data-panel="list"]');
+
             if (window.innerWidth <= 767) {
                 // Mobile: show bottom navigation
-                document.querySelector('.mobile-nav').style.display = 'block';
-                document.querySelector('.matrix-panel').classList.add('active');
+                if (mobileNav) mobileNav.style.display = 'block';
+                if (matrixPanel) matrixPanel.classList.add('active');
             } else if (window.innerWidth <= 1200) {
                 // Tablet (all sizes): show panel switcher, display matrix + list
-                document.querySelector('.panel-switcher').style.display = 'flex';
-                document.querySelector('.matrix-panel').classList.add('active');
-                document.querySelector('.list-panel').classList.add('active');
-                document.querySelector('.panel-switch-btn[data-panel="list"]').classList.add('active');
+                if (panelSwitcher) panelSwitcher.style.display = 'flex';
+                if (matrixPanel) matrixPanel.classList.add('active');
+                if (listPanel) listPanel.classList.add('active');
+                if (listPanelBtn) listPanelBtn.classList.add('active');
             } else {
                 // Desktop: hide all special navigations
-                document.querySelector('.mobile-nav').style.display = 'none';
+                if (mobileNav) mobileNav.style.display = 'none';
             }
 
             // Tablet navigation
@@ -3610,14 +3631,20 @@
                     btn.classList.add('active');
 
                     // Show/hide panels
-                    document.querySelector('.matrix-panel').classList.toggle('active', panel === 'matrix');
-                    document.querySelector('.list-panel').classList.toggle('active', panel === 'list');
-                    document.querySelector('.leaderboard-panel').classList.toggle('active', panel === 'leaderboard');
+                    const matrixPanel = document.querySelector('.matrix-panel');
+                    const listPanel = document.querySelector('.list-panel');
+                    const leaderboardPanel = document.querySelector('.leaderboard-panel');
+                    if (matrixPanel) matrixPanel.classList.toggle('active', panel === 'matrix');
+                    if (listPanel) listPanel.classList.toggle('active', panel === 'list');
+                    if (leaderboardPanel) leaderboardPanel.classList.toggle('active', panel === 'leaderboard');
 
                     // Load leaderboard data when switching to leaderboard tab
                     if (panel === 'leaderboard') {
-                        const activePeriod = document.querySelector('.period-btn.active').dataset.period;
-                        loadLeaderboard(activePeriod);
+                        const activePeriodBtn = document.querySelector('.period-btn.active');
+                        if (activePeriodBtn) {
+                            const activePeriod = activePeriodBtn.dataset.period;
+                            loadLeaderboard(activePeriod);
+                        }
                     }
                 });
             });
@@ -3632,8 +3659,10 @@
                     btn.classList.add('active');
 
                     // Show/hide panels (matrix is always visible on landscape tablet)
-                    document.querySelector('.list-panel').classList.toggle('active', panel === 'list');
-                    document.querySelector('.leaderboard-panel').classList.toggle('active', panel === 'leaderboard');
+                    const listPanel = document.querySelector('.list-panel');
+                    const leaderboardPanel = document.querySelector('.leaderboard-panel');
+                    if (listPanel) listPanel.classList.toggle('active', panel === 'list');
+                    if (leaderboardPanel) leaderboardPanel.classList.toggle('active', panel === 'leaderboard');
 
                     // Load leaderboard data when switching to leaderboard tab
                     if (panel === 'leaderboard') {
