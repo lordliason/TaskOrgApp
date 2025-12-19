@@ -963,45 +963,7 @@
         .task-dot:hover {
             transform: translate(-50%, -50%) scale(1.15);
             z-index: 10;
-        }
-
-        /* Overlapping dots handling */
-        .task-dot.overlapping {
-            position: relative;
-        }
-
-        .task-dot.fanned-out {
-            z-index: 20;
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .overlap-indicator {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background: rgba(255, 255, 255, 0.9);
-            color: var(--bg-main);
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.65rem;
-            font-weight: 700;
-            border: 2px solid var(--bg-main);
-            z-index: 15;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-
-        .task-dot.has-overlap .overlap-indicator {
-            opacity: 1;
-        }
-
-        .task-dot.fanned-out .overlap-indicator {
-            opacity: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
         .task-dot.mario { background: var(--accent-mario); }
@@ -3624,12 +3586,20 @@
             resizeHandle.addEventListener('mousedown', startResize);
             resizeHandle.addEventListener('touchstart', startResize, { passive: false });
 
-            // Window resize handler to reset grid columns
+            // Window resize handler to reset grid columns and re-render matrix
             window.addEventListener('resize', () => {
                 const appContainer = document.querySelector('.app-container');
                 if (appContainer) {
                     appContainer.style.gridTemplateColumns = ''; // Reset to CSS defaults
                 }
+
+                // Re-render matrix to recalculate overlaps on resize (debounced)
+                clearTimeout(window.resizeTimeout);
+                window.resizeTimeout = setTimeout(() => {
+                    if (typeof renderMatrix === 'function') {
+                        renderMatrix();
+                    }
+                }, 250);
 
                 const mobileNav = document.querySelector('.mobile-nav');
                 const tabletNav = document.querySelector('.tablet-nav');
@@ -4095,186 +4065,105 @@
                 return { dot, task };
             });
 
-            // Detect and handle overlaps after a brief delay to ensure rendering
+            // Resolve overlaps after rendering (double RAF to ensure DOM is ready)
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    detectAndHandleOverlaps(dots);
+                    resolveOverlaps(dots);
                 });
             });
         }
 
-        function detectAndHandleOverlaps(dots) {
-            const overlapThreshold = 0.5; // Consider overlapping if centers are within 50% of average size
-            const clusters = new Map(); // clusterId -> array of dot indices
-
-            // Calculate dot sizes
-            const dotSizes = dots.map(({ dot }) => {
-                const size = dot.className.match(/\b(xs|s|m|l|xl)\b/)?.[1] || 'm';
-                const sizeMap = { xs: 24, s: 32, m: 44, l: 56, xl: 72 };
-                return sizeMap[size] || 44;
-            });
-
-            // Get bounding boxes using percentage-based positions
+        function resolveOverlaps(dots) {
+            const sizeMap = { xs: 24, s: 32, m: 44, l: 56, xl: 72 };
             const containerRect = dotsContainer.getBoundingClientRect();
-            const containerWidth = containerRect.width || dotsContainer.offsetWidth || 800; // fallback
-            const boxes = dots.map(({ dot }, i) => {
+            const containerWidth = containerRect.width || dotsContainer.offsetWidth || 800;
+            const containerHeight = containerRect.height || dotsContainer.offsetHeight || 600;
+            
+            // Get all dot positions and sizes
+            const dotData = dots.map(({ dot, task }) => {
+                const size = dot.className.match(/\b(xs|s|m|l|xl)\b/)?.[1] || 'm';
+                const pixelSize = sizeMap[size] || 44;
                 const leftPercent = parseFloat(dot.style.left) / 100;
                 const topPercent = parseFloat(dot.style.top) / 100;
-                const sizePercent = dotSizes[i] / containerWidth;
                 
                 return {
-                    left: leftPercent,
-                    top: topPercent,
-                    width: sizePercent,
-                    height: sizePercent,
-                    centerX: leftPercent,
-                    centerY: topPercent,
-                    index: i,
-                    size: dotSizes[i]
+                    dot,
+                    task,
+                    left: leftPercent * containerWidth,
+                    top: topPercent * containerHeight,
+                    radius: pixelSize / 2,
+                    originalLeft: leftPercent,
+                    originalTop: topPercent
                 };
             });
 
-            // Find overlapping dots
-            for (let i = 0; i < boxes.length; i++) {
-                for (let j = i + 1; j < boxes.length; j++) {
-                    const box1 = boxes[i];
-                    const box2 = boxes[j];
-                    
-                    // Calculate distance between centers (in percentage)
-                    const dx = box1.centerX - box2.centerX;
-                    const dy = box1.centerY - box2.centerY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    // Average radius as percentage (using actual pixel sizes)
-                    const avgRadius = ((box1.size + box2.size) / 2) / containerWidth;
-                    const threshold = avgRadius * overlapThreshold;
-                    
-                    if (distance < threshold) {
-                        // They overlap - find or create cluster
-                        let clusterId1 = null, clusterId2 = null;
-                        for (const [id, indices] of clusters.entries()) {
-                            if (indices.includes(i)) clusterId1 = id;
-                            if (indices.includes(j)) clusterId2 = id;
-                        }
+            // Find overlapping groups
+            const groups = [];
+            const processed = new Set();
+            
+            for (let i = 0; i < dotData.length; i++) {
+                if (processed.has(i)) continue;
+                
+                const group = [i];
+                processed.add(i);
+                let foundNew = true;
+                
+                // Find all dots that overlap with any dot in this group
+                while (foundNew) {
+                    foundNew = false;
+                    for (let j = 0; j < dotData.length; j++) {
+                        if (processed.has(j)) continue;
                         
-                        if (clusterId1 && clusterId2 && clusterId1 !== clusterId2) {
-                            // Merge clusters
-                            clusters.get(clusterId1).push(...clusters.get(clusterId2));
-                            clusters.delete(clusterId2);
-                        } else if (clusterId1) {
-                            clusters.get(clusterId1).push(j);
-                        } else if (clusterId2) {
-                            clusters.get(clusterId2).push(i);
-                        } else {
-                            // Create new cluster
-                            clusters.set(i, [i, j]);
+                        // Check if j overlaps with any dot in group
+                        for (const idx of group) {
+                            const dot1 = dotData[idx];
+                            const dot2 = dotData[j];
+                            
+                            const dx = dot1.left - dot2.left;
+                            const dy = dot1.top - dot2.top;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            const minDistance = dot1.radius + dot2.radius + 4;
+                            
+                            if (distance < minDistance) {
+                                group.push(j);
+                                processed.add(j);
+                                foundNew = true;
+                                break;
+                            }
                         }
                     }
                 }
+                
+                if (group.length > 1) {
+                    groups.push(group);
+                }
             }
 
-            // Process clusters
-            clusters.forEach((indices, clusterId) => {
-                if (indices.length < 2) return;
+            // Resolve each group by spreading horizontally
+            groups.forEach(group => {
+                const groupDots = group.map(idx => dotData[idx]);
                 
-                const clusterDots = indices.map(idx => dots[idx]);
-                const clusterBoxes = indices.map(idx => boxes[idx]);
+                // Calculate center of group
+                const centerX = groupDots.reduce((sum, d) => sum + d.left, 0) / groupDots.length;
+                const centerY = groupDots.reduce((sum, d) => sum + d.top, 0) / groupDots.length;
                 
-                // Calculate cluster center
-                const centerX = clusterBoxes.reduce((sum, b) => sum + b.centerX, 0) / clusterBoxes.length;
-                const centerY = clusterBoxes.reduce((sum, b) => sum + b.centerY, 0) / clusterBoxes.length;
+                // Calculate total width needed (sum of diameters + spacing)
+                const totalWidth = groupDots.reduce((sum, d) => sum + d.radius * 2, 0) + (groupDots.length - 1) * 4;
+                const startX = centerX - totalWidth / 2;
                 
-                // Store original positions and add overlap indicator
-                clusterDots.forEach(({ dot }, idx) => {
-                    dot.dataset.originalLeft = dot.style.left;
-                    dot.dataset.originalTop = dot.style.top;
-                    dot.classList.add('has-overlap');
+                // Position dots side by side horizontally
+                let currentX = startX;
+                groupDots.forEach((dotData, idx) => {
+                    currentX += dotData.radius;
+                    dotData.left = currentX;
+                    currentX += dotData.radius + 4; // 4px spacing
                     
-                    // Add overlap count indicator
-                    if (!dot.querySelector('.overlap-indicator')) {
-                        const indicator = document.createElement('div');
-                        indicator.className = 'overlap-indicator';
-                        indicator.textContent = indices.length;
-                        dot.appendChild(indicator);
-                    } else {
-                        dot.querySelector('.overlap-indicator').textContent = indices.length;
-                    }
-                });
-                
-                // Add hover handlers for fan-out
-                let clusterHoverTimeout = null;
-                const handleClusterMouseEnter = () => {
-                    if (clusterHoverTimeout) {
-                        clearTimeout(clusterHoverTimeout);
-                        clusterHoverTimeout = null;
-                    }
-                    fanOutCluster(clusterDots, clusterBoxes, centerX, centerY);
-                };
-                
-                const handleClusterMouseLeave = () => {
-                    clusterHoverTimeout = setTimeout(() => {
-                        // Check if mouse is still over any fanned-out dot
-                        const mouseOverAny = clusterDots.some(({ dot }) => {
-                            const rect = dot.getBoundingClientRect();
-                            return window.mouseX >= rect.left && window.mouseX <= rect.right &&
-                                   window.mouseY >= rect.top && window.mouseY <= rect.bottom;
-                        });
-                        
-                        if (!mouseOverAny) {
-                            restoreCluster(clusterDots);
-                        }
-                    }, 150);
-                };
-                
-                clusterDots.forEach(({ dot }) => {
-                    // Remove old listeners if they exist
-                    if (dot._overlapMouseEnter) {
-                        dot.removeEventListener('mouseenter', dot._overlapMouseEnter);
-                        dot.removeEventListener('mouseleave', dot._overlapMouseLeave);
-                    }
-                    
-                    // Store handlers
-                    dot._overlapMouseEnter = handleClusterMouseEnter;
-                    dot._overlapMouseLeave = handleClusterMouseLeave;
-                    
-                    dot.addEventListener('mouseenter', handleClusterMouseEnter);
-                    dot.addEventListener('mouseleave', handleClusterMouseLeave);
+                    // Convert back to percentages and apply
+                    dotData.dot.style.left = `${(dotData.left / containerWidth) * 100}%`;
+                    dotData.dot.style.top = `${(dotData.top / containerHeight) * 100}%`;
                 });
             });
         }
-
-        function fanOutCluster(clusterDots, clusterBoxes, centerX, centerY) {
-            const containerRect = dotsContainer.getBoundingClientRect();
-            const count = clusterDots.length;
-            const radius = 0.08; // 8% of container size
-            
-            clusterDots.forEach(({ dot }, idx) => {
-                const angle = (2 * Math.PI * idx) / count;
-                const offsetX = Math.cos(angle) * radius;
-                const offsetY = Math.sin(angle) * radius;
-                
-                const newLeft = (centerX + offsetX) * 100;
-                const newTop = (centerY + offsetY) * 100;
-                
-                dot.classList.add('fanned-out');
-                dot.style.left = `${newLeft}%`;
-                dot.style.top = `${newTop}%`;
-            });
-        }
-
-        function restoreCluster(clusterDots) {
-            clusterDots.forEach(({ dot }) => {
-                dot.classList.remove('fanned-out');
-                dot.style.left = dot.dataset.originalLeft;
-                dot.style.top = dot.dataset.originalTop;
-            });
-        }
-
-        // Track mouse position for overlap detection
-        document.addEventListener('mousemove', (e) => {
-            window.mouseX = e.clientX;
-            window.mouseY = e.clientY;
-        });
 
         function createTaskDot(task) {
             const dot = document.createElement('div');
