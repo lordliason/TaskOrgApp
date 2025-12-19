@@ -1088,6 +1088,120 @@
         .legend-dot.maria { background: var(--accent-maria); }
         .legend-dot.both { background: var(--accent-both); }
 
+        /* Task Options Menu */
+        .task-options-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 31, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .task-options-menu.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .task-options-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 0;
+            max-width: 320px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            transform: scale(0.9);
+            transition: transform 0.2s ease;
+        }
+
+        .task-options-menu.show .task-options-content {
+            transform: scale(1);
+        }
+
+        .task-options-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 1.5rem 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .task-options-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.25rem;
+            color: var(--accent-mario);
+            margin: 0;
+        }
+
+        .task-options-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .task-options-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .task-options-body {
+            padding: 0.5rem 0;
+        }
+
+        .task-option-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            text-align: left;
+        }
+
+        .task-option-btn:hover {
+            background: var(--bg-hover);
+        }
+
+        .task-option-btn.complete:hover {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .task-option-btn.bank:hover {
+            background: rgba(74, 158, 255, 0.1);
+            color: var(--accent-mario);
+        }
+
+        .task-option-btn.delete:hover {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+
+        .task-option-btn svg {
+            flex-shrink: 0;
+        }
+
         /* Loading Overlay */
         .loading-overlay {
             position: fixed;
@@ -1458,6 +1572,24 @@
                 font-size: 1.2rem;
                 right: 0.75rem;
             }
+
+            .task-options-content {
+                max-width: 280px;
+                margin: 1rem;
+            }
+
+            .task-options-header {
+                padding: 1.25rem 1.25rem 0.875rem 1.25rem;
+            }
+
+            .task-options-title {
+                font-size: 1.125rem;
+            }
+
+            .task-option-btn {
+                padding: 0.875rem 1.25rem;
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -1662,6 +1794,40 @@
         <div class="tooltip-meta"></div>
     </div>
 
+    <!-- Task Options Menu -->
+    <div class="task-options-menu" id="taskOptionsMenu">
+        <div class="task-options-content">
+            <div class="task-options-header">
+                <div class="task-options-title">Task Options</div>
+                <button class="task-options-close" id="taskOptionsClose">&times;</button>
+            </div>
+            <div class="task-options-body">
+                <button class="task-option-btn complete" id="markCompleteBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Mark Complete
+                </button>
+                <button class="task-option-btn bank" id="moveToBankBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                    Move to Bank
+                </button>
+                <button class="task-option-btn delete" id="deleteTaskBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                    Delete Task
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Floating Add Task Button -->
     <button class="floating-add-btn" id="floatingAddBtn">+</button>
 
@@ -1827,6 +1993,14 @@
         const modalTaskName = document.getElementById('modalTaskName');
         const modalAddTaskBtn = document.getElementById('modalAddTaskBtn');
 
+        // Task options menu
+        const taskOptionsMenu = document.getElementById('taskOptionsMenu');
+        const taskOptionsClose = document.getElementById('taskOptionsClose');
+        const markCompleteBtn = document.getElementById('markCompleteBtn');
+        const moveToBankBtn = document.getElementById('moveToBankBtn');
+        const deleteTaskBtn = document.getElementById('deleteTaskBtn');
+        let selectedTaskForOptions = null;
+
         // Resize handle
         const resizeHandle = document.getElementById('resizeHandle');
         let isResizing = false;
@@ -1989,6 +2163,40 @@
             addTaskModal.addEventListener('click', (e) => {
                 if (e.target === addTaskModal) {
                     closeAddTaskModal();
+                }
+            });
+
+            // Task options menu events
+            taskOptionsClose.addEventListener('click', () => {
+                closeTaskOptionsMenu();
+            });
+
+            taskOptionsMenu.addEventListener('click', (e) => {
+                if (e.target === taskOptionsMenu) {
+                    closeTaskOptionsMenu();
+                }
+            });
+
+            markCompleteBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    toggleTaskComplete(selectedTaskForOptions.id, true);
+                    closeTaskOptionsMenu();
+                }
+            });
+
+            moveToBankBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    moveTaskToBank(selectedTaskForOptions);
+                    closeTaskOptionsMenu();
+                }
+            });
+
+            deleteTaskBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    if (confirm(`Delete "${selectedTaskForOptions.name}"?`)) {
+                        deleteTask(selectedTaskForOptions.id);
+                    }
+                    closeTaskOptionsMenu();
                 }
             });
 
@@ -2417,12 +2625,10 @@
             dot.addEventListener('mousemove', moveTooltip);
             dot.addEventListener('mouseleave', hideTooltip);
 
-            // Click to delete
+            // Click to show options menu
             dot.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (confirm(`Delete "${task.name}"?`)) {
-                    deleteTask(task.id);
-                }
+                showTaskOptionsMenu(task);
             });
 
             return dot;
@@ -2691,6 +2897,47 @@
             }
 
             modalAddTaskBtn.disabled = false;
+        }
+
+        // ===========================================
+        // Task Options Menu Functions
+        // ===========================================
+        function showTaskOptionsMenu(task) {
+            selectedTaskForOptions = task;
+            taskOptionsMenu.classList.add('show');
+        }
+
+        function closeTaskOptionsMenu() {
+            taskOptionsMenu.classList.remove('show');
+            selectedTaskForOptions = null;
+        }
+
+        async function moveTaskToBank(task) {
+            try {
+                // Add task to the bank
+                const bankedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const bankedTask = {
+                    ...task,
+                    bankedDate: bankedDate
+                };
+
+                bankedTasks.unshift(bankedTask);
+                localStorage.setItem('taskMatrixBank', JSON.stringify(bankedTasks));
+                renderTaskBank();
+
+                // Delete from database
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .delete()
+                    .eq('id', task.id);
+
+                if (error) throw error;
+
+                // Task will be removed via realtime subscription
+            } catch (error) {
+                console.error('Error moving task to bank:', error);
+                alert('Failed to move task to bank. Please try again.');
+            }
         }
     </script>
 </body>
