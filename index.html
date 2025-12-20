@@ -2148,6 +2148,43 @@
             border-bottom-left-radius: 4px;
         }
 
+        /* Markdown formatting styles for chatbot */
+        .chatbot-message-content p {
+            margin: 0 0 0.5rem 0;
+        }
+
+        .chatbot-message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .chatbot-message-content ol,
+        .chatbot-message-content ul {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .chatbot-message-content li {
+            margin: 0.25rem 0;
+            line-height: 1.4;
+        }
+
+        .chatbot-message-content ol {
+            list-style-type: decimal;
+        }
+
+        .chatbot-message-content ul {
+            list-style-type: disc;
+        }
+
+        .chatbot-message-content strong {
+            font-weight: 600;
+            color: var(--accent-mario);
+        }
+
+        .chatbot-message-content em {
+            font-style: italic;
+        }
+
         .chatbot-message-loading {
             display: flex;
             gap: 0.25rem;
@@ -5577,6 +5614,86 @@
             return context;
         }
 
+        // Simple markdown parser for chatbot responses
+        function parseMarkdown(text) {
+            if (!text) return '';
+            
+            // Escape HTML to prevent XSS
+            let html = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // Bold: **text** or __text__
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+            
+            // Italic: *text* or _text_
+            html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+            
+            // Split into lines for list processing
+            const lines = html.split('\n');
+            let result = [];
+            let inOrderedList = false;
+            let inUnorderedList = false;
+            
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                
+                // Numbered list: 1. item, 2. item, etc.
+                const orderedMatch = line.match(/^(\d+)\.\s+(.+)$/);
+                if (orderedMatch) {
+                    if (!inOrderedList) {
+                        if (inUnorderedList) {
+                            result.push('</ul>');
+                            inUnorderedList = false;
+                        }
+                        result.push('<ol>');
+                        inOrderedList = true;
+                    }
+                    result.push(`<li>${orderedMatch[2]}</li>`);
+                    continue;
+                }
+                
+                // Bullet list: - item or * item
+                const unorderedMatch = line.match(/^[-*]\s+(.+)$/);
+                if (unorderedMatch) {
+                    if (!inUnorderedList) {
+                        if (inOrderedList) {
+                            result.push('</ol>');
+                            inOrderedList = false;
+                        }
+                        result.push('<ul>');
+                        inUnorderedList = true;
+                    }
+                    result.push(`<li>${unorderedMatch[1]}</li>`);
+                    continue;
+                }
+                
+                // Close any open lists if we hit a non-list line
+                if (inOrderedList) {
+                    result.push('</ol>');
+                    inOrderedList = false;
+                }
+                if (inUnorderedList) {
+                    result.push('</ul>');
+                    inUnorderedList = false;
+                }
+                
+                // Regular line - add as paragraph or line break
+                if (line.trim()) {
+                    result.push(`<p>${line}</p>`);
+                }
+            }
+            
+            // Close any remaining open lists
+            if (inOrderedList) result.push('</ol>');
+            if (inUnorderedList) result.push('</ul>');
+            
+            return result.join('');
+        }
+
         // Add message to chatbot
         function addChatbotMessage(type, content) {
             if (!taskChatbotMessages) return null;
@@ -5597,7 +5714,14 @@
             } else {
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'chatbot-message-content';
-                contentDiv.textContent = content;
+                
+                // Use markdown parsing for assistant messages, plain text for user
+                if (type === 'assistant') {
+                    contentDiv.innerHTML = parseMarkdown(content);
+                } else {
+                    contentDiv.textContent = content;
+                }
+                
                 messageDiv.appendChild(contentDiv);
             }
 
