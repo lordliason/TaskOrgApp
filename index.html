@@ -1546,6 +1546,15 @@
             color: #f59e0b;
         }
 
+        .task-option-btn.split {
+            color: var(--text-primary);
+        }
+
+        .task-option-btn.split:hover {
+            background: rgba(139, 92, 246, 0.1);
+            color: #8b5cf6;
+        }
+
         .task-option-btn svg {
             flex-shrink: 0;
         }
@@ -2967,6 +2976,18 @@
                     </svg>
                     Edit Task
                 </button>
+                <button class="task-option-btn split" id="splitTaskBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="2" x2="12" y2="22"></line>
+                        <path d="M17 7h5"></path>
+                        <path d="M17 12h5"></path>
+                        <path d="M17 17h5"></path>
+                        <path d="M2 7h5"></path>
+                        <path d="M2 12h5"></path>
+                        <path d="M2 17h5"></path>
+                    </svg>
+                    Split Task
+                </button>
                 <button class="task-option-btn bank" id="moveToBankBtn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -3237,7 +3258,7 @@
         let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
         let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn;
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
-        let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn;
+        let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn, splitTaskBtn;
         let selectedTaskForOptions = null;
         let editingTaskId = null;
         let resizeHandle;
@@ -3311,6 +3332,7 @@
             moveToBankBtn = document.getElementById('moveToBankBtn');
             deleteTaskBtn = document.getElementById('deleteTaskBtn');
             editTaskBtn = document.getElementById('editTaskBtn');
+            splitTaskBtn = document.getElementById('splitTaskBtn');
             resizeHandle = document.getElementById('resizeHandle');
             modalTitle = document.getElementById('modalTitle');
             viewTaskModal = document.getElementById('viewTaskModal');
@@ -3891,6 +3913,13 @@
             editTaskBtn.addEventListener('click', () => {
                 if (selectedTaskForOptions) {
                     openEditTaskModal(selectedTaskForOptions);
+                    closeTaskOptionsMenu();
+                }
+            });
+
+            splitTaskBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    splitTask(selectedTaskForOptions);
                     closeTaskOptionsMenu();
                 }
             });
@@ -5301,6 +5330,52 @@
             } catch (error) {
                 console.error('Error moving task to bank:', error);
                 alert('Failed to move task to bank. Please try again.');
+            }
+        }
+
+        async function splitTask(task) {
+            try {
+                // Create two new tasks based on the original
+                const task1 = {
+                    name: `${task.name} - Part 1`,
+                    assignee: task.assignee,
+                    size: task.size,
+                    urgent: task.urgent,
+                    important: task.important,
+                    completed: false,
+                    icon: task.icon,
+                    first_step: task.first_step,
+                    completion_criteria: task.completion_criteria
+                };
+
+                const task2 = {
+                    name: `${task.name} - Part 2`,
+                    assignee: task.assignee,
+                    size: task.size,
+                    urgent: task.urgent,
+                    important: task.important,
+                    completed: false,
+                    icon: task.icon,
+                    first_step: task.first_step,
+                    completion_criteria: task.completion_criteria
+                };
+
+                // Insert both tasks into the database
+                const { data, error } = await supabaseClient
+                    .from('tasks')
+                    .insert([task1, task2])
+                    .select();
+
+                if (error) {
+                    console.error('Supabase Error:', error);
+                    throw error;
+                }
+
+                // Tasks will be added via realtime subscription
+                console.log('Task split successfully into two parts');
+            } catch (error) {
+                console.error('Error splitting task:', error);
+                alert('Failed to split task: ' + (error.message || 'Please try again.'));
             }
         }
     </script>
