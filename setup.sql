@@ -12,6 +12,8 @@ CREATE TABLE tasks (
     completed BOOLEAN DEFAULT FALSE,
     completed_by TEXT CHECK (completed_by IS NULL OR completed_by IN ('mario', 'maria', 'both')),
     icon TEXT DEFAULT NULL,
+    first_step TEXT DEFAULT NULL,
+    completion_criteria TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -48,6 +50,10 @@ ALTER TABLE tasks ALTER COLUMN important SET DEFAULT 3;
 -- ADD COMPLETED_BY COLUMN (run this to add who completed the task)
 -- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_by TEXT;
 -- ALTER TABLE tasks ADD CONSTRAINT tasks_completed_by_check CHECK (completed_by IS NULL OR completed_by IN ('mario', 'maria', 'both'));
+
+-- ADD FIRST_STEP AND COMPLETION_CRITERIA COLUMNS (run this to add the new task properties)
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS first_step TEXT DEFAULT NULL;
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completion_criteria TEXT DEFAULT NULL;
 
 -- CREATE SCORES TABLE (run this to add scoring system)
 CREATE TABLE IF NOT EXISTS scores (

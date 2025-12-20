@@ -301,6 +301,30 @@
             color: var(--text-muted);
         }
 
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+            transition: all 0.2s ease;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-mario);
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+        }
+
+        .form-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
         /* Assignee Buttons */
         .assignee-group {
             display: flex;
@@ -358,16 +382,15 @@
             border-radius: 8px;
             background: var(--bg-card);
             color: var(--text-muted);
-            font-size: 0.75rem;
+            font-size: 0.6875rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: inherit;
-            white-space: nowrap;
             text-align: center;
             box-sizing: border-box;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            line-height: 1.3;
+            word-wrap: break-word;
         }
 
         .size-btn:hover {
@@ -1154,7 +1177,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 1.25rem;
+            font-size: 0.65rem;
             color: white;
         }
 
@@ -1761,6 +1784,187 @@
         .modal-close:hover {
             background: var(--bg-hover);
             color: var(--text-primary);
+        }
+
+        /* View Task Modal */
+        .view-task-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 31, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .view-task-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .view-task-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .view-task-modal.show .view-task-modal-content {
+            transform: scale(1);
+        }
+
+        .view-task-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .view-task-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .view-task-icon.mario {
+            background: var(--accent-mario);
+        }
+
+        .view-task-icon.maria {
+            background: var(--accent-maria);
+        }
+
+        .view-task-icon.both {
+            background: linear-gradient(135deg, var(--accent-mario) 50%, var(--accent-maria) 50%);
+        }
+
+        .view-task-title-section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .view-task-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            word-wrap: break-word;
+        }
+
+        .view-task-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .view-task-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .view-task-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .view-task-properties {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .view-task-property {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .view-task-property-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .view-task-property-value {
+            font-size: 1rem;
+            color: var(--text-primary);
+            padding: 0.75rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .view-task-property-value.completed {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .view-task-property-value.pending {
+            color: var(--text-muted);
+        }
+
+        .view-task-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .view-task-action-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .view-task-action-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-mario);
+            color: var(--accent-mario);
+        }
+
+        .view-task-action-btn.primary {
+            background: linear-gradient(135deg, var(--accent-mario), var(--accent-both));
+            color: white;
+            border-color: transparent;
+        }
+
+        .view-task-action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
         }
 
         /* Responsive */
@@ -2849,7 +3053,38 @@
                 </div>
             </div>
 
+            <div class="form-section">
+                <label class="form-label">What is a small step you can do to start the task?</label>
+                <textarea id="modalFirstStep" class="form-textarea" placeholder="Enter a small first step to get started..."></textarea>
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">For the task to be marked complete, what should be accomplished?</label>
+                <textarea id="modalCompletionCriteria" class="form-textarea" placeholder="Describe what needs to be accomplished for this task to be considered complete..."></textarea>
+            </div>
+
             <button class="add-btn" id="modalAddTaskBtn">Add Task</button>
+        </div>
+    </div>
+
+    <!-- View Task Modal -->
+    <div class="view-task-modal" id="viewTaskModal">
+        <div class="view-task-modal-content">
+            <div class="view-task-header">
+                <div class="view-task-icon" id="viewTaskIcon"></div>
+                <div class="view-task-title-section">
+                    <div class="view-task-title" id="viewTaskTitle"></div>
+                    <div class="view-task-subtitle" id="viewTaskSubtitle"></div>
+                </div>
+                <button class="view-task-close" id="viewTaskClose">&times;</button>
+            </div>
+            <div class="view-task-properties" id="viewTaskProperties">
+                <!-- Properties will be populated by JavaScript -->
+            </div>
+            <div class="view-task-actions">
+                <button class="view-task-action-btn primary" id="viewTaskEditBtn">Edit Task</button>
+                <button class="view-task-action-btn" id="viewTaskCloseBtn">Close</button>
+            </div>
         </div>
     </div>
 
@@ -2924,8 +3159,9 @@
         let dotsContainer, resetPointsBtn, resetDayBtn, todayDateEl;
         let taskBankHeader, taskBankList, bankToggle, bankCount;
         let leaderboardToggleBtn;
-        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle;
+        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria;
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
+        let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn;
         let selectedTaskForOptions = null;
@@ -2989,6 +3225,8 @@
             modalClose = document.getElementById('modalClose');
             modalTaskName = document.getElementById('modalTaskName');
             modalAddTaskBtn = document.getElementById('modalAddTaskBtn');
+            modalFirstStep = document.getElementById('modalFirstStep');
+            modalCompletionCriteria = document.getElementById('modalCompletionCriteria');
             taskOptionsMenu = document.getElementById('taskOptionsMenu');
             taskOptionsClose = document.getElementById('taskOptionsClose');
             markCompleteGroup = document.getElementById('markCompleteGroup');
@@ -3001,6 +3239,14 @@
             editTaskBtn = document.getElementById('editTaskBtn');
             resizeHandle = document.getElementById('resizeHandle');
             modalTitle = document.getElementById('modalTitle');
+            viewTaskModal = document.getElementById('viewTaskModal');
+            viewTaskClose = document.getElementById('viewTaskClose');
+            viewTaskEditBtn = document.getElementById('viewTaskEditBtn');
+            viewTaskCloseBtn = document.getElementById('viewTaskCloseBtn');
+            viewTaskTitle = document.getElementById('viewTaskTitle');
+            viewTaskSubtitle = document.getElementById('viewTaskSubtitle');
+            viewTaskIcon = document.getElementById('viewTaskIcon');
+            viewTaskProperties = document.getElementById('viewTaskProperties');
 
             // Quadrant mapping
             quadrants = {
@@ -3357,7 +3603,7 @@
                     <div class="leaderboard-entry">
                         <div class="leaderboard-rank ${rankClass}">${rank}</div>
                         <div class="leaderboard-player">
-                            <div class="leaderboard-avatar ${entry.player}">${entry.player === 'mario' ? 'M' : 'A'}</div>
+                            <div class="leaderboard-avatar ${entry.player}">${entry.player === 'mario' ? 'Mario' : 'Maria'}</div>
                             <div class="leaderboard-info">
                                 <div class="leaderboard-name">${playerName}</div>
                                 <div class="leaderboard-stats">${entry.tasks} tasks • ${entry.days} day${entry.days !== 1 ? 's' : ''}</div>
@@ -3452,6 +3698,28 @@
             taskOptionsMenu.addEventListener('click', (e) => {
                 if (e.target === taskOptionsMenu) {
                     closeTaskOptionsMenu();
+                }
+            });
+
+            // View task modal events
+            viewTaskClose.addEventListener('click', () => {
+                closeViewTaskModal();
+            });
+
+            viewTaskCloseBtn.addEventListener('click', () => {
+                closeViewTaskModal();
+            });
+
+            viewTaskModal.addEventListener('click', (e) => {
+                if (e.target === viewTaskModal) {
+                    closeViewTaskModal();
+                }
+            });
+
+            viewTaskEditBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    closeViewTaskModal();
+                    openEditTaskModal(selectedTaskForOptions);
                 }
             });
 
@@ -4224,10 +4492,10 @@
             dot.addEventListener('mousemove', moveTooltip);
             dot.addEventListener('mouseleave', hideTooltip);
 
-            // Click to show options menu
+            // Click to show view modal
             dot.addEventListener('click', (e) => {
                 e.stopPropagation();
-                showTaskOptionsMenu(task);
+                showViewTaskModal(task);
             });
 
             return dot;
@@ -4300,7 +4568,7 @@
                                 </svg>
                             </div>
                             <div class="task-item-dot ${task.assignee} ${task.size}">${task.icon || ''}</div>
-                            <div class="task-item-content" onclick="openEditTaskModalById('${task.id}')" style="cursor: pointer; flex: 1;">
+                            <div class="task-item-content" onclick="showViewTaskModalById('${task.id}')" style="cursor: pointer; flex: 1;">
                                 <div class="task-item-name">${iconDisplay}${escapeHtml(task.name)}</div>
                                 <div class="task-item-meta">${assigneeLabels[task.assignee]} • ${sizeLabels[task.size] || task.size}</div>
                             </div>
@@ -4441,6 +4709,8 @@
             selectedUrgent = task.urgent || 3;
             selectedImportant = task.important || 3;
             selectedIcon = task.icon || null;
+            modalFirstStep.value = task.first_step || '';
+            modalCompletionCriteria.value = task.completion_criteria || '';
             
             // Sync modal state
             syncModalState();
@@ -4462,6 +4732,8 @@
             if (modalTitle) modalTitle.textContent = 'Add Task';
             modalAddTaskBtn.textContent = 'Add Task';
             modalTaskName.value = '';
+            modalFirstStep.value = '';
+            modalCompletionCriteria.value = '';
         }
 
         function syncModalState() {
@@ -4508,7 +4780,9 @@
                 urgent: selectedUrgent,
                 important: selectedImportant,
                 completed: false,
-                icon: selectedIcon
+                icon: selectedIcon,
+                first_step: modalFirstStep.value.trim() || null,
+                completion_criteria: modalCompletionCriteria.value.trim() || null
             };
 
             try {
@@ -4557,7 +4831,9 @@
                 size: selectedSize,
                 urgent: selectedUrgent,
                 important: selectedImportant,
-                icon: selectedIcon
+                icon: selectedIcon,
+                first_step: modalFirstStep.value.trim() || null,
+                completion_criteria: modalCompletionCriteria.value.trim() || null
             };
 
             try {
@@ -4609,6 +4885,175 @@
 
         function closeTaskOptionsMenu() {
             taskOptionsMenu.classList.remove('show');
+            selectedTaskForOptions = null;
+        }
+
+        // ===========================================
+        // View Task Modal Functions
+        // ===========================================
+        function showViewTaskModal(task) {
+            selectedTaskForOptions = task;
+            
+            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both' };
+            const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
+            const urgencyLabels = { 1: 'Whenever', 2: 'This Week', 3: 'Today', 4: 'Morning', 5: 'ASAP' };
+            const importanceLabels = { 1: 'Optional', 2: 'Nice to Have', 3: 'Keeps us on track', 4: 'Matters a lot', 5: 'Critical' };
+            const completedByLabels = { mario: 'Mario', maria: 'Maria', both: 'Both' };
+
+            // Set icon
+            viewTaskIcon.className = `view-task-icon ${task.assignee}`;
+            if (task.icon) {
+                viewTaskIcon.textContent = task.icon;
+            } else {
+                viewTaskIcon.textContent = '';
+            }
+
+            // Set title and subtitle
+            viewTaskTitle.textContent = task.name || 'Untitled Task';
+            const quadrant = getQuadrant(task);
+            const quadrantLabels = {
+                'do-first': 'Do First',
+                'schedule': 'Delegate or do second',
+                'delegate': 'Schedule or do third',
+                'eliminate': 'Do last or Eliminate'
+            };
+            viewTaskSubtitle.textContent = quadrantLabels[quadrant] || '';
+
+            // Build properties
+            let propertiesHTML = '';
+
+            // Status
+            propertiesHTML += `
+                <div class="view-task-property">
+                    <div class="view-task-property-label">Status</div>
+                    <div class="view-task-property-value ${task.completed ? 'completed' : 'pending'}">
+                        ${task.completed ? '✓ Completed' : '○ Pending'}
+                    </div>
+                </div>
+            `;
+
+            // Completed By (if completed)
+            if (task.completed && task.completed_by) {
+                propertiesHTML += `
+                    <div class="view-task-property">
+                        <div class="view-task-property-label">Completed By</div>
+                        <div class="view-task-property-value completed">
+                            ${completedByLabels[task.completed_by] || task.completed_by}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Assignee
+            propertiesHTML += `
+                <div class="view-task-property">
+                    <div class="view-task-property-label">Assigned To</div>
+                    <div class="view-task-property-value">
+                        ${assigneeLabels[task.assignee] || task.assignee}
+                    </div>
+                </div>
+            `;
+
+            // Size
+            propertiesHTML += `
+                <div class="view-task-property">
+                    <div class="view-task-property-label">Task Size</div>
+                    <div class="view-task-property-value">
+                        ${sizeLabels[task.size] || task.size}
+                    </div>
+                </div>
+            `;
+
+            // Urgency
+            if (task.urgency) {
+                propertiesHTML += `
+                    <div class="view-task-property">
+                        <div class="view-task-property-label">Urgency</div>
+                        <div class="view-task-property-value">
+                            ${urgencyLabels[task.urgency] || task.urgency}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Importance
+            if (task.importance) {
+                propertiesHTML += `
+                    <div class="view-task-property">
+                        <div class="view-task-property-label">Importance</div>
+                        <div class="view-task-property-value">
+                            ${importanceLabels[task.importance] || task.importance}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Points
+            const points = getTaskPoints(task.size);
+            propertiesHTML += `
+                <div class="view-task-property">
+                    <div class="view-task-property-label">Points Value</div>
+                    <div class="view-task-property-value">
+                        ${points} point${points !== 1 ? 's' : ''}
+                    </div>
+                </div>
+            `;
+
+            // First Step
+            if (task.first_step) {
+                propertiesHTML += `
+                    <div class="view-task-property">
+                        <div class="view-task-property-label">What is a small step you can do to start the task?</div>
+                        <div class="view-task-property-value">
+                            ${escapeHtml(task.first_step)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Completion Criteria
+            if (task.completion_criteria) {
+                propertiesHTML += `
+                    <div class="view-task-property">
+                        <div class="view-task-property-label">For the task to be marked complete, what should be accomplished?</div>
+                        <div class="view-task-property-value">
+                            ${escapeHtml(task.completion_criteria)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Date (if available)
+            if (task.date) {
+                const date = new Date(task.date);
+                const formattedDate = date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                propertiesHTML += `
+                    <div class="view-task-property">
+                        <div class="view-task-property-label">Date</div>
+                        <div class="view-task-property-value">
+                            ${formattedDate}
+                        </div>
+                    </div>
+                `;
+            }
+
+            viewTaskProperties.innerHTML = propertiesHTML;
+            viewTaskModal.classList.add('show');
+        }
+
+        function showViewTaskModalById(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                showViewTaskModal(task);
+            }
+        }
+
+        function closeViewTaskModal() {
+            viewTaskModal.classList.remove('show');
             selectedTaskForOptions = null;
         }
 
