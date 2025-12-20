@@ -1,7 +1,7 @@
 // Vercel Serverless Function for OpenAI Chat
 // This keeps the API key secure on the server side
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // Only allow POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -59,5 +59,4 @@ export default async function handler(req, res) {
         console.error('Chat API error:', error);
         return res.status(500).json({ error: error.message || 'Internal server error' });
     }
-}
-
+};
