@@ -2012,6 +2012,18 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
+        .view-task-action-btn.split {
+            background: #8b5cf6;
+            color: white;
+            border-color: transparent;
+        }
+
+        .view-task-action-btn.split:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
         .view-task-primary-actions {
             display: flex;
             flex-direction: column;
@@ -3175,6 +3187,7 @@
                 </div>
                 <div class="view-task-secondary-actions">
                     <button class="view-task-action-btn primary" id="viewTaskEditBtn">Edit Task</button>
+                    <button class="view-task-action-btn split" id="viewTaskSplitBtn">Split Task</button>
                     <button class="view-task-action-btn delete" id="viewTaskDeleteBtn">Delete</button>
                     <button class="view-task-action-btn" id="viewTaskCloseBtn">Close</button>
                 </div>
@@ -3256,7 +3269,7 @@
         let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria;
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
         let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
-        let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn;
+        let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn, viewTaskSplitBtn;
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn, splitTaskBtn;
         let selectedTaskForOptions = null;
@@ -3349,6 +3362,7 @@
             viewTaskCompleteBothBtn = document.getElementById('viewTaskCompleteBothBtn');
             viewTaskUndoBtn = document.getElementById('viewTaskUndoBtn');
             viewTaskDeleteBtn = document.getElementById('viewTaskDeleteBtn');
+            viewTaskSplitBtn = document.getElementById('viewTaskSplitBtn');
 
             // Quadrant mapping
             quadrants = {
@@ -3853,6 +3867,13 @@
             viewTaskUndoBtn.addEventListener('click', () => {
                 if (selectedTaskForOptions) {
                     undoTaskCompletion(selectedTaskForOptions);
+                    closeViewTaskModal();
+                }
+            });
+
+            viewTaskSplitBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    splitTask(selectedTaskForOptions);
                     closeViewTaskModal();
                 }
             });
