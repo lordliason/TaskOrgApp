@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
         :root {
             --bg-main: #1a1a1f;
@@ -3481,6 +3482,14 @@
         
         // Simple password for family access (change this!)
         const FAMILY_PASSWORD = 'family123';
+        
+        // Check if OpenAI API key is available from config.js
+        // This runs immediately when the script loads
+        if (typeof window !== 'undefined' && window.OPENAI_API_KEY) {
+            console.log('OpenAI API key loaded from config.js');
+        } else {
+            console.log('OpenAI API key not yet available, will load on demand');
+        }
 
         // ===========================================
         // Wait for Supabase library and DOM to be ready
@@ -3693,7 +3702,19 @@
         // ===========================================
         // Initialize App
         // ===========================================
+        // Check if API key is available (called after config.js loads)
+        function checkAPIKeyAvailable() {
+            if (typeof window !== 'undefined' && window.OPENAI_API_KEY) {
+                OPENAI_API_KEY = window.OPENAI_API_KEY;
+                console.log('API key available from config.js');
+                return true;
+            }
+            return false;
+        }
+
         async function init() {
+            // Try to load API key immediately when init runs
+            checkAPIKeyAvailable();
             // Safety check: ensure Supabase is initialized
             if (!supabaseClient) {
                 console.error('Supabase client not initialized');
@@ -5333,20 +5354,58 @@
         
         // Load OpenAI API key from config.js
         async function loadOpenAIKey() {
-            if (OPENAI_API_KEY) return OPENAI_API_KEY;
+            // Check if already loaded in our local variable
+            if (OPENAI_API_KEY) {
+                console.log('Using cached API key');
+                return OPENAI_API_KEY;
+            }
             
+            // First, try to get from global scope (if config.js was loaded as script)
+            if (typeof window !== 'undefined' && window.OPENAI_API_KEY) {
+                OPENAI_API_KEY = window.OPENAI_API_KEY;
+                console.log('Loaded API key from window.OPENAI_API_KEY');
+                return OPENAI_API_KEY;
+            }
+            
+            // Wait a bit for config.js to load if it hasn't yet (max 2 seconds)
+            let attempts = 0;
+            while (attempts < 20 && typeof window !== 'undefined' && !window.OPENAI_API_KEY) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (typeof window !== 'undefined' && window.OPENAI_API_KEY) {
+                OPENAI_API_KEY = window.OPENAI_API_KEY;
+                console.log('Loaded API key from window.OPENAI_API_KEY after wait');
+                return OPENAI_API_KEY;
+            }
+            
+            // Fallback: try to fetch config.js and parse it
+            console.log('Attempting to fetch config.js...');
             try {
-                const response = await fetch('config.js');
+                const response = await fetch('config.js', { cache: 'no-cache' });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 const configText = await response.text();
+                console.log('Fetched config.js, length:', configText.length);
                 const match = configText.match(/OPENAI_API_KEY\s*=\s*['"]([^'"]+)['"]/);
                 if (match && match[1]) {
                     OPENAI_API_KEY = match[1];
+                    // Also set it globally for future use
+                    if (typeof window !== 'undefined') {
+                        window.OPENAI_API_KEY = OPENAI_API_KEY;
+                    }
+                    console.log('Loaded API key from fetch, length:', OPENAI_API_KEY.length);
                     return OPENAI_API_KEY;
+                } else {
+                    console.error('Could not find OPENAI_API_KEY in config.js. Config text:', configText.substring(0, 200));
+                    throw new Error('Could not find OPENAI_API_KEY in config.js');
                 }
             } catch (error) {
                 console.error('Error loading OpenAI API key:', error);
+                throw new Error('Failed to load OpenAI API key. Please ensure config.js exists and contains a valid OPENAI_API_KEY. Error: ' + error.message);
             }
-            return null;
         }
 
         // Reset chatbot when viewing a new task
@@ -5391,7 +5450,8 @@
             try {
                 // Load API key if not already loaded
                 const apiKey = await loadOpenAIKey();
-                if (!apiKey) {
+                if (!apiKey || apiKey === null || apiKey === 'null' || apiKey === 'undefined') {
+                    console.error('API key is invalid:', apiKey);
                     throw new Error('OpenAI API key not found. Please check config.js');
                 }
 
@@ -5437,7 +5497,8 @@
             } catch (error) {
                 console.error('Chatbot error:', error);
                 removeChatbotMessage(loadingId);
-                addChatbotMessage('assistant', `Sorry, I encountered an error: ${error.message}. Please check your OpenAI API key in config.js.`);
+                const errorMsg = error.message || 'Unknown error occurred';
+                addChatbotMessage('assistant', `Sorry, I encountered an error: ${errorMsg}. Please check your OpenAI API key in config.js and ensure the file is accessible.`);
             } finally {
                 // Re-enable input
                 if (taskChatbotInput) taskChatbotInput.disabled = false;
