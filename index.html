@@ -1967,6 +1967,66 @@
             box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
         }
 
+        .view-task-action-btn.complete {
+            background: var(--accent-mario);
+            color: white;
+            border-color: transparent;
+        }
+
+        .view-task-action-btn.complete:hover {
+            background: var(--accent-maria);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+        }
+
+        .view-task-action-btn.undo {
+            background: #f59e0b;
+            color: white;
+            border-color: transparent;
+        }
+
+        .view-task-action-btn.undo:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .view-task-action-btn.delete {
+            background: #ef4444;
+            color: white;
+            border-color: transparent;
+        }
+
+        .view-task-action-btn.delete:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .view-task-primary-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .view-task-complete-group {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .view-task-secondary-actions {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .view-task-actions {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
         /* Responsive */
 
         /* Older iPad Landscape (1024px exactly) + Similar devices */
@@ -3082,8 +3142,21 @@
                 <!-- Properties will be populated by JavaScript -->
             </div>
             <div class="view-task-actions">
-                <button class="view-task-action-btn primary" id="viewTaskEditBtn">Edit Task</button>
-                <button class="view-task-action-btn" id="viewTaskCloseBtn">Close</button>
+                <div class="view-task-primary-actions" id="viewTaskPrimaryActions">
+                    <!-- Mark Complete buttons (shown when task is not completed) -->
+                    <div class="view-task-complete-group" id="viewTaskCompleteGroup" style="display: none;">
+                        <button class="view-task-action-btn complete" id="viewTaskCompleteMarioBtn">✓ Mario</button>
+                        <button class="view-task-action-btn complete" id="viewTaskCompleteMariaBtn">✓ Maria</button>
+                        <button class="view-task-action-btn complete" id="viewTaskCompleteBothBtn">✓ Both</button>
+                    </div>
+                    <!-- Undo Complete button (shown when task is completed) -->
+                    <button class="view-task-action-btn undo" id="viewTaskUndoBtn" style="display: none;">Undo Completion</button>
+                </div>
+                <div class="view-task-secondary-actions">
+                    <button class="view-task-action-btn primary" id="viewTaskEditBtn">Edit Task</button>
+                    <button class="view-task-action-btn delete" id="viewTaskDeleteBtn">Delete</button>
+                    <button class="view-task-action-btn" id="viewTaskCloseBtn">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -3162,6 +3235,7 @@
         let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria;
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
         let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
+        let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn;
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn;
         let selectedTaskForOptions = null;
@@ -3247,6 +3321,12 @@
             viewTaskSubtitle = document.getElementById('viewTaskSubtitle');
             viewTaskIcon = document.getElementById('viewTaskIcon');
             viewTaskProperties = document.getElementById('viewTaskProperties');
+            viewTaskCompleteGroup = document.getElementById('viewTaskCompleteGroup');
+            viewTaskCompleteMarioBtn = document.getElementById('viewTaskCompleteMarioBtn');
+            viewTaskCompleteMariaBtn = document.getElementById('viewTaskCompleteMariaBtn');
+            viewTaskCompleteBothBtn = document.getElementById('viewTaskCompleteBothBtn');
+            viewTaskUndoBtn = document.getElementById('viewTaskUndoBtn');
+            viewTaskDeleteBtn = document.getElementById('viewTaskDeleteBtn');
 
             // Quadrant mapping
             quadrants = {
@@ -3720,6 +3800,43 @@
                 if (selectedTaskForOptions) {
                     closeViewTaskModal();
                     openEditTaskModal(selectedTaskForOptions);
+                }
+            });
+
+            viewTaskCompleteMarioBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    toggleTaskComplete(selectedTaskForOptions.id, true, 'mario');
+                    closeViewTaskModal();
+                }
+            });
+
+            viewTaskCompleteMariaBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    toggleTaskComplete(selectedTaskForOptions.id, true, 'maria');
+                    closeViewTaskModal();
+                }
+            });
+
+            viewTaskCompleteBothBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    toggleTaskComplete(selectedTaskForOptions.id, true, 'both');
+                    closeViewTaskModal();
+                }
+            });
+
+            viewTaskUndoBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    undoTaskCompletion(selectedTaskForOptions);
+                    closeViewTaskModal();
+                }
+            });
+
+            viewTaskDeleteBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    if (confirm(`Delete "${selectedTaskForOptions.name}"?`)) {
+                        deleteTask(selectedTaskForOptions.id);
+                        closeViewTaskModal();
+                    }
                 }
             });
 
@@ -5042,6 +5159,18 @@
             }
 
             viewTaskProperties.innerHTML = propertiesHTML;
+            
+            // Show/hide action buttons based on completion status
+            if (task.completed) {
+                // Task is completed - show undo button, hide complete buttons
+                viewTaskCompleteGroup.style.display = 'none';
+                viewTaskUndoBtn.style.display = 'block';
+            } else {
+                // Task is not completed - show complete buttons, hide undo button
+                viewTaskCompleteGroup.style.display = 'flex';
+                viewTaskUndoBtn.style.display = 'none';
+            }
+            
             viewTaskModal.classList.add('show');
         }
 
