@@ -2048,6 +2048,187 @@
             box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
         }
 
+        /* Task Chatbot Styles */
+        .task-chatbot-container {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .task-chatbot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 12px;
+            transition: background 0.2s ease;
+        }
+
+        .task-chatbot-header:hover {
+            background: var(--bg-hover);
+        }
+
+        .task-chatbot-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .task-chatbot-toggle {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .task-chatbot-toggle:hover {
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+
+        .task-chatbot-content {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .task-chatbot-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .chatbot-message {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .chatbot-message-user {
+            align-items: flex-end;
+        }
+
+        .chatbot-message-assistant {
+            align-items: flex-start;
+        }
+
+        .chatbot-message-content {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .chatbot-message-user .chatbot-message-content {
+            background: var(--accent-mario);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chatbot-message-assistant .chatbot-message-content {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chatbot-message-loading {
+            display: flex;
+            gap: 0.25rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .chatbot-message-loading span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: chatbot-bounce 1.4s infinite ease-in-out;
+        }
+
+        .chatbot-message-loading span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .chatbot-message-loading span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes chatbot-bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .task-chatbot-input-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .task-chatbot-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .task-chatbot-input:focus {
+            border-color: var(--accent-mario);
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+        }
+
+        .task-chatbot-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .task-chatbot-send {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            background: var(--accent-mario);
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .task-chatbot-send:hover:not(:disabled) {
+            background: #3a8eef;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+        }
+
+        .task-chatbot-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .view-task-primary-actions {
             display: flex;
             flex-direction: column;
@@ -3198,6 +3379,26 @@
             <div class="view-task-properties" id="viewTaskProperties">
                 <!-- Properties will be populated by JavaScript -->
             </div>
+            
+            <!-- Task Chatbot -->
+            <div class="task-chatbot-container" id="taskChatbotContainer">
+                <div class="task-chatbot-header" id="taskChatbotHeader">
+                    <span class="task-chatbot-title">💬 Ask about this task</span>
+                    <button class="task-chatbot-toggle" id="taskChatbotToggle">+</button>
+                </div>
+                <div class="task-chatbot-content" id="taskChatbotContent" style="display: none;">
+                    <div class="task-chatbot-messages" id="taskChatbotMessages">
+                        <div class="chatbot-message chatbot-message-assistant">
+                            <div class="chatbot-message-content">Hi! I can help answer questions about this task. What would you like to know?</div>
+                        </div>
+                    </div>
+                    <div class="task-chatbot-input-container">
+                        <input type="text" class="task-chatbot-input" id="taskChatbotInput" placeholder="Ask a question about this task..." />
+                        <button class="task-chatbot-send" id="taskChatbotSend">Send</button>
+                    </div>
+                </div>
+            </div>
+            
             <div class="view-task-actions">
                 <div class="view-task-primary-actions" id="viewTaskPrimaryActions">
                     <!-- Mark Complete buttons (shown when task is not completed) -->
@@ -3294,6 +3495,9 @@
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
         let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
         let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn, viewTaskSplitBtn;
+        let taskChatbotContainer, taskChatbotHeader, taskChatbotToggle, taskChatbotContent, taskChatbotMessages, taskChatbotInput, taskChatbotSend;
+        let currentTaskForChat = null;
+        let OPENAI_API_KEY = null;
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn, splitTaskBtn;
         let selectedTaskForOptions = null;
@@ -3387,6 +3591,15 @@
             viewTaskUndoBtn = document.getElementById('viewTaskUndoBtn');
             viewTaskDeleteBtn = document.getElementById('viewTaskDeleteBtn');
             viewTaskSplitBtn = document.getElementById('viewTaskSplitBtn');
+            
+            // Chatbot elements
+            taskChatbotContainer = document.getElementById('taskChatbotContainer');
+            taskChatbotHeader = document.getElementById('taskChatbotHeader');
+            taskChatbotToggle = document.getElementById('taskChatbotToggle');
+            taskChatbotContent = document.getElementById('taskChatbotContent');
+            taskChatbotMessages = document.getElementById('taskChatbotMessages');
+            taskChatbotInput = document.getElementById('taskChatbotInput');
+            taskChatbotSend = document.getElementById('taskChatbotSend');
 
             // Quadrant mapping
             quadrants = {
@@ -3901,6 +4114,34 @@
                     closeViewTaskModal();
                 }
             });
+
+            // Chatbot event listeners
+            if (taskChatbotHeader) {
+                taskChatbotHeader.addEventListener('click', () => {
+                    const isVisible = taskChatbotContent.style.display !== 'none';
+                    taskChatbotContent.style.display = isVisible ? 'none' : 'flex';
+                    taskChatbotToggle.textContent = isVisible ? '+' : '−';
+                    // Focus input when expanding
+                    if (!isVisible && taskChatbotInput) {
+                        setTimeout(() => taskChatbotInput.focus(), 100);
+                    }
+                });
+            }
+
+            if (taskChatbotSend) {
+                taskChatbotSend.addEventListener('click', () => {
+                    sendChatbotMessage();
+                });
+            }
+
+            if (taskChatbotInput) {
+                taskChatbotInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendChatbotMessage();
+                    }
+                });
+            }
 
             viewTaskDeleteBtn.addEventListener('click', () => {
                 if (selectedTaskForOptions) {
@@ -5086,8 +5327,211 @@
         // ===========================================
         // View Task Modal Functions
         // ===========================================
+        // ===========================================
+        // Chatbot Functions
+        // ===========================================
+        
+        // Load OpenAI API key from config.js
+        async function loadOpenAIKey() {
+            if (OPENAI_API_KEY) return OPENAI_API_KEY;
+            
+            try {
+                const response = await fetch('config.js');
+                const configText = await response.text();
+                const match = configText.match(/OPENAI_API_KEY\s*=\s*['"]([^'"]+)['"]/);
+                if (match && match[1]) {
+                    OPENAI_API_KEY = match[1];
+                    return OPENAI_API_KEY;
+                }
+            } catch (error) {
+                console.error('Error loading OpenAI API key:', error);
+            }
+            return null;
+        }
+
+        // Reset chatbot when viewing a new task
+        function resetChatbot() {
+            if (taskChatbotMessages) {
+                taskChatbotMessages.innerHTML = `
+                    <div class="chatbot-message chatbot-message-assistant">
+                        <div class="chatbot-message-content">Hi! I can help answer questions about this task. What would you like to know?</div>
+                    </div>
+                `;
+            }
+            if (taskChatbotInput) {
+                taskChatbotInput.value = '';
+            }
+            // Collapse chatbot by default
+            if (taskChatbotContent) {
+                taskChatbotContent.style.display = 'none';
+            }
+            if (taskChatbotToggle) {
+                taskChatbotToggle.textContent = '+';
+            }
+        }
+
+        // Send message to chatbot
+        async function sendChatbotMessage() {
+            if (!currentTaskForChat) return;
+            
+            const message = taskChatbotInput?.value.trim();
+            if (!message) return;
+
+            // Disable input while processing
+            if (taskChatbotInput) taskChatbotInput.disabled = true;
+            if (taskChatbotSend) taskChatbotSend.disabled = true;
+
+            // Add user message to chat
+            addChatbotMessage('user', message);
+            if (taskChatbotInput) taskChatbotInput.value = '';
+
+            // Show loading indicator
+            const loadingId = addChatbotMessage('loading', '');
+
+            try {
+                // Load API key if not already loaded
+                const apiKey = await loadOpenAIKey();
+                if (!apiKey) {
+                    throw new Error('OpenAI API key not found. Please check config.js');
+                }
+
+                // Build task context for the AI
+                const taskContext = buildTaskContext(currentTaskForChat);
+
+                // Call OpenAI API
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `You are a helpful assistant that answers questions about tasks. Here is the task information:\n\n${taskContext}\n\nAnswer questions about this task concisely and helpfully.`
+                            },
+                            {
+                                role: 'user',
+                                content: message
+                            }
+                        ],
+                        max_tokens: 300,
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const aiResponse = data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+
+                // Remove loading indicator and add AI response
+                removeChatbotMessage(loadingId);
+                addChatbotMessage('assistant', aiResponse);
+
+            } catch (error) {
+                console.error('Chatbot error:', error);
+                removeChatbotMessage(loadingId);
+                addChatbotMessage('assistant', `Sorry, I encountered an error: ${error.message}. Please check your OpenAI API key in config.js.`);
+            } finally {
+                // Re-enable input
+                if (taskChatbotInput) taskChatbotInput.disabled = false;
+                if (taskChatbotSend) taskChatbotSend.disabled = false;
+                if (taskChatbotInput) taskChatbotInput.focus();
+            }
+        }
+
+        // Build task context string for AI
+        function buildTaskContext(task) {
+            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario and Maria' };
+            const sizeLabels = { xs: '5-10 minutes', s: '10-30 minutes', m: '30 minutes to 1 hour', l: '1-2 hours', xl: '2+ hours' };
+            const urgencyLabels = { 1: 'Whenever', 2: 'This Week', 3: 'Today', 4: 'Morning', 5: 'ASAP' };
+            const importanceLabels = { 1: 'Optional', 2: 'Nice to Have', 3: 'Keeps us on track', 4: 'Matters a lot', 5: 'Critical' };
+            const quadrantLabels = {
+                'do-first': 'Do First',
+                'schedule': 'Delegate or do second',
+                'delegate': 'Schedule or do third',
+                'eliminate': 'Do last or Eliminate'
+            };
+
+            const quadrant = getQuadrant(task);
+            let context = `Task: ${task.name || 'Untitled Task'}\n`;
+            context += `Status: ${task.completed ? 'Completed' : 'Pending'}\n`;
+            context += `Assigned to: ${assigneeLabels[task.assignee] || task.assignee}\n`;
+            context += `Quadrant: ${quadrantLabels[quadrant] || quadrant}\n`;
+            context += `Size: ${sizeLabels[task.size] || task.size}\n`;
+            
+            if (task.urgency) {
+                context += `Urgency: ${urgencyLabels[task.urgency] || task.urgency}\n`;
+            }
+            if (task.importance) {
+                context += `Importance: ${importanceLabels[task.importance] || task.importance}\n`;
+            }
+            if (task.first_step) {
+                context += `First step: ${task.first_step}\n`;
+            }
+            if (task.completion_criteria) {
+                context += `Completion criteria: ${task.completion_criteria}\n`;
+            }
+            if (task.date) {
+                const date = new Date(task.date);
+                context += `Date: ${date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+            }
+            if (task.completed && task.completed_by) {
+                context += `Completed by: ${assigneeLabels[task.completed_by] || task.completed_by}\n`;
+            }
+
+            return context;
+        }
+
+        // Add message to chatbot
+        function addChatbotMessage(type, content) {
+            if (!taskChatbotMessages) return null;
+
+            const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            const messageDiv = document.createElement('div');
+            messageDiv.id = messageId;
+            messageDiv.className = `chatbot-message chatbot-message-${type}`;
+
+            if (type === 'loading') {
+                messageDiv.innerHTML = `
+                    <div class="chatbot-message-loading">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                `;
+            } else {
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'chatbot-message-content';
+                contentDiv.textContent = content;
+                messageDiv.appendChild(contentDiv);
+            }
+
+            taskChatbotMessages.appendChild(messageDiv);
+            taskChatbotMessages.scrollTop = taskChatbotMessages.scrollHeight;
+
+            return messageId;
+        }
+
+        // Remove message from chatbot
+        function removeChatbotMessage(messageId) {
+            if (!messageId) return;
+            const messageElement = document.getElementById(messageId);
+            if (messageElement) {
+                messageElement.remove();
+            }
+        }
+
         function showViewTaskModal(task) {
             selectedTaskForOptions = task;
+            currentTaskForChat = task;
+            resetChatbot();
             
             const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both' };
             const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
@@ -5262,6 +5706,14 @@
         function closeViewTaskModal() {
             viewTaskModal.classList.remove('show');
             selectedTaskForOptions = null;
+            currentTaskForChat = null;
+            // Collapse chatbot when closing modal
+            if (taskChatbotContent) {
+                taskChatbotContent.style.display = 'none';
+            }
+            if (taskChatbotToggle) {
+                taskChatbotToggle.textContent = '+';
+            }
         }
 
         async function undoTaskCompletion(task) {
