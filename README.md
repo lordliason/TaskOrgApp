@@ -42,6 +42,57 @@ Your app will be live at `https://your-project.vercel.app`
 3. **View matrix**: Tasks appear as colored dots positioned according to their priority
 4. **Real-time sync**: Changes sync instantly between devices!
 
+### AI-Powered Task Management
+
+The app now includes AI-powered task management features:
+
+#### Function Calling Tools
+
+The AI can now perform these actions for you:
+
+- **Create Tasks**: "Create a task to organize the garage assigned to Mario"
+- **Split Tasks**: "Split the 'Write report' task into research and writing parts"
+- **Update Tasks**: "Mark the kitchen cleanup task as completed"
+- **Query Tasks**: "Show me all urgent tasks assigned to Maria"
+
+#### Testing Function Calling
+
+Run the test script to verify AI function calling works:
+
+```bash
+node test-openai.js
+```
+
+This will test both basic connectivity and the new task management function calling features.
+
+#### API Integration
+
+To enable function calling in your chat API calls, add `enableFunctions: true` to your request:
+
+```javascript
+const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        message: "Create a task for grocery shopping",
+        taskContext: "Current tasks: ...",
+        enableFunctions: true  // Enable AI function calling
+    })
+});
+```
+
+When functions are called, the API returns:
+- `function_call`: The AI's function call request
+- `function_result`: The executed function result
+- `original_response`: The full OpenAI response
+
+#### Available Functions
+
+1. **createTask**: Creates new tasks with validation
+2. **splitTask**: Splits existing tasks into subtasks
+3. **updateTask**: Modifies existing task properties
+4. **getTasks**: Queries tasks with filters
+
 ## Customization
 
 ### Change the Password
