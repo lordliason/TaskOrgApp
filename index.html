@@ -3746,7 +3746,7 @@
         let taskChatbotContainer, taskChatbotHeader, taskChatbotToggle, taskChatbotContent, taskChatbotMessages, taskChatbotInput, taskChatbotSend;
         let currentTaskForChat = null;
         let globalAiBtn, globalAiModal, globalAiClose, globalAiMessages, globalAiInput, globalAiSend;
-        let OPENAI_API_KEY = null;
+        let cachedApiKey = null;
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn, splitTaskBtn;
         let selectedTaskForOptions = null;
@@ -3953,7 +3953,7 @@
         // Check if API key is available (called after config.js loads)
         function checkAPIKeyAvailable() {
             if (typeof window !== 'undefined' && window.OPENAI_API_KEY) {
-                OPENAI_API_KEY = window.OPENAI_API_KEY;
+                cachedApiKey = window.OPENAI_API_KEY;
                 console.log('API key available from config.js');
                 return true;
             }
@@ -5638,16 +5638,16 @@
         // Load OpenAI API key from config.js
         async function loadOpenAIKey() {
             // Check if already loaded in our local variable
-            if (OPENAI_API_KEY) {
+            if (cachedApiKey) {
                 console.log('Using cached API key');
-                return OPENAI_API_KEY;
+                return cachedApiKey;
             }
             
             // First, try to get from global scope (if config.js was loaded as script)
             if (typeof window !== 'undefined' && window.OPENAI_API_KEY) {
-                OPENAI_API_KEY = window.OPENAI_API_KEY;
+                cachedApiKey = window.OPENAI_API_KEY;
                 console.log('Loaded API key from window.OPENAI_API_KEY');
-                return OPENAI_API_KEY;
+                return cachedApiKey;
             }
             
             // Wait a bit for config.js to load if it hasn't yet (max 2 seconds)
@@ -5658,9 +5658,9 @@
             }
             
             if (typeof window !== 'undefined' && window.OPENAI_API_KEY) {
-                OPENAI_API_KEY = window.OPENAI_API_KEY;
+                cachedApiKey = window.OPENAI_API_KEY;
                 console.log('Loaded API key from window.OPENAI_API_KEY after wait');
-                return OPENAI_API_KEY;
+                return cachedApiKey;
             }
             
             // Fallback: try to fetch config.js and parse it
@@ -5674,13 +5674,13 @@
                 console.log('Fetched config.js, length:', configText.length);
                 const match = configText.match(/OPENAI_API_KEY\s*=\s*['"]([^'"]+)['"]/);
                 if (match && match[1]) {
-                    OPENAI_API_KEY = match[1];
+                    cachedApiKey = match[1];
                     // Also set it globally for future use
                     if (typeof window !== 'undefined') {
-                        window.OPENAI_API_KEY = OPENAI_API_KEY;
+                        window.OPENAI_API_KEY = cachedApiKey;
                     }
-                    console.log('Loaded API key from fetch, length:', OPENAI_API_KEY.length);
-                    return OPENAI_API_KEY;
+                    console.log('Loaded API key from fetch, length:', cachedApiKey.length);
+                    return cachedApiKey;
                 } else {
                     console.error('Could not find OPENAI_API_KEY in config.js. Config text:', configText.substring(0, 200));
                     throw new Error('Could not find OPENAI_API_KEY in config.js');
