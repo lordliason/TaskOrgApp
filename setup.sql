@@ -14,6 +14,9 @@ CREATE TABLE tasks (
     icon TEXT DEFAULT NULL,
     first_step TEXT DEFAULT NULL,
     completion_criteria TEXT DEFAULT NULL,
+    deadline DATE DEFAULT NULL,
+    depends_on UUID[] DEFAULT NULL,
+    parent_task_id UUID DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -55,6 +58,11 @@ ALTER TABLE tasks ALTER COLUMN important SET DEFAULT 3;
 -- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS first_step TEXT DEFAULT NULL;
 -- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completion_criteria TEXT DEFAULT NULL;
 
+-- ADD DEADLINE AND DEPENDENCY COLUMNS (for intelligent task decomposition)
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deadline DATE DEFAULT NULL;
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS depends_on UUID[] DEFAULT NULL;
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS parent_task_id UUID DEFAULT NULL;
+
 -- CREATE SCORES TABLE (run this to add scoring system)
 CREATE TABLE IF NOT EXISTS scores (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -93,9 +101,15 @@ CREATE POLICY "Allow all operations" ON tasks
     USING (true)
     WITH CHECK (true);
 
+-- Add foreign key constraint for parent task relationship
+ALTER TABLE tasks ADD CONSTRAINT fk_parent_task FOREIGN KEY (parent_task_id) REFERENCES tasks(id) ON DELETE CASCADE;
+
 -- Enable realtime for the tasks table
 ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
 
 -- Create index for faster queries
 CREATE INDEX idx_tasks_created_at ON tasks(created_at DESC);
+CREATE INDEX idx_tasks_parent_task_id ON tasks(parent_task_id);
+CREATE INDEX idx_tasks_deadline ON tasks(deadline);
+CREATE INDEX idx_tasks_depends_on ON tasks USING GIN(depends_on);
 

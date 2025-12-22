@@ -5928,6 +5928,136 @@
                             success: true
                         };
 
+                    case 'decomposeTask':
+                        // Handle task decomposition - create parent task and subtasks
+                        const decomposition = functionResult.decomposition || functionResult;
+                        const review = functionResult.review || {};
+                        
+                        // If needs refinement, return questions to ask user
+                        if (functionResult.needsRefinement && review.questions && review.questions.length > 0) {
+                            const questionsText = review.questions.map((q, i) => `${i + 1}. ${q}`).join('\n');
+                            return {
+                                message: `📋 I've created an initial breakdown, but I have some questions to make it better:\n\n${questionsText}\n\nLet me know so I can refine this plan!`,
+                                success: true,
+                                needsRefinement: true,
+                                decomposition: decomposition,
+                                review: review
+                            };
+                        }
+                        
+                        // Otherwise, create tasks in database
+                        try {
+                            // Create parent task
+                            const { data: parentData, error: parentError } = await supabaseClient
+                                .from('tasks')
+                                .insert([decomposition.parentTask])
+                                .select();
+                            
+                            if (parentError) throw parentError;
+                            
+                            // Update subtasks with parent_task_id
+                            const subtasksWithParent = decomposition.subtasks.map(st => ({
+                                ...st,
+                                parent_task_id: parentData[0].id
+                            }));
+                            
+                            // Create subtasks
+                            const { data: subtasksData, error: subtasksError } = await supabaseClient
+                                .from('tasks')
+                                .insert(subtasksWithParent)
+                                .select();
+                            
+                            if (subtasksError) throw subtasksError;
+                            
+                            // Build summary message
+                            const matrixSummary = decomposition.matrix_positions
+                                ? decomposition.matrix_positions.map(mp => 
+                                    `  • ${mp.position.toUpperCase()}: ${decomposition.subtasks.find(st => st.id === mp.taskId)?.name || 'Task'}`
+                                  ).join('\n')
+                                : '';
+                            
+                            const integrationsText = decomposition.integrations && decomposition.integrations.length > 0
+                                ? `\n\n📅 Suggested Integrations:\n${decomposition.integrations.map(i => `  • ${i.type}: ${i.details}`).join('\n')}`
+                                : '';
+                            
+                            return {
+                                message: `✅ Decomposed "${decomposition.parentTask.name}" into ${decomposition.subtasks.length} subtasks!\n\n📊 Summary:\n  • Total tasks: ${decomposition.subtasks.length + 1}\n  • Mario: ${decomposition.subtasks.filter(st => st.assignee === 'mario').length}\n  • Maria: ${decomposition.subtasks.filter(st => st.assignee === 'maria').length}\n  • Both: ${decomposition.subtasks.filter(st => st.assignee === 'both').length}${matrixSummary ? `\n\n🎯 Matrix Positions:\n${matrixSummary}` : ''}${integrationsText}`,
+                                success: true,
+                                parentTask: parentData[0],
+                                subtasks: subtasksData
+                            };
+                        } catch (error) {
+                            console.error('Error creating decomposed tasks:', error);
+                            throw error;
+                        }
+
+                    case 'refineDecomposition':
+                        // Handle refinement - similar to decomposeTask but with updated data
+                        const refinedDecomposition = functionResult.decomposition || functionResult;
+                        const refinedReview = functionResult.review || {};
+                        
+                        // If still needs refinement, ask more questions
+                        if (functionResult.needsRefinement && refinedReview.questions && refinedReview.questions.length > 0) {
+                            const questionsText = refinedReview.questions.map((q, i) => `${i + 1}. ${q}`).join('\n');
+                            return {
+                                message: `📋 I've refined the plan, but I still have a few questions:\n\n${questionsText}\n\nLet me know so I can finalize this!`,
+                                success: true,
+                                needsRefinement: true,
+                                decomposition: refinedDecomposition,
+                                review: refinedReview
+                            };
+                        }
+                        
+                        // Otherwise, update existing tasks or create new ones
+                        // For now, return success message - in production you'd update the database
+                        return {
+                            message: `✅ Plan refined successfully! Ready to finalize.`,
+                            success: true,
+                            decomposition: refinedDecomposition
+                        };
+
+                    case 'finalizeDecomposition':
+                        // Finalize and create all tasks in database
+                        const finalDecomposition = functionResult.decomposition || functionResult;
+                        
+                        try {
+                            // Create parent task
+                            const { data: finalParentData, error: finalParentError } = await supabaseClient
+                                .from('tasks')
+                                .insert([finalDecomposition.parentTask])
+                                .select();
+                            
+                            if (finalParentError) throw finalParentError;
+                            
+                            // Update subtasks with parent_task_id
+                            const finalSubtasksWithParent = finalDecomposition.subtasks.map(st => ({
+                                ...st,
+                                parent_task_id: finalParentData[0].id
+                            }));
+                            
+                            // Create subtasks
+                            const { data: finalSubtasksData, error: finalSubtasksError } = await supabaseClient
+                                .from('tasks')
+                                .insert(finalSubtasksWithParent)
+                                .select();
+                            
+                            if (finalSubtasksError) throw finalSubtasksError;
+                            
+                            const nextStepsText = functionResult.next_steps
+                                ? `\n\n📝 Next Steps:\n${functionResult.next_steps.map((step, i) => `  ${i + 1}. ${step}`).join('\n')}`
+                                : '';
+                            
+                            return {
+                                message: `✅ ${functionResult.message || 'Task decomposition finalized!'}\n\n📊 Final Summary:\n  • Total tasks: ${functionResult.summary?.totalTasks || finalDecomposition.subtasks.length + 1}\n  • Mario: ${functionResult.summary?.marioTasks || finalDecomposition.subtasks.filter(st => st.assignee === 'mario').length}\n  • Maria: ${functionResult.summary?.mariaTasks || finalDecomposition.subtasks.filter(st => st.assignee === 'maria').length}\n  • Deadlines set: ${functionResult.summary?.deadlines || finalDecomposition.subtasks.filter(st => st.deadline).length}\n  • Dependencies: ${functionResult.summary?.dependencies || finalDecomposition.subtasks.filter(st => st.depends_on && st.depends_on.length > 0).length}${nextStepsText}`,
+                                success: true,
+                                parentTask: finalParentData[0],
+                                subtasks: finalSubtasksData
+                            };
+                        } catch (error) {
+                            console.error('Error finalizing decomposition:', error);
+                            throw error;
+                        }
+
                     default:
                         throw new Error(`Unknown function: ${functionCall.name}`);
                 }
@@ -6242,7 +6372,23 @@
                             messages: [
                                 {
                                     role: 'system',
-                                    content: `You are a helpful task management assistant for TaskOrgApp. ${taskContext}\n\nYou can help users create, split, update, and query tasks.`
+                                    content: `You are an intelligent task decomposition agent for TaskOrgApp. You help break down large tasks into manageable subtasks with proper assignees, deadlines, and dependencies.
+
+CORE BEHAVIOR:
+- When users ask to decompose/decompose/break down large tasks, immediately call decomposeTask()
+- Be collaborative: ask clarifying questions instead of assuming details
+- Be iterative: refine plans based on user answers until confident
+- Consider couple-friendly workload balance between Mario and Maria
+- Suggest calendar/shopping integrations when relevant
+- Use Eisenhower matrix for prioritization (urgent+important=DO, etc.)
+
+DECOMPOSITION PROCESS:
+1. Generate initial draft with decomposeTask()
+2. Self-review and ask 2-4 clarifying questions if needed
+3. Refine with refineDecomposition() based on answers
+4. Repeat until confident, then finalizeDecomposition()
+
+${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                                 },
                                 {
                                     role: 'user',
@@ -6309,6 +6455,57 @@
                                         properties: {
                                             filters: { type: 'object', description: 'Filters to apply to the query' }
                                         }
+                                    }
+                                },
+                                {
+                                    name: 'decomposeTask',
+                                    description: 'Intelligently decompose a large task into smaller subtasks with assignees, deadlines, and dependencies. Use this when users ask to decompose, break down, or split a large task into subtasks. This is different from getTasks - use decomposeTask to CREATE new subtasks from a task description, not to query existing tasks.',
+                                    parameters: {
+                                        type: 'object',
+                                        properties: {
+                                            name: { type: 'string', description: 'The name/title of the large task to decompose' },
+                                            assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Initial assignee preference' },
+                                            deadline: { type: 'string', description: 'Overall deadline (YYYY-MM-DD format)' },
+                                            urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
+                                            important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
+                                            firstStep: { type: 'string', description: 'Suggested first step' },
+                                            completionCriteria: { type: 'string', description: 'Completion criteria' },
+                                            icon: { type: 'string', description: 'Emoji icon for the task' }
+                                        },
+                                        required: ['name']
+                                    }
+                                },
+                                {
+                                    name: 'refineDecomposition',
+                                    description: 'Refine a task decomposition based on user answers to clarifying questions',
+                                    parameters: {
+                                        type: 'object',
+                                        properties: {
+                                            originalDecomposition: { type: 'object', description: 'The original decomposition object' },
+                                            userAnswers: {
+                                                type: 'array',
+                                                items: {
+                                                    type: 'object',
+                                                    properties: {
+                                                        question: { type: 'string', description: 'The question that was asked' },
+                                                        response: { type: 'string', description: 'The user\'s answer' }
+                                                    }
+                                                },
+                                                description: 'Array of question-answer pairs'
+                                            }
+                                        },
+                                        required: ['originalDecomposition', 'userAnswers']
+                                    }
+                                },
+                                {
+                                    name: 'finalizeDecomposition',
+                                    description: 'Finalize a task decomposition and prepare it for database insertion',
+                                    parameters: {
+                                        type: 'object',
+                                        properties: {
+                                            decomposition: { type: 'object', description: 'The refined decomposition to finalize' }
+                                        },
+                                        required: ['decomposition']
                                     }
                                 }
                             ],
@@ -6410,13 +6607,42 @@
                                 count: 0
                             };
                             mockFunctionResult.count = mockFunctionResult.tasks.length;
+                        } else if (functionCall.name === 'decomposeTask' || functionCall.name === 'refineDecomposition' || functionCall.name === 'finalizeDecomposition') {
+                            // For decomposition functions, call the serverless API
+                            try {
+                                const decomposeResponse = await fetch('/api/chat', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        taskContext: taskContext,
+                                        message: `Execute ${functionCall.name} with arguments: ${JSON.stringify(args)}`,
+                                        enableFunctions: true
+                                    })
+                                });
+                                
+                                if (decomposeResponse.ok) {
+                                    const decomposeData = await decomposeResponse.json();
+                                    if (decomposeData.function_call && decomposeData.function_result) {
+                                        mockFunctionResult = decomposeData.function_result;
+                                    } else {
+                                        throw new Error('Decomposition API did not return expected format');
+                                    }
+                                } else {
+                                    throw new Error(`Decomposition API error: ${decomposeResponse.status}`);
+                                }
+                            } catch (apiError) {
+                                console.error('Error calling decomposition API:', apiError);
+                                throw new Error(`Failed to decompose task: ${apiError.message}`);
+                            }
                         }
                         
                         // Execute the function
                         const functionResult = await handleFunctionCall({ name: functionCall.name }, mockFunctionResult);
                         
-                        // Reload tasks if a task was created/updated/split
-                        if (['createTask', 'splitTask', 'updateTask'].includes(functionCall.name)) {
+                        // Reload tasks if a task was created/updated/split/decomposed
+                        if (['createTask', 'splitTask', 'updateTask', 'decomposeTask', 'finalizeDecomposition'].includes(functionCall.name)) {
                             await loadTasks();
                         }
                         
