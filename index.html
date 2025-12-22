@@ -5753,7 +5753,16 @@
                     if (serverlessResponse.ok) {
                         data = await serverlessResponse.json();
                     } else {
-                        const errorData = await serverlessResponse.json();
+                        // Try to parse as JSON, but handle HTML error pages
+                        let errorData;
+                        const contentType = serverlessResponse.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            errorData = await serverlessResponse.json();
+                        } else {
+                            const text = await serverlessResponse.text();
+                            console.error('Non-JSON error response:', text.substring(0, 200));
+                            throw new Error(`Server error (${serverlessResponse.status}): ${serverlessResponse.statusText}`);
+                        }
                         // If serverless API fails, fall back to direct API call
                         console.log('Serverless API not available, falling back to direct API call');
                         throw new Error(errorData.error || 'Serverless API error');
@@ -5764,7 +5773,9 @@
                     
                     if (!isLocalhost) {
                         // On production (Vercel), don't try fallback - show the actual error
-                        throw new Error('Server API error: ' + serverlessError.message);
+                        const errorMsg = serverlessError.message || serverlessError.toString();
+                        console.error('Serverless API error:', errorMsg);
+                        throw new Error('Server API error: ' + errorMsg);
                     }
                     
                     // Fall back to direct OpenAI API call (for local development with config.js)
@@ -6177,7 +6188,16 @@
                     if (serverlessResponse.ok) {
                         data = await serverlessResponse.json();
                     } else {
-                        const errorData = await serverlessResponse.json();
+                        // Try to parse as JSON, but handle HTML error pages
+                        let errorData;
+                        const contentType = serverlessResponse.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            errorData = await serverlessResponse.json();
+                        } else {
+                            const text = await serverlessResponse.text();
+                            console.error('Non-JSON error response:', text.substring(0, 200));
+                            throw new Error(`Server error (${serverlessResponse.status}): ${serverlessResponse.statusText}`);
+                        }
                         console.log('Serverless API not available, falling back to direct API call');
                         throw new Error(errorData.error || 'Serverless API error');
                     }
@@ -6187,7 +6207,9 @@
                     
                     if (!isLocalhost) {
                         // On production (Vercel), don't try fallback - show the actual error
-                        throw new Error('Server API error: ' + serverlessError.message);
+                        const errorMsg = serverlessError.message || serverlessError.toString();
+                        console.error('Serverless API error:', errorMsg);
+                        throw new Error('Server API error: ' + errorMsg);
                     }
                     
                     // Fall back to direct OpenAI API call (for local development with config.js)
