@@ -20,7 +20,26 @@ You should see "Success. No rows returned" - this means the table was created!
 2. Find the `tasks` table
 3. Make sure the toggle is **ON** for realtime
 
-### Step 3: Deploy to Vercel
+### Step 3: Set Up OpenAI API Key (Required for AI Chat Features)
+
+**For Vercel Deployment:**
+
+1. Get your OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+2. In Vercel dashboard, go to your project → **Settings** → **Environment Variables**
+3. Add a new variable:
+   - **Name**: `OPENAI_API_KEY`
+   - **Value**: Your OpenAI API key (starts with `sk-`)
+   - **Environment**: `Production`, `Preview`, `Development`
+
+**For Local Development:**
+
+1. Edit `config.js` and temporarily add your API key (remove before committing):
+   ```javascript
+   const OPENAI_API_KEY = 'your-api-key-here';
+   ```
+2. **⚠️ SECURITY WARNING**: Never commit API keys to version control!
+
+### Step 4: Deploy to Vercel
 
 **Option A: One-Click Deploy (Easiest)**
 
@@ -31,7 +50,8 @@ You should see "Success. No rows returned" - this means the table was created!
 1. Go to [vercel.com](https://vercel.com) and sign up/login
 2. Click **Add New Project**
 3. Import your GitHub repo (or drag & drop the folder)
-4. Click **Deploy**
+4. **Important**: Add the `OPENAI_API_KEY` environment variable in Vercel before deploying
+5. Click **Deploy**
 
 Your app will be live at `https://your-project.vercel.app`
 
@@ -121,6 +141,11 @@ The app uses a 1-5 scale for Urgency and Importance, positioning tasks continuou
 
 ## Troubleshooting
 
+**Chatbot keeps loading forever after clicking Enter?**
+- **Most common cause**: Missing OpenAI API key in Vercel environment variables
+- **Solution**: Add `OPENAI_API_KEY` environment variable in Vercel dashboard (see Step 3 above)
+- **Alternative**: For local testing, temporarily add your API key to `config.js` (remove before committing)
+
 **Tasks not syncing?**
 - Check that Realtime is enabled for the `tasks` table in Supabase
 - Refresh the page and check the connection status indicator
@@ -128,6 +153,12 @@ The app uses a 1-5 scale for Urgency and Importance, positioning tasks continuou
 **Can't add tasks?**
 - Make sure you ran the `setup.sql` script in Supabase
 - Check browser console for errors (F12 → Console)
+
+**API key errors in chat?**
+- OpenAI API key not configured properly
+- Check that the key is valid and has credits remaining
+- For production: Ensure `OPENAI_API_KEY` is set in Vercel environment variables
+- For local development: Check that `config.js` contains a valid key (never commit this!)
 
 **Forgot password?**
 - Clear your browser's localStorage, or

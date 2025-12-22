@@ -3920,7 +3920,8 @@
                 const savedPassword = localStorage.getItem('taskMatrixAuth');
                 if (savedPassword === FAMILY_PASSWORD) {
                     passwordGate.classList.add('hidden');
-                    // App is already initialized, just hide the password gate
+                    // Initialize the app after password authentication
+                    init();
                 }
             }
 
@@ -3939,7 +3940,8 @@
                     if (passwordError) {
                         passwordError.classList.remove('show');
                     }
-                    // App is already initialized, just hide the password gate
+                    // Initialize the app after password authentication
+                    init();
                 } else {
                     console.log('Password incorrect');
                     if (passwordError) {
@@ -5819,18 +5821,10 @@
                         throw new Error(errorMsg);
                     }
                 } catch (serverlessError) {
-                    // Only fall back to direct API on localhost (config.js exists locally but not on Vercel)
-                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                    
-                    if (!isLocalhost) {
-                        // On production (Vercel), don't try fallback - show the actual error
-                        const errorMsg = serverlessError.message || serverlessError.toString();
-                        console.error('Serverless API error:', errorMsg);
-                        throw new Error(errorMsg);
-                    }
-                    
-                    // Fall back to direct OpenAI API call (for local development with config.js)
-                    console.log('Falling back to direct OpenAI API call:', serverlessError.message);
+                    console.error('Serverless API failed, attempting fallback:', serverlessError.message);
+
+                    // Try to load API key for fallback - works in both localhost and production
+                    // if someone has set up a local API key (though this is not recommended for security)
                     
                     const apiKey = await loadOpenAIKey();
                     if (!apiKey || apiKey === null || apiKey === 'null' || apiKey === 'undefined') {
@@ -6471,18 +6465,10 @@
                         throw new Error(errorMsg);
                     }
                 } catch (serverlessError) {
-                    // Only fall back to direct API on localhost (config.js exists locally but not on Vercel)
-                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                    
-                    if (!isLocalhost) {
-                        // On production (Vercel), don't try fallback - show the actual error
-                        const errorMsg = serverlessError.message || serverlessError.toString();
-                        console.error('Serverless API error:', errorMsg);
-                        throw new Error(errorMsg);
-                    }
-                    
-                    // Fall back to direct OpenAI API call (for local development with config.js)
-                    console.log('Falling back to direct OpenAI API call:', serverlessError.message);
+                    console.error('Serverless API failed, attempting fallback:', serverlessError.message);
+
+                    // Try to load API key for fallback - works in both localhost and production
+                    // if someone has set up a local API key (though this is not recommended for security)
                     
                     const apiKey = await loadOpenAIKey();
                     if (!apiKey || apiKey === 'null' || apiKey === 'undefined') {
@@ -6779,7 +6765,22 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                                         throw new Error('Decomposition API did not return expected format');
                                     }
                                 } else {
-                                    throw new Error(`Decomposition API error: ${decomposeResponse.status}`);
+                                    // Provide more helpful error messages based on status code
+                                    let errorMessage = `Decomposition API error: ${decomposeResponse.status}`;
+                                    if (decomposeResponse.status === 501) {
+                                        errorMessage = 'Decomposition API is not available. The serverless function may not be deployed or configured correctly. Please check your Vercel deployment and ensure the /api/chat endpoint is properly set up.';
+                                    } else if (decomposeResponse.status === 500) {
+                                        errorMessage = 'Decomposition API server error. The OpenAI API key may not be configured in Vercel environment variables.';
+                                    } else if (decomposeResponse.status === 404) {
+                                        errorMessage = 'Decomposition API endpoint not found. Please ensure the /api/chat route is deployed.';
+                                    }
+                                    const errorText = await decomposeResponse.text();
+                                    console.error('Decomposition API error details:', {
+                                        status: decomposeResponse.status,
+                                        statusText: decomposeResponse.statusText,
+                                        body: errorText
+                                    });
+                                    throw new Error(errorMessage);
                                 }
                             } catch (apiError) {
                                 console.error('Error calling decomposition API:', apiError);
