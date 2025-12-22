@@ -6352,6 +6352,9 @@
             }
         }
 
+        // Track conversation history for context
+        let conversationHistory = [];
+
         async function sendGlobalAiMessage() {
             const message = globalAiInput?.value.trim();
             if (!message) return;
@@ -6362,6 +6365,10 @@
 
             // Add user message to chat
             addGlobalAiMessage('user', message);
+            
+            // Add user message to conversation history
+            conversationHistory.push({ role: 'user', content: message });
+            
             if (globalAiInput) globalAiInput.value = '';
 
             // Show loading indicator
@@ -6385,7 +6392,8 @@
                         body: JSON.stringify({
                             taskContext: taskContext,
                             message: message,
-                            enableFunctions: true  // Enable AI function calling for task management
+                            enableFunctions: true,  // Enable AI function calling for task management
+                            conversationHistory: conversationHistory.slice(-6) // Last 6 messages for context
                         })
                     });
                     
@@ -6454,18 +6462,27 @@ CORE BEHAVIOR:
 DECOMPOSITION PROCESS:
 1. Generate initial draft with decomposeTask()
 2. Self-review and ask 2-4 clarifying questions if needed
-3. When user answers questions, IMMEDIATELY call refineDecomposition() with their answers
-4. After refining, if still needs work, ask MAX 2 more questions
-5. After 2 refinement rounds, call finalizeDecomposition() even if not perfect
-6. NEVER ask more than 6 total questions - finalize after 2 rounds of refinement
+3. CRITICAL: When user responds after you asked questions, they are ANSWERING your questions
+4. IMMEDIATELY call refineDecomposition() with question-answer pairs extracted from their response
+5. After refining, if still needs work, ask MAX 2 more questions
+6. After 2 refinement rounds, call finalizeDecomposition() even if not perfect
+7. NEVER ask more than 6 total questions - finalize after 2 rounds of refinement
 
-IMPORTANT:
-- If you just asked questions and user responds (yes/no/short answer), they are answering your questions
-- Extract the question-answer pairs and call refineDecomposition() immediately
+DETECTING USER ANSWERS:
+- If your last message asked questions AND user sends a new message, they are answering
+- Extract answers: match user response to your questions (even if partial/yes/no)
+- Example: You asked "What's the deadline?" User says "next week" → answer: {question: "What's the deadline?", response: "next week"}
+- Example: You asked 2 questions, user says "yes" → answer both with "yes" or infer from context
+- ALWAYS call refineDecomposition() when you detect an answer, NEVER ask new questions first
+
+IMPORTANT RULES:
+- If user responds after questions → call refineDecomposition() immediately
 - Do NOT ask new questions without refining first
-- After refineDecomposition(), if confidence is high OR you've asked 2 rounds of questions, call finalizeDecomposition()
+- After refineDecomposition(), if confidence is high/medium OR refinementCount >= 2, call finalizeDecomposition()
+- Track refinementCount: start at 0, increment each refineDecomposition() call
 
-${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
+${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}
+${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n')}` : ''}`
                                 },
                                 {
                                     role: 'user',
@@ -6554,7 +6571,7 @@ ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                                 },
                                 {
                                     name: 'refineDecomposition',
-                                    description: 'Refine a task decomposition based on user answers to clarifying questions',
+                                    description: 'Refine a task decomposition based on user answers to clarifying questions. Call this IMMEDIATELY when user responds after you asked questions. Extract question-answer pairs from the conversation: match the user\'s response to your previous questions. Even if user gives short answers (yes/no/one word), create pairs for each question you asked.',
                                     parameters: {
                                         type: 'object',
                                         properties: {
@@ -6607,11 +6624,15 @@ ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
 
                     // Add a brief message about the function execution
                     removeGlobalAiMessage(loadingId);
-                    addGlobalAiMessage('assistant', functionResult.message);
+                    const assistantMessage = functionResult.message;
+                    addGlobalAiMessage('assistant', assistantMessage);
+                    conversationHistory.push({ role: 'assistant', content: assistantMessage });
 
                     // Continue with follow-up if there's more content
                     if (data.choices && data.choices[0]?.message?.content) {
-                        addGlobalAiMessage('assistant', data.choices[0].message.content);
+                        const followUpMessage = data.choices[0].message.content;
+                        addGlobalAiMessage('assistant', followUpMessage);
+                        conversationHistory.push({ role: 'assistant', content: followUpMessage });
                     }
                 } else if (data.choices && data.choices[0]?.message?.function_call) {
                     // Handle function call from OpenAI response
@@ -6724,10 +6745,14 @@ ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                         }
                         
                         removeGlobalAiMessage(loadingId);
-                        addGlobalAiMessage('assistant', functionResult.message || 'Task operation completed successfully.');
+                        const resultMessage = functionResult.message || 'Task operation completed successfully.';
+                        addGlobalAiMessage('assistant', resultMessage);
+                        conversationHistory.push({ role: 'assistant', content: resultMessage });
                     } catch (error) {
                         removeGlobalAiMessage(loadingId);
-                        addGlobalAiMessage('assistant', `Error: ${error.message}`);
+                        const errorMessage = `Error: ${error.message}`;
+                        addGlobalAiMessage('assistant', errorMessage);
+                        conversationHistory.push({ role: 'assistant', content: errorMessage });
                     }
                 } else {
                     // Normal response without function calls
@@ -6736,13 +6761,16 @@ ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                     // Remove loading indicator and add AI response
                     removeGlobalAiMessage(loadingId);
                     addGlobalAiMessage('assistant', aiResponse);
+                    conversationHistory.push({ role: 'assistant', content: aiResponse });
                 }
 
             } catch (error) {
                 console.error('Global AI error:', error);
                 removeGlobalAiMessage(loadingId);
                 const errorMsg = error.message || 'Unknown error occurred';
-                addGlobalAiMessage('assistant', `Sorry, I encountered an error: ${errorMsg}`);
+                const errorMessage = `Sorry, I encountered an error: ${errorMsg}`;
+                addGlobalAiMessage('assistant', errorMessage);
+                conversationHistory.push({ role: 'assistant', content: errorMessage });
             } finally {
                 // Re-enable input
                 if (globalAiInput) globalAiInput.disabled = false;

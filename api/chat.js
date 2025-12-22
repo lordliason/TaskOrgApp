@@ -585,7 +585,7 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Request body is required' });
         }
 
-        const { taskContext, message, enableFunctions = false } = body;
+        const { taskContext, message, enableFunctions = false, conversationHistory = [], pendingDecomposition = null } = body;
 
         console.log('Received request:', { 
             hasMessage: !!message, 
@@ -616,18 +616,27 @@ CORE BEHAVIOR:
 DECOMPOSITION PROCESS:
 1. Generate initial draft with decomposeTask()
 2. Self-review and ask 2-4 clarifying questions if needed
-3. When user answers questions, IMMEDIATELY call refineDecomposition() with their answers
-4. After refining, if still needs work, ask MAX 2 more questions
-5. After 2 refinement rounds, call finalizeDecomposition() even if not perfect
-6. NEVER ask more than 6 total questions - finalize after 2 rounds of refinement
+3. CRITICAL: When user responds after you asked questions, they are ANSWERING your questions
+4. IMMEDIATELY call refineDecomposition() with question-answer pairs extracted from their response
+5. After refining, if still needs work, ask MAX 2 more questions
+6. After 2 refinement rounds, call finalizeDecomposition() even if not perfect
+7. NEVER ask more than 6 total questions - finalize after 2 rounds of refinement
 
-IMPORTANT:
-- If you just asked questions and user responds (yes/no/short answer), they are answering your questions
-- Extract the question-answer pairs and call refineDecomposition() immediately
+DETECTING USER ANSWERS:
+- If your last message asked questions AND user sends a new message, they are answering
+- Extract answers: match user response to your questions (even if partial/yes/no)
+- Example: You asked "What's the deadline?" User says "next week" → answer: {question: "What's the deadline?", response: "next week"}
+- Example: You asked 2 questions, user says "yes" → answer both with "yes" or infer from context
+- ALWAYS call refineDecomposition() when you detect an answer, NEVER ask new questions first
+
+IMPORTANT RULES:
+- If user responds after questions → call refineDecomposition() immediately
 - Do NOT ask new questions without refining first
-- After refineDecomposition(), if confidence is high OR you've asked 2 rounds of questions, call finalizeDecomposition()
+- After refineDecomposition(), if confidence is high/medium OR refinementCount >= 2, call finalizeDecomposition()
+- Track refinementCount: start at 0, increment each refineDecomposition() call
 
-${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
+${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}
+${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n')}` : ''}`
                 },
                 {
                     role: 'user',
@@ -726,7 +735,7 @@ ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                 },
                 {
                     name: 'refineDecomposition',
-                    description: 'Refine a task decomposition based on user answers to clarifying questions. Call this IMMEDIATELY when user answers your questions. After refining, if confidence is high/medium OR you\'ve refined 2+ times, call finalizeDecomposition() instead of asking more questions.',
+                    description: 'Refine a task decomposition based on user answers to clarifying questions. Call this IMMEDIATELY when user responds after you asked questions. Extract question-answer pairs from the conversation: match the user\'s response to your previous questions. Even if user gives short answers (yes/no/one word), create pairs for each question you asked. After refining, if confidence is high/medium OR refinementCount >= 2, call finalizeDecomposition() instead of asking more questions.',
                     parameters: {
                         type: 'object',
                         properties: {
