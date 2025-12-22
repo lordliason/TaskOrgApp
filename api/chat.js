@@ -258,71 +258,91 @@ function suggestIntegrations(taskName, subtasks) {
     return integrations;
 }
 
-function reviewDecomposition(decomposition) {
+function reviewDecomposition(decomposition, isRefinement = false) {
     const { parentTask, subtasks } = decomposition;
     const issues = [];
     const questions = [];
 
-    // Check completeness
-    if (!parentTask.deadline) {
-        issues.push('Missing deadline for parent task');
-        questions.push('What\'s the overall deadline for this task?');
+    // After refinement, be more lenient - only flag critical issues
+    const strictMode = !isRefinement;
+
+    // Check completeness - only require deadline if task is urgent/important
+    if (!parentTask.deadline && (parentTask.urgent >= 4 || parentTask.important >= 4)) {
+        if (strictMode) {
+            issues.push('Missing deadline for urgent/important task');
+            questions.push('What\'s the overall deadline for this task?');
+        }
     }
 
-    if (!parentTask.first_step) {
-        issues.push('Missing first step');
+    // First step is nice to have but not critical - only ask if task is complex
+    if (!parentTask.first_step && parentTask.size === 'xl' && strictMode) {
+        // Only ask for first step on very large tasks
+        issues.push('Missing first step for complex task');
         questions.push('What would be a good first step to get started?');
     }
 
-    // Check budget considerations
+    // Check budget considerations - only for purchase-related tasks
     if (parentTask.name.toLowerCase().includes('buy') ||
         parentTask.name.toLowerCase().includes('purchase') ||
         parentTask.name.toLowerCase().includes('cost') ||
         parentTask.name.toLowerCase().includes('budget')) {
         if (!parentTask.completion_criteria || !parentTask.completion_criteria.includes('budget')) {
-            issues.push('Budget not considered');
-            questions.push('What\'s your budget for this task?');
+            if (strictMode) {
+                issues.push('Budget not considered');
+                questions.push('What\'s your budget for this task?');
+            }
         }
     }
 
-    // Check workload balance
+    // Check workload balance - only flag if very unbalanced (3+ task difference)
     const marioTasks = subtasks.filter(t => t.assignee === 'mario').length;
     const mariaTasks = subtasks.filter(t => t.assignee === 'maria').length;
+    const bothTasks = subtasks.filter(t => t.assignee === 'both').length;
 
-    if (Math.abs(marioTasks - mariaTasks) > 1) {
-        issues.push('Unbalanced workload');
-        questions.push('Would you prefer to balance the workload differently between Mario and Maria?');
+    if (Math.abs(marioTasks - mariaTasks) > 2 && subtasks.length > 3) {
+        // Only ask if very unbalanced and we have enough tasks
+        if (strictMode) {
+            issues.push('Unbalanced workload');
+            questions.push('Would you prefer to balance the workload differently between Mario and Maria?');
+        }
     }
 
-    // Check realistic deadlines
+    // Check realistic deadlines - only flag if really unrealistic (urgent task due tomorrow)
     const today = new Date();
     const urgentTasks = subtasks.filter(t => {
         if (!t.deadline) return false;
         const deadline = new Date(t.deadline);
         const daysUntil = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-        return daysUntil < 3 && t.urgent >= 4;
+        return daysUntil < 2 && t.urgent >= 4; // Only flag if due in less than 2 days
     });
 
-    if (urgentTasks.length > 0) {
+    if (urgentTasks.length > 0 && strictMode) {
         issues.push('Potentially unrealistic urgent deadlines');
         questions.push('Are these urgent deadlines realistic given the task complexity?');
     }
 
-    // Check dependencies logic
+    // Check dependencies logic - only flag circular deps
     const hasCircularDeps = checkCircularDependencies(subtasks);
     if (hasCircularDeps) {
         issues.push('Circular dependencies detected');
         questions.push('Can you clarify the dependency relationships between these tasks?');
     }
 
-    // Determine confidence level
-    const confidence = calculateConfidence(issues, subtasks);
+    // After refinement, be more lenient with confidence
+    let confidence = calculateConfidence(issues, subtasks);
+    if (isRefinement && confidence === 'low' && issues.length <= 1) {
+        // If we've refined and only have minor issues, boost confidence
+        confidence = 'medium';
+    }
+
+    // After refinement, mark as complete if we have minimal issues
+    const isComplete = isRefinement ? (issues.length <= 1 && !hasCircularDeps) : (issues.length === 0);
 
     return {
-        isComplete: issues.length === 0,
+        isComplete: isComplete,
         confidence: confidence,
         issues: issues,
-        questions: questions.slice(0, 4), // Limit to 4 questions max
+        questions: questions.slice(0, 2), // Limit to 2 questions max after refinement
         suggestions: generateSuggestions(issues, subtasks)
     };
 }
@@ -586,7 +606,7 @@ module.exports = async function handler(req, res) {
                     content: `You are an intelligent task decomposition agent for TaskOrgApp. You help break down large tasks into manageable subtasks with proper assignees, deadlines, and dependencies.
 
 CORE BEHAVIOR:
-- When users ask to decompose/decompose/break down large tasks, immediately call decomposeTask()
+- When users ask to decompose/break down large tasks, immediately call decomposeTask()
 - Be collaborative: ask clarifying questions instead of assuming details
 - Be iterative: refine plans based on user answers until confident
 - Consider couple-friendly workload balance between Mario and Maria
@@ -596,8 +616,16 @@ CORE BEHAVIOR:
 DECOMPOSITION PROCESS:
 1. Generate initial draft with decomposeTask()
 2. Self-review and ask 2-4 clarifying questions if needed
-3. Refine with refineDecomposition() based on answers
-4. Repeat until confident, then finalizeDecomposition()
+3. When user answers questions, IMMEDIATELY call refineDecomposition() with their answers
+4. After refining, if still needs work, ask MAX 2 more questions
+5. After 2 refinement rounds, call finalizeDecomposition() even if not perfect
+6. NEVER ask more than 6 total questions - finalize after 2 rounds of refinement
+
+IMPORTANT:
+- If you just asked questions and user responds (yes/no/short answer), they are answering your questions
+- Extract the question-answer pairs and call refineDecomposition() immediately
+- Do NOT ask new questions without refining first
+- After refineDecomposition(), if confidence is high OR you've asked 2 rounds of questions, call finalizeDecomposition()
 
 ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                 },
@@ -698,11 +726,11 @@ ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                 },
                 {
                     name: 'refineDecomposition',
-                    description: 'Refine a task decomposition based on user answers to clarifying questions',
+                    description: 'Refine a task decomposition based on user answers to clarifying questions. Call this IMMEDIATELY when user answers your questions. After refining, if confidence is high/medium OR you\'ve refined 2+ times, call finalizeDecomposition() instead of asking more questions.',
                     parameters: {
                         type: 'object',
                         properties: {
-                            originalDecomposition: { type: 'object', description: 'The original decomposition object' },
+                            originalDecomposition: { type: 'object', description: 'The original decomposition object from previous decomposeTask or refineDecomposition call' },
                             userAnswers: {
                                 type: 'array',
                                 items: {
@@ -712,8 +740,9 @@ ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                                         response: { type: 'string', description: 'The user\'s answer' }
                                     }
                                 },
-                                description: 'Array of question-answer pairs'
-                            }
+                                description: 'Array of question-answer pairs matching the questions you asked'
+                            },
+                            refinementCount: { type: 'integer', description: 'How many times you\'ve refined (0 = first refinement, 1 = second, etc.). Use this to track iterations.' }
                         },
                         required: ['originalDecomposition', 'userAnswers']
                     }
@@ -802,27 +831,46 @@ ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                         break;
                     case 'decomposeTask':
                         const decomposition = decomposeTask(args);
-                        const review = reviewDecomposition(decomposition);
+                        const review = reviewDecomposition(decomposition, false); // Initial review
                         functionResult = {
                             decomposition: decomposition,
                             review: review,
-                            needsRefinement: !review.isComplete,
+                            needsRefinement: !review.isComplete && review.questions.length > 0,
+                            refinementCount: 0,
                             message: review.isComplete
                                 ? 'Decomposition looks good! Here\'s the breakdown:'
-                                : `I have some questions to make this decomposition better: ${review.questions.join(' ')}`
+                                : `I've created an initial breakdown, but I have some questions to make it better:\n${review.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nLet me know so I can refine this plan!`
                         };
                         break;
                     case 'refineDecomposition':
                         const refined = refineDecomposition(args.originalDecomposition, args.userAnswers);
-                        const refinedReview = reviewDecomposition(refined);
-                        functionResult = {
-                            decomposition: refined,
-                            review: refinedReview,
-                            needsRefinement: !refinedReview.isComplete,
-                            message: refinedReview.isComplete
-                                ? 'Perfect! The decomposition is now ready.'
-                                : `A few more questions: ${refinedReview.questions.join(' ')}`
-                        };
+                        const refinedReview = reviewDecomposition(refined, true); // Refinement review - be lenient
+                        
+                        // Get refinement count from args (how many times we've refined)
+                        const refinementCount = args.refinementCount || 1;
+                        
+                        // After 1 refinement, be more lenient - only ask questions if confidence is low
+                        // After 2 refinements, always finalize
+                        const shouldFinalize = refinementCount >= 2 || refinedReview.confidence === 'high' || 
+                                             (refinementCount >= 1 && refinedReview.confidence === 'medium') ||
+                                             refinedReview.isComplete;
+                        
+                        if (shouldFinalize) {
+                            // Auto-finalize if we've refined enough or confidence is good
+                            functionResult = finalizeDecomposition(refined);
+                        } else {
+                            // Only ask more questions if confidence is low and we haven't refined too much
+                            const remainingQuestions = refinedReview.questions.slice(0, 2);
+                            functionResult = {
+                                decomposition: refined,
+                                review: refinedReview,
+                                needsRefinement: refinedReview.confidence === 'low' && refinementCount < 2 && remainingQuestions.length > 0,
+                                refinementCount: refinementCount + 1,
+                                message: refinedReview.confidence === 'low' && refinementCount < 2 && remainingQuestions.length > 0
+                                    ? `I've refined the plan. A couple more questions:\n${remainingQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nLet me know so I can finalize this!`
+                                    : 'Perfect! The decomposition is now ready.'
+                            };
+                        }
                         break;
                     case 'finalizeDecomposition':
                         functionResult = finalizeDecomposition(args.decomposition);

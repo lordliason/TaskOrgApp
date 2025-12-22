@@ -5992,6 +5992,49 @@
                         }
 
                     case 'refineDecomposition':
+                        // Check if backend auto-finalized (has summary/next_steps = finalized structure)
+                        if (functionResult.summary && functionResult.next_steps) {
+                            // Backend auto-finalized - create tasks in database
+                            const autoFinalDecomposition = functionResult.decomposition || functionResult;
+                            try {
+                                // Create parent task
+                                const { data: autoParentData, error: autoParentError } = await supabaseClient
+                                    .from('tasks')
+                                    .insert([autoFinalDecomposition.parentTask])
+                                    .select();
+                                
+                                if (autoParentError) throw autoParentError;
+                                
+                                // Update subtasks with parent_task_id
+                                const autoSubtasksWithParent = autoFinalDecomposition.subtasks.map(st => ({
+                                    ...st,
+                                    parent_task_id: autoParentData[0].id
+                                }));
+                                
+                                // Create subtasks
+                                const { data: autoSubtasksData, error: autoSubtasksError } = await supabaseClient
+                                    .from('tasks')
+                                    .insert(autoSubtasksWithParent)
+                                    .select();
+                                
+                                if (autoSubtasksError) throw autoSubtasksError;
+                                
+                                const nextStepsText = functionResult.next_steps
+                                    ? `\n\n📝 Next Steps:\n${functionResult.next_steps.map((step, i) => `  ${i + 1}. ${step}`).join('\n')}`
+                                    : '';
+                                
+                                return {
+                                    message: `✅ ${functionResult.message || 'Task decomposition finalized!'}\n\n📊 Final Summary:\n  • Total tasks: ${functionResult.summary?.totalTasks || autoFinalDecomposition.subtasks.length + 1}\n  • Mario: ${functionResult.summary?.marioTasks || autoFinalDecomposition.subtasks.filter(st => st.assignee === 'mario').length}\n  • Maria: ${functionResult.summary?.mariaTasks || autoFinalDecomposition.subtasks.filter(st => st.assignee === 'maria').length}\n  • Deadlines set: ${functionResult.summary?.deadlines || autoFinalDecomposition.subtasks.filter(st => st.deadline).length}\n  • Dependencies: ${functionResult.summary?.dependencies || autoFinalDecomposition.subtasks.filter(st => st.depends_on && st.depends_on.length > 0).length}${nextStepsText}`,
+                                    success: true,
+                                    parentTask: autoParentData[0],
+                                    subtasks: autoSubtasksData
+                                };
+                            } catch (error) {
+                                console.error('Error auto-finalizing decomposition:', error);
+                                throw error;
+                            }
+                        }
+                        
                         // Handle refinement - similar to decomposeTask but with updated data
                         const refinedDecomposition = functionResult.decomposition || functionResult;
                         const refinedReview = functionResult.review || {};
@@ -6008,13 +6051,39 @@
                             };
                         }
                         
-                        // Otherwise, update existing tasks or create new ones
-                        // For now, return success message - in production you'd update the database
-                        return {
-                            message: `✅ Plan refined successfully! Ready to finalize.`,
-                            success: true,
-                            decomposition: refinedDecomposition
-                        };
+                        // Otherwise, auto-finalize on frontend if confidence is good
+                        // Fall through to finalizeDecomposition logic
+                        const finalDecomposition = refinedDecomposition;
+                        try {
+                            const { data: finalParentData, error: finalParentError } = await supabaseClient
+                                .from('tasks')
+                                .insert([finalDecomposition.parentTask])
+                                .select();
+                            
+                            if (finalParentError) throw finalParentError;
+                            
+                            const finalSubtasksWithParent = finalDecomposition.subtasks.map(st => ({
+                                ...st,
+                                parent_task_id: finalParentData[0].id
+                            }));
+                            
+                            const { data: finalSubtasksData, error: finalSubtasksError } = await supabaseClient
+                                .from('tasks')
+                                .insert(finalSubtasksWithParent)
+                                .select();
+                            
+                            if (finalSubtasksError) throw finalSubtasksError;
+                            
+                            return {
+                                message: `✅ Plan refined and finalized! Created ${finalDecomposition.subtasks.length + 1} tasks.`,
+                                success: true,
+                                parentTask: finalParentData[0],
+                                subtasks: finalSubtasksData
+                            };
+                        } catch (error) {
+                            console.error('Error finalizing refined decomposition:', error);
+                            throw error;
+                        }
 
                     case 'finalizeDecomposition':
                         // Finalize and create all tasks in database
@@ -6375,7 +6444,7 @@
                                     content: `You are an intelligent task decomposition agent for TaskOrgApp. You help break down large tasks into manageable subtasks with proper assignees, deadlines, and dependencies.
 
 CORE BEHAVIOR:
-- When users ask to decompose/decompose/break down large tasks, immediately call decomposeTask()
+- When users ask to decompose/break down large tasks, immediately call decomposeTask()
 - Be collaborative: ask clarifying questions instead of assuming details
 - Be iterative: refine plans based on user answers until confident
 - Consider couple-friendly workload balance between Mario and Maria
@@ -6385,8 +6454,16 @@ CORE BEHAVIOR:
 DECOMPOSITION PROCESS:
 1. Generate initial draft with decomposeTask()
 2. Self-review and ask 2-4 clarifying questions if needed
-3. Refine with refineDecomposition() based on answers
-4. Repeat until confident, then finalizeDecomposition()
+3. When user answers questions, IMMEDIATELY call refineDecomposition() with their answers
+4. After refining, if still needs work, ask MAX 2 more questions
+5. After 2 refinement rounds, call finalizeDecomposition() even if not perfect
+6. NEVER ask more than 6 total questions - finalize after 2 rounds of refinement
+
+IMPORTANT:
+- If you just asked questions and user responds (yes/no/short answer), they are answering your questions
+- Extract the question-answer pairs and call refineDecomposition() immediately
+- Do NOT ask new questions without refining first
+- After refineDecomposition(), if confidence is high OR you've asked 2 rounds of questions, call finalizeDecomposition()
 
 ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}`
                                 },
