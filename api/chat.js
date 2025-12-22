@@ -558,13 +558,31 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Get API key from environment variable
-    const apiKey = process.env.OPENAI_API_KEY;
+    // Get API key from environment variable (production) or config file (development)
+    let apiKey = process.env.OPENAI_API_KEY;
+
+    // If not set in environment, try to read from config.js for local development
+    if (!apiKey) {
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const configPath = path.join(process.cwd(), 'config.js');
+            const configContent = fs.readFileSync(configPath, 'utf8');
+
+            // Extract API key using regex (same as test-openai.js)
+            const match = configContent.match(/OPENAI_API_KEY\s*=\s*['"]([^'"]+)['"]/);
+            if (match && match[1]) {
+                apiKey = match[1];
+            }
+        } catch (configError) {
+            console.error('Could not read config.js:', configError.message);
+        }
+    }
 
     if (!apiKey) {
-        console.error('OPENAI_API_KEY is missing from environment variables');
+        console.error('OPENAI_API_KEY is missing from environment variables and config.js');
         return res.status(500).json({
-            error: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable in Vercel.'
+            error: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable in Vercel or config.js for local development.'
         });
     }
 
