@@ -3910,31 +3910,65 @@
         // Password Gate
         // ===========================================
         function setupPasswordGate() {
+            // Verify all elements exist
+            if (!passwordGate || !passwordInput || !passwordBtn) {
+                console.error('Password gate elements not found');
+                return;
+            }
+
             function checkPassword() {
                 const savedPassword = localStorage.getItem('taskMatrixAuth');
                 if (savedPassword === FAMILY_PASSWORD) {
                     passwordGate.classList.add('hidden');
-                    init();
+                    // App is already initialized, just hide the password gate
                 }
             }
 
             function handlePasswordSubmit() {
+                console.log('Password submit triggered, value:', passwordInput.value);
+                
+                if (!passwordInput || !passwordInput.value) {
+                    console.error('Password input not found or empty');
+                    return;
+                }
+
                 if (passwordInput.value === FAMILY_PASSWORD) {
+                    console.log('Password correct, authenticating...');
                     localStorage.setItem('taskMatrixAuth', FAMILY_PASSWORD);
                     passwordGate.classList.add('hidden');
-                    passwordError.classList.remove('show');
-                    init();
+                    if (passwordError) {
+                        passwordError.classList.remove('show');
+                    }
+                    // App is already initialized, just hide the password gate
                 } else {
-                    passwordError.classList.add('show');
+                    console.log('Password incorrect');
+                    if (passwordError) {
+                        passwordError.classList.add('show');
+                    }
                     passwordInput.value = '';
                     passwordInput.focus();
                 }
             }
 
-            passwordBtn.addEventListener('click', handlePasswordSubmit);
-            passwordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handlePasswordSubmit();
-            });
+            // Add event listeners
+            if (passwordBtn) {
+                passwordBtn.addEventListener('click', handlePasswordSubmit);
+                console.log('Password button event listener added');
+            } else {
+                console.error('Password button not found');
+            }
+
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handlePasswordSubmit();
+                    }
+                });
+                console.log('Password input event listener added');
+            } else {
+                console.error('Password input not found');
+            }
 
             // Check if already authenticated
             checkPassword();
