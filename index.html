@@ -3959,7 +3959,7 @@
             }
 
             if (passwordInput) {
-                passwordInput.addEventListener('keypress', (e) => {
+                passwordInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         handlePasswordSubmit();
