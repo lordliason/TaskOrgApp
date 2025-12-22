@@ -3340,6 +3340,20 @@
                 </div>
                 <div class="task-bank-list" id="taskBankList"></div>
             </div>
+
+            <!-- Completed Tasks -->
+            <div class="task-bank completed-tasks" id="completedTasks">
+                <div class="task-bank-header" id="completedTasksHeader">
+                    <div class="task-bank-title">
+                        <span>✅ Completed Tasks</span>
+                        <span class="task-bank-count" id="completedCount">0</span>
+                    </div>
+                    <svg class="task-bank-toggle" id="completedToggle" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="task-bank-list" id="completedTasksList"></div>
+            </div>
         </div>
 
         <!-- Right Panel: Leaderboard -->
@@ -3738,6 +3752,7 @@
         let connectionStatus, statusDot, statusText, clearAllBtn, taskList, taskCount, tooltip;
         let dotsContainer, resetPointsBtn, resetDayBtn, todayDateEl;
         let taskBankHeader, taskBankList, bankToggle, bankCount;
+        let completedTasksHeader, completedTasksList, completedToggle, completedCount;
         let leaderboardToggleBtn;
         let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria;
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
@@ -3755,6 +3770,7 @@
         let isResizing = false;
         let startX, startWidth;
         let bankedTasks = JSON.parse(localStorage.getItem('taskMatrixBank') || '[]');
+        let completedTasks = JSON.parse(localStorage.getItem('taskMatrixCompleted') || '[]');
         const TASK_POINTS = { xs: 2, s: 4, m: 6, l: 8, xl: 10 };
         let currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
         let quadrants = {};
@@ -3804,6 +3820,10 @@
             taskBankList = document.getElementById('taskBankList');
             bankToggle = document.getElementById('bankToggle');
             bankCount = document.getElementById('bankCount');
+            completedTasksHeader = document.getElementById('completedTasksHeader');
+            completedTasksList = document.getElementById('completedTasksList');
+            completedToggle = document.getElementById('completedToggle');
+            completedCount = document.getElementById('completedCount');
             leaderboardToggleBtn = document.getElementById('leaderboardToggleBtn');
             floatingAddBtn = document.getElementById('floatingAddBtn');
             addTaskModal = document.getElementById('addTaskModal');
@@ -4027,6 +4047,7 @@
                 await loadTodayScores();
                 setupRealtimeSubscription();
                 renderTaskBank();
+                renderCompletedTasks();
                 if (loadingOverlay) {
                     loadingOverlay.classList.add('hidden');
                 }
@@ -4305,9 +4326,9 @@
                 
                 if (incompleteTasks.length === 0 && completedTasks.length === 0) return;
                 
-                const message = incompleteTasks.length > 0 
-                    ? `Reset day?\n\n• ${incompleteTasks.length} incomplete task(s) will be moved to the Task Bank\n• ${completedTasks.length} completed task(s) will be cleared`
-                    : `Reset day?\n\n• ${completedTasks.length} completed task(s) will be cleared`;
+                const message = incompleteTasks.length > 0
+                    ? `Reset day?\n\n• ${incompleteTasks.length} incomplete task(s) will be moved to the Task Bank\n• ${completedTasks.length} completed task(s) will be saved to Completed Tasks`
+                    : `Reset day?\n\n• ${completedTasks.length} completed task(s) will be saved to Completed Tasks`;
                 
                 if (confirm(message)) {
                     await resetDay(incompleteTasks, completedTasks);
@@ -4323,6 +4344,12 @@
             taskBankHeader.addEventListener('click', () => {
                 bankToggle.classList.toggle('open');
                 taskBankList.classList.toggle('open');
+            });
+
+            // Completed tasks toggle
+            completedTasksHeader.addEventListener('click', () => {
+                completedToggle.classList.toggle('open');
+                completedTasksList.classList.toggle('open');
             });
 
             // Floating add button
@@ -4979,6 +5006,20 @@
                     renderTaskBank();
                 }
 
+                // Add completed tasks to completed tasks section
+                if (completedTasks.length > 0) {
+                    const completedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    completedTasks.forEach(task => {
+                        completedTasks.unshift({
+                            ...task,
+                            completedDate: completedDate,
+                            completed: true
+                        });
+                    });
+                    localStorage.setItem('taskMatrixCompleted', JSON.stringify(completedTasks));
+                    renderCompletedTasks();
+                }
+
                 // Delete all tasks from database
                 const { error } = await supabaseClient
                     .from('tasks')
@@ -5017,6 +5058,24 @@
                             <path d="M18 6L6 18M6 6l12 12"/>
                         </svg>
                     </button>
+                </div>
+            `).join('');
+        }
+
+        function renderCompletedTasks() {
+            completedCount.textContent = completedTasks.length;
+
+            if (completedTasks.length === 0) {
+                completedTasksList.innerHTML = '<div class="bank-item" style="color: var(--text-muted); justify-content: center;">No completed tasks</div>';
+                return;
+            }
+
+            completedTasksList.innerHTML = completedTasks.map((task, index) => `
+                <div class="bank-item">
+                    <span class="bank-item-icon">${task.icon || '✅'}</span>
+                    <span class="bank-item-name" title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
+                    <span style="font-size: 0.6rem; color: var(--text-muted)">${task.completedDate || ''}</span>
+                    <span style="font-size: 0.6rem; color: var(--text-muted)">by ${task.completed_by || 'unknown'}</span>
                 </div>
             `).join('');
         }
