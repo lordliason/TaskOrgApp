@@ -3206,7 +3206,7 @@
             <div class="password-logo">Task Matrix</div>
             <div class="password-subtitle">Enter family password to continue</div>
             <input type="password" class="password-input" id="passwordInput" placeholder="Password">
-            <button class="password-btn" id="passwordBtn">Enter</button>
+            <button type="button" class="password-btn" id="passwordBtn">Enter</button>
             <div class="password-error" id="passwordError">Incorrect password</div>
         </div>
     </div>
@@ -3959,10 +3959,22 @@
             }
 
             if (passwordInput) {
+                // Handle Enter key on password input
                 passwordInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
                         e.preventDefault();
+                        e.stopPropagation();
                         handlePasswordSubmit();
+                        return false;
+                    }
+                });
+                // Also handle keypress as fallback
+                passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePasswordSubmit();
+                        return false;
                     }
                 });
                 console.log('Password input event listener added');
