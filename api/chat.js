@@ -156,13 +156,36 @@ module.exports = async function handler(req, res) {
     const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
+        console.error('OPENAI_API_KEY is missing from environment variables');
         return res.status(500).json({
             error: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable in Vercel.'
         });
     }
 
     try {
-        const { taskContext, message, enableFunctions = false } = req.body;
+        // Parse request body - Vercel may send it as a string or already parsed
+        let body = req.body;
+        if (typeof body === 'string') {
+            try {
+                body = JSON.parse(body);
+            } catch (parseError) {
+                console.error('Failed to parse request body:', parseError);
+                return res.status(400).json({ error: 'Invalid JSON in request body' });
+            }
+        }
+
+        if (!body) {
+            console.error('Request body is empty or undefined');
+            return res.status(400).json({ error: 'Request body is required' });
+        }
+
+        const { taskContext, message, enableFunctions = false } = body;
+
+        console.log('Received request:', { 
+            hasMessage: !!message, 
+            hasTaskContext: !!taskContext, 
+            enableFunctions 
+        });
 
         if (!message) {
             return res.status(400).json({ error: 'Message is required' });
@@ -257,6 +280,7 @@ module.exports = async function handler(req, res) {
             requestBody.function_call = 'auto';
         }
 
+        console.log('Calling OpenAI API...');
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -267,22 +291,50 @@ module.exports = async function handler(req, res) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                const text = await response.text();
+                console.error('OpenAI API error (non-JSON):', text.substring(0, 500));
+                return res.status(response.status).json({
+                    error: `OpenAI API error: ${response.status} ${response.statusText}`
+                });
+            }
+            console.error('OpenAI API error:', errorData);
             return res.status(response.status).json({
-                error: errorData.error?.message || `OpenAI API error: ${response.status}`
+                error: errorData.error?.message || errorData.error || `OpenAI API error: ${response.status}`
             });
         }
 
         const data = await response.json();
-        const message = data.choices[0]?.message;
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            console.error('Invalid response structure from OpenAI:', JSON.stringify(data).substring(0, 500));
+            return res.status(500).json({
+                error: 'Invalid response structure from OpenAI API'
+            });
+        }
+
+        const aiMessage = data.choices[0].message;
 
         // Handle function calls
-        if (message.function_call && enableFunctions) {
-            const args = JSON.parse(message.function_call.arguments);
+        if (aiMessage && aiMessage.function_call && enableFunctions) {
+            let args;
+            try {
+                args = JSON.parse(aiMessage.function_call.arguments);
+            } catch (parseError) {
+                console.error('Failed to parse function call arguments:', parseError);
+                return res.status(400).json({
+                    error: `Failed to parse function call arguments: ${parseError.message}`,
+                    function_call: aiMessage.function_call
+                });
+            }
+
             let functionResult;
 
             try {
-                switch (message.function_call.name) {
+                switch (aiMessage.function_call.name) {
                     case 'createTask':
                         functionResult = createTask(args);
                         break;
@@ -296,12 +348,12 @@ module.exports = async function handler(req, res) {
                         functionResult = getTasks(args.filters || {});
                         break;
                     default:
-                        throw new Error(`Unknown function: ${message.function_call.name}`);
+                        throw new Error(`Unknown function: ${aiMessage.function_call.name}`);
                 }
 
                 // Return the function call and result for the frontend to handle
                 return res.status(200).json({
-                    function_call: message.function_call,
+                    function_call: aiMessage.function_call,
                     function_result: functionResult,
                     original_response: data
                 });
@@ -309,7 +361,7 @@ module.exports = async function handler(req, res) {
             } catch (error) {
                 return res.status(400).json({
                     error: `Function execution failed: ${error.message}`,
-                    function_call: message.function_call
+                    function_call: aiMessage.function_call
                 });
             }
         }
@@ -318,6 +370,19 @@ module.exports = async function handler(req, res) {
         return res.status(200).json(data);
     } catch (error) {
         console.error('Chat API error:', error);
-        return res.status(500).json({ error: error.message || 'Internal server error' });
+        const errorMessage = error.message || 'Internal server error';
+        console.error('Error details:', {
+            message: errorMessage,
+            stack: error.stack,
+            name: error.name,
+            type: typeof error
+        });
+        return res.status(500).json({ 
+            error: errorMessage,
+            message: errorMessage 
+        });
     }
 };
+
+// Export as default for Vercel compatibility
+module.exports.default = module.exports;

@@ -5757,15 +5757,20 @@
                         let errorData;
                         const contentType = serverlessResponse.headers.get('content-type');
                         if (contentType && contentType.includes('application/json')) {
-                            errorData = await serverlessResponse.json();
+                            try {
+                                errorData = await serverlessResponse.json();
+                            } catch (parseError) {
+                                console.error('Failed to parse error response as JSON:', parseError);
+                                throw new Error(`Server error (${serverlessResponse.status}): ${serverlessResponse.statusText}`);
+                            }
                         } else {
                             const text = await serverlessResponse.text();
                             console.error('Non-JSON error response:', text.substring(0, 200));
                             throw new Error(`Server error (${serverlessResponse.status}): ${serverlessResponse.statusText}`);
                         }
-                        // If serverless API fails, fall back to direct API call
-                        console.log('Serverless API not available, falling back to direct API call');
-                        throw new Error(errorData.error || 'Serverless API error');
+                        // Extract error message from response
+                        const errorMsg = errorData.error || errorData.message || `Server error (${serverlessResponse.status})`;
+                        throw new Error(errorMsg);
                     }
                 } catch (serverlessError) {
                     // Only fall back to direct API on localhost (config.js exists locally but not on Vercel)
@@ -5775,7 +5780,7 @@
                         // On production (Vercel), don't try fallback - show the actual error
                         const errorMsg = serverlessError.message || serverlessError.toString();
                         console.error('Serverless API error:', errorMsg);
-                        throw new Error('Server API error: ' + errorMsg);
+                        throw new Error(errorMsg);
                     }
                     
                     // Fall back to direct OpenAI API call (for local development with config.js)
@@ -6192,14 +6197,20 @@
                         let errorData;
                         const contentType = serverlessResponse.headers.get('content-type');
                         if (contentType && contentType.includes('application/json')) {
-                            errorData = await serverlessResponse.json();
+                            try {
+                                errorData = await serverlessResponse.json();
+                            } catch (parseError) {
+                                console.error('Failed to parse error response as JSON:', parseError);
+                                throw new Error(`Server error (${serverlessResponse.status}): ${serverlessResponse.statusText}`);
+                            }
                         } else {
                             const text = await serverlessResponse.text();
                             console.error('Non-JSON error response:', text.substring(0, 200));
                             throw new Error(`Server error (${serverlessResponse.status}): ${serverlessResponse.statusText}`);
                         }
-                        console.log('Serverless API not available, falling back to direct API call');
-                        throw new Error(errorData.error || 'Serverless API error');
+                        // Extract error message from response
+                        const errorMsg = errorData.error || errorData.message || `Server error (${serverlessResponse.status})`;
+                        throw new Error(errorMsg);
                     }
                 } catch (serverlessError) {
                     // Only fall back to direct API on localhost (config.js exists locally but not on Vercel)
@@ -6209,7 +6220,7 @@
                         // On production (Vercel), don't try fallback - show the actual error
                         const errorMsg = serverlessError.message || serverlessError.toString();
                         console.error('Serverless API error:', errorMsg);
-                        throw new Error('Server API error: ' + errorMsg);
+                        throw new Error(errorMsg);
                     }
                     
                     // Fall back to direct OpenAI API call (for local development with config.js)
