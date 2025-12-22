@@ -6099,39 +6099,42 @@
                         
                         // Otherwise, auto-finalize on frontend if confidence is good
                         // Fall through to finalizeDecomposition logic
-                        const finalDecomposition = refinedDecomposition;
-                        try {
-                            const { data: finalParentData, error: finalParentError } = await supabaseClient
-                                .from('tasks')
-                                .insert([finalDecomposition.parentTask])
-                                .select();
-                            
-                            if (finalParentError) throw finalParentError;
-                            
-                            const finalSubtasksWithParent = finalDecomposition.subtasks.map(st => ({
-                                ...st,
-                                parent_task_id: finalParentData[0].id
-                            }));
-                            
-                            const { data: finalSubtasksData, error: finalSubtasksError } = await supabaseClient
-                                .from('tasks')
-                                .insert(finalSubtasksWithParent)
-                                .select();
-                            
-                            if (finalSubtasksError) throw finalSubtasksError;
-                            
-                            return {
-                                message: `✅ Plan refined and finalized! Created ${finalDecomposition.subtasks.length + 1} tasks.`,
-                                success: true,
-                                parentTask: finalParentData[0],
-                                subtasks: finalSubtasksData
-                            };
-                        } catch (error) {
-                            console.error('Error finalizing refined decomposition:', error);
-                            throw error;
+                        {
+                            const finalDecomposition = refinedDecomposition;
+                            try {
+                                const { data: finalParentData, error: finalParentError } = await supabaseClient
+                                    .from('tasks')
+                                    .insert([finalDecomposition.parentTask])
+                                    .select();
+                                
+                                if (finalParentError) throw finalParentError;
+                                
+                                const finalSubtasksWithParent = finalDecomposition.subtasks.map(st => ({
+                                    ...st,
+                                    parent_task_id: finalParentData[0].id
+                                }));
+                                
+                                const { data: finalSubtasksData, error: finalSubtasksError } = await supabaseClient
+                                    .from('tasks')
+                                    .insert(finalSubtasksWithParent)
+                                    .select();
+                                
+                                if (finalSubtasksError) throw finalSubtasksError;
+                                
+                                return {
+                                    message: `✅ Plan refined and finalized! Created ${finalDecomposition.subtasks.length + 1} tasks.`,
+                                    success: true,
+                                    parentTask: finalParentData[0],
+                                    subtasks: finalSubtasksData
+                                };
+                            } catch (error) {
+                                console.error('Error finalizing refined decomposition:', error);
+                                throw error;
+                            }
                         }
+                        break;
 
-                    case 'finalizeDecomposition':
+                    case 'finalizeDecomposition': {
                         // Finalize and create all tasks in database
                         const finalDecomposition = functionResult.decomposition || functionResult;
                         
@@ -6172,6 +6175,8 @@
                             console.error('Error finalizing decomposition:', error);
                             throw error;
                         }
+                        break;
+                    }
 
                     default:
                         throw new Error(`Unknown function: ${functionCall.name}`);
