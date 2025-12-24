@@ -4937,6 +4937,29 @@
                     }
                 }
 
+                // Save/remove from completed tasks
+                if (completed && completedBy) {
+                    // Add to completed tasks with completion date
+                    const completedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const completedTask = {
+                        ...task,
+                        completedDate: completedDate,
+                        completed: true,
+                        completed_by: completedBy
+                    };
+                    completedTasks.unshift(completedTask);
+                    localStorage.setItem('taskMatrixCompleted', JSON.stringify(completedTasks));
+                    renderCompletedTasks();
+                } else if (!completed) {
+                    // Remove from completed tasks if marking as incomplete
+                    const taskIndex = completedTasks.findIndex(t => t.id === id);
+                    if (taskIndex !== -1) {
+                        completedTasks.splice(taskIndex, 1);
+                        localStorage.setItem('taskMatrixCompleted', JSON.stringify(completedTasks));
+                        renderCompletedTasks();
+                    }
+                }
+
                 // Task will be updated via realtime subscription
             } catch (error) {
                 console.error('Error updating task:', error);
@@ -5006,15 +5029,18 @@
                     renderTaskBank();
                 }
 
-                // Add completed tasks to completed tasks section
+                // Add completed tasks to completed tasks section (avoid duplicates)
                 if (completedTasks.length > 0) {
                     const completedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                     completedTasks.forEach(task => {
-                        completedTasks.unshift({
-                            ...task,
-                            completedDate: completedDate,
-                            completed: true
-                        });
+                        // Only add if not already in completedTasks
+                        if (!completedTasks.some(ct => ct.id === task.id)) {
+                            completedTasks.unshift({
+                                ...task,
+                                completedDate: completedDate,
+                                completed: true
+                            });
+                        }
                     });
                     localStorage.setItem('taskMatrixCompleted', JSON.stringify(completedTasks));
                     renderCompletedTasks();
