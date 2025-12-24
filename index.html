@@ -850,6 +850,27 @@
             color: #ff6b6b;
         }
 
+        /* Completed Tasks Date Sections */
+        .completed-date-section {
+            margin-bottom: 1rem;
+        }
+
+        .completed-date-header {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-mario);
+        }
+
+        .completed-task-item {
+            margin-left: 1rem;
+            opacity: 0.8;
+        }
+
         /* Axis Labels */
         .matrix-container {
             flex: 1;
@@ -5096,14 +5117,40 @@
                 return;
             }
 
-            completedTasksList.innerHTML = completedTasks.map((task, index) => `
-                <div class="bank-item">
-                    <span class="bank-item-icon">${task.icon || '✅'}</span>
-                    <span class="bank-item-name" title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
-                    <span style="font-size: 0.6rem; color: var(--text-muted)">${task.completedDate || ''}</span>
-                    <span style="font-size: 0.6rem; color: var(--text-muted)">by ${task.completed_by || 'unknown'}</span>
-                </div>
-            `).join('');
+            // Group tasks by completion date
+            const tasksByDate = {};
+            completedTasks.forEach(task => {
+                const date = task.completedDate || 'Unknown Date';
+                if (!tasksByDate[date]) {
+                    tasksByDate[date] = [];
+                }
+                tasksByDate[date].push(task);
+            });
+
+            // Sort dates in descending order (most recent first)
+            const sortedDates = Object.keys(tasksByDate).sort((a, b) => {
+                if (a === 'Unknown Date') return 1;
+                if (b === 'Unknown Date') return -1;
+                // Parse dates like "Dec 24" and compare them
+                const dateA = new Date(a + ', 2024'); // Add year for parsing
+                const dateB = new Date(b + ', 2024');
+                return dateB - dateA;
+            });
+
+            // Generate HTML with date sections
+            completedTasksList.innerHTML = sortedDates.map(date => {
+                const tasksForDate = tasksByDate[date];
+                const dateHeader = `<div class="completed-date-header">${date}</div>`;
+                const taskItems = tasksForDate.map(task => `
+                    <div class="bank-item completed-task-item">
+                        <span class="bank-item-icon">${task.icon || '✅'}</span>
+                        <span class="bank-item-name" title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
+                        <span style="font-size: 0.6rem; color: var(--text-muted)">by ${task.completed_by || 'unknown'}</span>
+                    </div>
+                `).join('');
+
+                return `<div class="completed-date-section">${dateHeader}${taskItems}</div>`;
+            }).join('');
         }
 
         async function restoreFromBank(index) {
