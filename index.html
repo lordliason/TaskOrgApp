@@ -82,7 +82,7 @@
             display: none;
         }
 
-        .password-box {
+        .login-box {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 20px;
@@ -106,6 +106,27 @@
             color: var(--text-muted);
             font-size: 0.875rem;
             margin-bottom: 2rem;
+        }
+
+        .login-input-group {
+            margin-bottom: 1rem;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: var(--accent-mario);
         }
 
         .password-input {
@@ -555,6 +576,35 @@
         .matrix-title {
             font-family: 'DM Serif Display', serif;
             font-size: 1.5rem;
+        }
+
+        /* User Info and Logout */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-left: auto;
+        }
+
+        .user-display {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
         }
 
         .matrix-date {
@@ -3223,12 +3273,15 @@
 <body>
     <!-- Password Gate -->
     <div class="password-gate" id="passwordGate">
-        <div class="password-box">
+        <div class="login-box">
             <div class="password-logo">Task Matrix</div>
-            <div class="password-subtitle">Enter family password to continue</div>
-            <input type="password" class="password-input" id="passwordInput" placeholder="Password">
-            <button type="button" class="password-btn" id="passwordBtn">Enter</button>
-            <div class="password-error" id="passwordError">Incorrect password</div>
+            <div class="password-subtitle">Login to your organization</div>
+            <div class="login-input-group">
+                <input type="text" class="login-input" id="usernameInput" placeholder="Username">
+                <input type="password" class="login-input" id="passwordInput" placeholder="Password">
+            </div>
+            <button type="button" class="password-btn" id="passwordBtn">Login</button>
+            <div class="password-error" id="passwordError">Invalid username or password</div>
         </div>
     </div>
 
@@ -3248,7 +3301,7 @@
         <div class="matrix-panel">
             <div class="matrix-header">
                 <div>
-                    <div class="matrix-title">Mario & Maria Daily Planner</div>
+                    <div class="matrix-title" id="matrixTitle">Task Matrix</div>
                     <div class="matrix-date" id="todayDate"></div>
                 </div>
                 <div class="score-display" id="scoreDisplay">
@@ -3754,8 +3807,7 @@
         const SUPABASE_URL = 'https://xscocgadvdgsqhfjbnbu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_rVTtCASbj82QuftDmLP8WQ_GubnlYov';
         
-        // Simple password for family access (change this!)
-        const FAMILY_PASSWORD = 'family123';
+        // Removed: FAMILY_PASSWORD - now using user authentication
         
         // Check if OpenAI API key is available from config.js
         // This runs immediately when the script loads
@@ -3769,7 +3821,7 @@
         // Wait for Supabase library and DOM to be ready
         // ===========================================
         let supabaseClient = null;
-        let passwordGate, passwordInput, passwordBtn, passwordError, loadingOverlay;
+        let passwordGate, usernameInput, passwordInput, passwordBtn, passwordError, loadingOverlay;
         let connectionStatus, statusDot, statusText, clearAllBtn, taskList, taskCount, tooltip;
         let dotsContainer, resetPointsBtn, resetDayBtn, todayDateEl;
         let taskBankHeader, taskBankList, bankToggle, bankCount;
@@ -3804,6 +3856,51 @@
         let selectedImportant = 3;
         let selectedIcon = null;
         let isConnected = false;
+        let currentUser = null;
+
+        // Simple password hashing function (client-side, for demo purposes)
+        // In production, this should be done server-side with proper bcrypt
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('taskMatrixAuth');
+            currentUser = null;
+            location.reload();
+        }
+
+        // Update UI to show user and organization information
+        function updateUIForUser() {
+            if (currentUser) {
+                // Update matrix title
+                const matrixTitle = document.getElementById('matrixTitle');
+                if (matrixTitle) {
+                    matrixTitle.textContent = `${currentUser.organizationName} Task Matrix`;
+                }
+
+                // Update header with user info and logout button
+                const appHeader = document.querySelector('.app-header');
+                if (appHeader) {
+                    // Add user info and logout button if not already present
+                    let userInfo = appHeader.querySelector('.user-info');
+                    if (!userInfo) {
+                        userInfo = document.createElement('div');
+                        userInfo.className = 'user-info';
+                        userInfo.innerHTML = `
+                            <span class="user-display">Welcome, ${currentUser.displayName}</span>
+                            <button class="logout-btn" onclick="logout()">Logout</button>
+                        `;
+                        appHeader.appendChild(userInfo);
+                    }
+                }
+            }
+        }
 
         // Function to initialize Supabase client
         function initSupabase() {
@@ -3822,6 +3919,7 @@
         // Function to get DOM elements
         function initDOMElements() {
             passwordGate = document.getElementById('passwordGate');
+            usernameInput = document.getElementById('usernameInput');
             passwordInput = document.getElementById('passwordInput');
             passwordBtn = document.getElementById('passwordBtn');
             passwordError = document.getElementById('passwordError');
@@ -3907,7 +4005,7 @@
                 'eliminate': document.querySelector('[data-quadrant="eliminate"]')
             };
 
-            return passwordGate && passwordInput && passwordBtn;
+            return passwordGate && usernameInput && passwordInput && passwordBtn;
         }
 
         // Function to wait for Supabase to load
@@ -3952,53 +4050,117 @@
         // ===========================================
         function setupPasswordGate() {
             // Verify all elements exist
-            if (!passwordGate || !passwordInput || !passwordBtn) {
-                console.error('Password gate elements not found');
+            if (!passwordGate || !usernameInput || !passwordInput || !passwordBtn) {
+                console.error('Login gate elements not found');
                 return;
             }
 
-            function checkPassword() {
-                const savedPassword = localStorage.getItem('taskMatrixAuth');
-                if (savedPassword === FAMILY_PASSWORD) {
-                    passwordGate.classList.add('hidden');
-                    // Initialize the app after password authentication
-                    init();
+            async function checkAuth() {
+                const authData = localStorage.getItem('taskMatrixAuth');
+                if (authData) {
+                    try {
+                        const userSession = JSON.parse(authData);
+                        // Verify user still exists and session is valid
+                        const { data: user, error } = await supabaseClient
+                            .from('users')
+                            .select('*, organizations(name)')
+                            .eq('id', userSession.userId)
+                            .single();
+
+                        if (!error && user) {
+                            currentUser = {
+                                id: user.id,
+                                username: user.username,
+                                displayName: user.display_name,
+                                organizationId: user.organization_id,
+                                organizationName: user.organizations.name
+                            };
+                            // Update UI with user and organization info
+                            updateUIForUser();
+                            passwordGate.classList.add('hidden');
+                            // Initialize the app after authentication
+                            init();
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Auth check failed:', e);
+                    }
                 }
+                // If no valid auth, show login form
+                passwordGate.classList.remove('hidden');
             }
 
-            function handlePasswordSubmit() {
-                console.log('Password submit triggered, value:', passwordInput.value);
-                
-                if (!passwordInput || !passwordInput.value) {
-                    console.error('Password input not found or empty');
+            async function handleLoginSubmit() {
+                console.log('Login submit triggered');
+
+                if (!usernameInput || !usernameInput.value || !passwordInput || !passwordInput.value) {
+                    console.error('Username or password input not found or empty');
                     return;
                 }
 
-                if (passwordInput.value === FAMILY_PASSWORD) {
-                    console.log('Password correct, authenticating...');
-                    localStorage.setItem('taskMatrixAuth', FAMILY_PASSWORD);
-                    passwordGate.classList.add('hidden');
-                    if (passwordError) {
-                        passwordError.classList.remove('show');
+                try {
+                    // Hash the password
+                    const hashedPassword = await hashPassword(passwordInput.value);
+
+                    // Check user credentials
+                    const { data: user, error } = await supabaseClient
+                        .from('users')
+                        .select('*, organizations(name)')
+                        .eq('username', usernameInput.value)
+                        .eq('password_hash', hashedPassword)
+                        .single();
+
+                    if (!error && user) {
+                        console.log('Login successful');
+                        currentUser = {
+                            id: user.id,
+                            username: user.username,
+                            displayName: user.display_name,
+                            organizationId: user.organization_id,
+                            organizationName: user.organizations.name
+                        };
+
+                        // Store session
+                        const sessionData = {
+                            userId: currentUser.id,
+                            username: currentUser.username,
+                            displayName: currentUser.displayName,
+                            organizationId: currentUser.organizationId,
+                            organizationName: currentUser.organizationName
+                        };
+                        localStorage.setItem('taskMatrixAuth', JSON.stringify(sessionData));
+
+                        // Update UI with user and organization info
+                        updateUIForUser();
+
+                        passwordGate.classList.add('hidden');
+                        if (passwordError) {
+                            passwordError.classList.remove('show');
+                        }
+                        // Initialize the app after authentication
+                        init();
+                    } else {
+                        console.log('Login failed');
+                        if (passwordError) {
+                            passwordError.classList.add('show');
+                        }
+                        passwordInput.value = '';
+                        passwordInput.focus();
                     }
-                    // Initialize the app after password authentication
-                    init();
-                } else {
-                    console.log('Password incorrect');
+                } catch (error) {
+                    console.error('Login error:', error);
                     if (passwordError) {
                         passwordError.classList.add('show');
                     }
-                    passwordInput.value = '';
-                    passwordInput.focus();
                 }
             }
 
             // Add event listeners
             if (passwordBtn) {
-                passwordBtn.addEventListener('click', handlePasswordSubmit);
-                console.log('Password button event listener added');
+                passwordBtn.addEventListener('click', handleLoginSubmit);
+                console.log('Login button event listener added');
             } else {
-                console.error('Password button not found');
+                console.error('Login button not found');
             }
 
             if (passwordInput) {
@@ -4007,16 +4169,7 @@
                     if (e.key === 'Enter' || e.keyCode === 13) {
                         e.preventDefault();
                         e.stopPropagation();
-                        handlePasswordSubmit();
-                        return false;
-                    }
-                });
-                // Also handle keypress as fallback
-                passwordInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' || e.keyCode === 13) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handlePasswordSubmit();
+                        handleLoginSubmit();
                         return false;
                     }
                 });
@@ -4025,8 +4178,22 @@
                 console.error('Password input not found');
             }
 
+            if (usernameInput) {
+                // Handle Enter key on username input (move to password)
+                usernameInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        passwordInput.focus();
+                        return false;
+                    }
+                });
+                console.log('Username input event listener added');
+            } else {
+                console.error('Username input not found');
+            }
+
             // Check if already authenticated
-            checkPassword();
+            checkAuth();
         }
 
         // Start initialization
@@ -4096,7 +4263,8 @@
                 const { data, error } = await supabaseClient
                     .from('scores')
                     .select('player, points, tasks_completed')
-                    .eq('date', today);
+                    .eq('date', today)
+                    .eq('organization_id', currentUser.organizationId);
 
                 if (error) throw error;
 
@@ -4163,17 +4331,23 @@
 
                 console.log('Updating score for', player, ':', currentScores[player]);
 
+                // Get user ID for the player
+                const userMap = { mario: '550e8400-e29b-41d4-a716-446655440001', maria: '550e8400-e29b-41d4-a716-446655440002' };
+                const userId = userMap[player];
+
                 // Update database
                 const { error } = await supabaseClient
                     .from('scores')
                     .upsert({
-                        player: player,
+                        user_id: userId,
+                        player: player, // Keep for backward compatibility
+                        organization_id: currentUser.organizationId,
                         date: today,
                         points: currentScores[player].points,
                         tasks_completed: currentScores[player].tasks,
                         updated_at: new Date().toISOString()
                     }, {
-                        onConflict: 'player,date'
+                        onConflict: 'user_id,date'
                     });
 
                 if (error) {
@@ -4247,6 +4421,7 @@
                 const { data, error } = await supabaseClient
                     .from('scores')
                     .select('player, points, tasks_completed, date')
+                    .eq('organization_id', currentUser.organizationId)
                     .gte('date', start)
                     .lte('date', end);
 
@@ -4848,6 +5023,7 @@
                 const { data, error } = await supabaseClient
                     .from('tasks')
                     .select('*')
+                    .eq('organization_id', currentUser.organizationId)
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
@@ -4875,7 +5051,8 @@
                 const { error } = await supabaseClient
                     .from('tasks')
                     .delete()
-                    .eq('id', id);
+                    .eq('id', id)
+                    .eq('organization_id', currentUser.organizationId);
 
                 if (error) throw error;
 
@@ -4926,7 +5103,8 @@
                 const { error } = await supabaseClient
                     .from('tasks')
                     .update(updateData)
-                    .eq('id', id);
+                    .eq('id', id)
+                    .eq('organization_id', currentUser.organizationId);
 
                 if (error) {
                     console.error('Supabase error:', error);
@@ -4936,7 +5114,8 @@
                         const { error: retryError } = await supabaseClient
                             .from('tasks')
                             .update({ completed })
-                            .eq('id', id);
+                            .eq('id', id)
+                            .eq('organization_id', currentUser.organizationId);
                         if (retryError) throw retryError;
                     } else {
                         throw error;
@@ -4993,7 +5172,8 @@
                 const { error } = await supabaseClient
                     .from('tasks')
                     .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+                    .neq('id', '00000000-0000-0000-0000-000000000000') // Delete all
+                    .eq('organization_id', currentUser.organizationId);
 
                 if (error) throw error;
                 
@@ -5071,7 +5251,8 @@
                 const { error } = await supabaseClient
                     .from('tasks')
                     .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000');
+                    .neq('id', '00000000-0000-0000-0000-000000000000')
+                    .eq('organization_id', currentUser.organizationId);
 
                 if (error) throw error;
                 
@@ -5702,7 +5883,8 @@
                 completed: false,
                 icon: selectedIcon,
                 first_step: modalFirstStep.value.trim() || null,
-                completion_criteria: modalCompletionCriteria.value.trim() || null
+                completion_criteria: modalCompletionCriteria.value.trim() || null,
+                organization_id: currentUser.organizationId
             };
 
             try {
@@ -5760,7 +5942,8 @@
                 const { error } = await supabaseClient
                     .from('tasks')
                     .update(updateData)
-                    .eq('id', editingTaskId);
+                    .eq('id', editingTaskId)
+                    .eq('organization_id', currentUser.organizationId);
 
                 if (error) {
                     console.error('Supabase Error:', error);
@@ -6036,7 +6219,10 @@
                 switch (functionCall.name) {
                     case 'createTask':
                         // Create the task in the database
-                        const taskToCreate = functionResult;
+                        const taskToCreate = {
+                            ...functionResult,
+                            organization_id: currentUser.organizationId
+                        };
                         const { data, error } = await supabaseClient
                             .from('tasks')
                             .insert([taskToCreate])
@@ -6120,17 +6306,22 @@
                         // Otherwise, create tasks in database
                         try {
                             // Create parent task
+                            const parentTaskWithOrg = {
+                                ...decomposition.parentTask,
+                                organization_id: currentUser.organizationId
+                            };
                             const { data: parentData, error: parentError } = await supabaseClient
                                 .from('tasks')
-                                .insert([decomposition.parentTask])
+                                .insert([parentTaskWithOrg])
                                 .select();
-                            
+
                             if (parentError) throw parentError;
-                            
-                            // Update subtasks with parent_task_id
+
+                            // Update subtasks with parent_task_id and organization_id
                             const subtasksWithParent = decomposition.subtasks.map(st => ({
                                 ...st,
-                                parent_task_id: parentData[0].id
+                                parent_task_id: parentData[0].id,
+                                organization_id: currentUser.organizationId
                             }));
                             
                             // Create subtasks
@@ -6170,17 +6361,22 @@
                             const autoFinalDecomposition = functionResult.decomposition || functionResult;
                             try {
                                 // Create parent task
+                                const autoParentTaskWithOrg = {
+                                    ...autoFinalDecomposition.parentTask,
+                                    organization_id: currentUser.organizationId
+                                };
                                 const { data: autoParentData, error: autoParentError } = await supabaseClient
                                     .from('tasks')
-                                    .insert([autoFinalDecomposition.parentTask])
+                                    .insert([autoParentTaskWithOrg])
                                     .select();
-                                
+
                                 if (autoParentError) throw autoParentError;
-                                
-                                // Update subtasks with parent_task_id
+
+                                // Update subtasks with parent_task_id and organization_id
                                 const autoSubtasksWithParent = autoFinalDecomposition.subtasks.map(st => ({
                                     ...st,
-                                    parent_task_id: autoParentData[0].id
+                                    parent_task_id: autoParentData[0].id,
+                                    organization_id: currentUser.organizationId
                                 }));
                                 
                                 // Create subtasks
@@ -6228,16 +6424,21 @@
                         {
                             const finalDecomposition = refinedDecomposition;
                             try {
+                                const finalParentTaskWithOrg = {
+                                    ...finalDecomposition.parentTask,
+                                    organization_id: currentUser.organizationId
+                                };
                                 const { data: finalParentData, error: finalParentError } = await supabaseClient
                                     .from('tasks')
-                                    .insert([finalDecomposition.parentTask])
+                                    .insert([finalParentTaskWithOrg])
                                     .select();
-                                
+
                                 if (finalParentError) throw finalParentError;
-                                
+
                                 const finalSubtasksWithParent = finalDecomposition.subtasks.map(st => ({
                                     ...st,
-                                    parent_task_id: finalParentData[0].id
+                                    parent_task_id: finalParentData[0].id,
+                                    organization_id: currentUser.organizationId
                                 }));
                                 
                                 const { data: finalSubtasksData, error: finalSubtasksError } = await supabaseClient
@@ -6266,17 +6467,22 @@
                         
                         try {
                             // Create parent task
+                            const finalParentTaskWithOrg = {
+                                ...finalDecomposition.parentTask,
+                                organization_id: currentUser.organizationId
+                            };
                             const { data: finalParentData, error: finalParentError } = await supabaseClient
                                 .from('tasks')
-                                .insert([finalDecomposition.parentTask])
+                                .insert([finalParentTaskWithOrg])
                                 .select();
-                            
+
                             if (finalParentError) throw finalParentError;
-                            
-                            // Update subtasks with parent_task_id
+
+                            // Update subtasks with parent_task_id and organization_id
                             const finalSubtasksWithParent = finalDecomposition.subtasks.map(st => ({
                                 ...st,
-                                parent_task_id: finalParentData[0].id
+                                parent_task_id: finalParentData[0].id,
+                                organization_id: currentUser.organizationId
                             }));
                             
                             // Create subtasks
@@ -7277,7 +7483,8 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     completed: false,
                     icon: task.icon,
                     first_step: task.first_step,
-                    completion_criteria: task.completion_criteria
+                    completion_criteria: task.completion_criteria,
+                    organization_id: currentUser.organizationId
                 };
 
                 const task2 = {
@@ -7289,7 +7496,8 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     completed: false,
                     icon: task.icon,
                     first_step: task.first_step,
-                    completion_criteria: task.completion_criteria
+                    completion_criteria: task.completion_criteria,
+                    organization_id: currentUser.organizationId
                 };
 
                 // Insert both tasks into the database

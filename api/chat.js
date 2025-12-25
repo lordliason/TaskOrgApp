@@ -2,13 +2,14 @@
 // This keeps the API key secure on the server side
 
 // Task Management Functions (same as in test-openai.js)
-function createTask(taskData) {
+function createTask(taskData, organizationId = null) {
     // Validate required fields
     if (!taskData.name || !taskData.assignee) {
         throw new Error('Task name and assignee are required');
     }
 
-    // Validate assignee values
+    // For now, keep the existing assignee validation (mario, maria, both)
+    // In the future, this should validate against organization users
     const validAssignees = ['mario', 'maria', 'both'];
     if (!validAssignees.includes(taskData.assignee)) {
         throw new Error(`Assignee must be one of: ${validAssignees.join(', ')}`);
@@ -36,7 +37,7 @@ function createTask(taskData) {
     return task;
 }
 
-function splitTask(taskId, splitDescription) {
+function splitTask(taskId, splitDescription, organizationId = null) {
     if (!taskId) {
         throw new Error('Task ID is required');
     }
@@ -78,7 +79,7 @@ function splitTask(taskId, splitDescription) {
     };
 }
 
-function updateTask(taskId, updates) {
+function updateTask(taskId, updates, organizationId = null) {
     if (!taskId) {
         throw new Error('Task ID is required');
     }
@@ -119,7 +120,7 @@ function updateTask(taskId, updates) {
     };
 }
 
-function getTasks(filters = {}) {
+function getTasks(filters = {}, organizationId = null) {
     // In the real app, this would query your Supabase database
     // For now, return a mock response
     return {
@@ -136,7 +137,7 @@ function getTasks(filters = {}) {
     };
 }
 
-function decomposeTask(taskDescription) {
+function decomposeTask(taskDescription, organizationId = null) {
     if (!taskDescription || !taskDescription.name) {
         throw new Error('Task name is required for decomposition');
     }
@@ -159,6 +160,7 @@ function decomposeTask(taskDescription) {
         deadline: taskDescription.deadline || null,
         depends_on: null,
         parent_task_id: null,
+        organization_id: organizationId,
         created_at: new Date().toISOString()
     };
 
@@ -182,6 +184,7 @@ function decomposeTask(taskDescription) {
             deadline: calculateDeadline(i, taskDescription.deadline),
             depends_on: i > 0 ? [subtasks[i-1].id] : null, // Chain dependencies
             parent_task_id: parentTaskId,
+            organization_id: organizationId,
             created_at: new Date().toISOString()
         };
         subtasks.push(subtask);
@@ -603,7 +606,7 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Request body is required' });
         }
 
-        const { taskContext, message, enableFunctions = false, conversationHistory = [], pendingDecomposition = null } = body;
+        const { taskContext, message, enableFunctions = false, conversationHistory = [], pendingDecomposition = null, organizationId = null } = body;
 
         console.log('Received request:', { 
             hasMessage: !!message, 
@@ -627,9 +630,10 @@ CORE BEHAVIOR:
 - When users ask to decompose/break down large tasks, immediately call decomposeTask()
 - Be collaborative: ask clarifying questions instead of assuming details
 - Be iterative: refine plans based on user answers until confident
-- Consider couple-friendly workload balance between Mario and Maria
+- Consider workload balance among team members in the organization
 - Suggest calendar/shopping integrations when relevant
 - Use Eisenhower matrix for prioritization (urgent+important=DO, etc.)
+- Always assign tasks to valid organization members
 
 DECOMPOSITION PROCESS:
 1. Generate initial draft with decomposeTask()
@@ -845,19 +849,19 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
             try {
                 switch (aiMessage.function_call.name) {
                     case 'createTask':
-                        functionResult = createTask(args);
+                        functionResult = createTask(args, organizationId);
                         break;
                     case 'splitTask':
-                        functionResult = splitTask(args.taskId, args.splitDescription);
+                        functionResult = splitTask(args.taskId, args.splitDescription, organizationId);
                         break;
                     case 'updateTask':
-                        functionResult = updateTask(args.taskId, args.updates);
+                        functionResult = updateTask(args.taskId, args.updates, organizationId);
                         break;
                     case 'getTasks':
-                        functionResult = getTasks(args.filters || {});
+                        functionResult = getTasks(args.filters || {}, organizationId);
                         break;
                     case 'decomposeTask':
-                        const decomposition = decomposeTask(args);
+                        const decomposition = decomposeTask(args, organizationId);
                         const review = reviewDecomposition(decomposition, false); // Initial review
                         functionResult = {
                             decomposition: decomposition,

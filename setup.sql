@@ -91,6 +91,107 @@ ALTER PUBLICATION supabase_realtime ADD TABLE scores;
 CREATE INDEX idx_scores_player_date ON scores(player, date DESC);
 CREATE INDEX idx_scores_date ON scores(date DESC);
 
+-- ===========================================
+-- MULTI-ORGANIZATION SYSTEM TABLES
+-- ===========================================
+
+-- Create organizations table
+CREATE TABLE organizations (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create users table
+CREATE TABLE users (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    display_name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Add organization_id to tasks table
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
+
+-- Add organization_id and user_id to scores table (keeping player column for backward compatibility)
+ALTER TABLE scores ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
+ALTER TABLE scores ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+
+-- Enable Row Level Security for new tables
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for organizations (allow all for now, can be restricted later)
+CREATE POLICY "Allow all operations on organizations" ON organizations
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Create policies for users (allow all for now, can be restricted later)
+CREATE POLICY "Allow all operations on users" ON users
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Update tasks RLS policy to filter by organization
+DROP POLICY IF EXISTS "Allow all operations" ON tasks;
+CREATE POLICY "Allow operations on own organization tasks" ON tasks
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Update scores RLS policy to filter by organization
+DROP POLICY IF EXISTS "Allow all operations on scores" ON scores;
+CREATE POLICY "Allow operations on own organization scores" ON scores
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Enable realtime for new tables
+ALTER PUBLICATION supabase_realtime ADD TABLE organizations;
+ALTER PUBLICATION supabase_realtime ADD TABLE users;
+
+-- Create indexes for better performance
+CREATE INDEX idx_users_organization_id ON users(organization_id);
+CREATE INDEX idx_tasks_organization_id ON tasks(organization_id);
+CREATE INDEX idx_scores_organization_id ON scores(organization_id);
+CREATE INDEX idx_scores_user_id ON scores(user_id);
+
+-- ===========================================
+-- SEED DATA FOR MARIO MARIA ORGANIZATION
+-- ===========================================
+
+-- Insert default organization
+INSERT INTO organizations (id, name) VALUES
+('550e8400-e29b-41d4-a716-446655440000', 'Mario Maria Organization')
+ON CONFLICT (name) DO NOTHING;
+
+-- Insert default users (password: Montreal013122!)
+-- Note: Password hashes generated using bcrypt with salt rounds 10
+INSERT INTO users (id, username, password_hash, organization_id, display_name) VALUES
+('550e8400-e29b-41d4-a716-446655440001', 'mario', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '550e8400-e29b-41d4-a716-446655440000', 'Mario'),
+('550e8400-e29b-41d4-a716-446655440002', 'maria', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '550e8400-e29b-41d4-a716-446655440000', 'Maria')
+ON CONFLICT (username) DO NOTHING;
+
+-- ===========================================
+-- MIGRATION SCRIPT FOR EXISTING DATA
+-- ===========================================
+
+-- Migrate existing tasks to default organization
+UPDATE tasks SET organization_id = '550e8400-e29b-41d4-a716-446655440000' WHERE organization_id IS NULL;
+
+-- Migrate existing scores to default organization and map players to users
+UPDATE scores SET
+    organization_id = '550e8400-e29b-41d4-a716-446655440000',
+    user_id = CASE
+        WHEN player = 'mario' THEN '550e8400-e29b-41d4-a716-446655440001'
+        WHEN player = 'maria' THEN '550e8400-e29b-41d4-a716-446655440002'
+        ELSE NULL
+    END
+WHERE organization_id IS NULL;
+
 
 -- Enable Row Level Security (but allow all operations for public access)
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
