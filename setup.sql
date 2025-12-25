@@ -169,10 +169,10 @@ INSERT INTO organizations (id, name) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- Insert default users (password: Montreal013122!)
--- Note: Password hashes generated using bcrypt with salt rounds 10
+-- Note: Password hashes generated using SHA-256
 INSERT INTO users (id, username, password_hash, organization_id, display_name) VALUES
-('550e8400-e29b-41d4-a716-446655440001', 'mario', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '550e8400-e29b-41d4-a716-446655440000', 'Mario'),
-('550e8400-e29b-41d4-a716-446655440002', 'maria', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '550e8400-e29b-41d4-a716-446655440000', 'Maria')
+('550e8400-e29b-41d4-a716-446655440001', 'mario', '61f12e5d2421c99479928836e7a20410100106e98d5ae985487f83e93cd1c6f3', '550e8400-e29b-41d4-a716-446655440000', 'Mario'),
+('550e8400-e29b-41d4-a716-446655440002', 'maria', '61f12e5d2421c99479928836e7a20410100106e98d5ae985487f83e93cd1c6f3', '550e8400-e29b-41d4-a716-446655440000', 'Maria')
 ON CONFLICT (username) DO NOTHING;
 
 -- ===========================================
