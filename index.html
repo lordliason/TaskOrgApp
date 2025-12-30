@@ -3805,7 +3805,7 @@
         // CONFIGURATION - Your Supabase credentials
         // ===========================================
         const SUPABASE_URL = 'https://xscocgadvdgsqhfjbnbu.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_rVTtCASbj82QuftDmLP8WQ_GubnlYov';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhzY29jZ2FkdmRnc3FoZmpibmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwNzM4MzAsImV4cCI6MjA4MTY0OTgzMH0.-r71VWJ55Xa65NDhfcqdqy7cItoJSzvgFtWtZij5Q8E';
         
         // Removed: FAMILY_PASSWORD - now using user authentication
         
@@ -4060,6 +4060,10 @@
                 if (authData) {
                     try {
                         const userSession = JSON.parse(authData);
+                        // Validate that the parsed data has the required fields
+                        if (!userSession || !userSession.userId) {
+                            throw new Error('Invalid session format');
+                        }
                         // Verify user still exists and session is valid
                         const { data: user, error } = await supabaseClient
                             .from('users')
@@ -4084,6 +4088,8 @@
                         }
                     } catch (e) {
                         console.error('Auth check failed:', e);
+                        // Clear invalid auth data from localStorage
+                        localStorage.removeItem('taskMatrixAuth');
                     }
                 }
                 // If no valid auth, show login form
@@ -5078,11 +5084,29 @@
 
         async function toggleTaskComplete(id, completed, completedBy = null) {
             try {
-                // Get task details first
-                const task = tasks.find(t => t.id === id);
+                // Get task details first - check in array, then fetch from DB if not found
+                let task = tasks.find(t => t.id === id);
                 if (!task) {
-                    console.error('Task not found:', id);
-                    return;
+                    console.log('Task not in array, fetching from database:', id);
+                    // Fetch from database if not in array (e.g., just restored from bank)
+                    const { data, error } = await supabaseClient
+                        .from('tasks')
+                        .select('*')
+                        .eq('id', id)
+                        .eq('organization_id', currentUser.organizationId)
+                        .single();
+                    
+                    if (error || !data) {
+                        console.error('Task not found in database:', id, error);
+                        alert('Task not found. Please refresh the page.');
+                        return;
+                    }
+                    
+                    task = data;
+                    // Add to tasks array if it's not there
+                    if (!tasks.find(t => t.id === id)) {
+                        tasks.unshift(task);
+                    }
                 }
 
                 // Don't do anything if completion status hasn't changed
@@ -5339,8 +5363,8 @@
             if (!task) return;
 
             try {
-                // Add task back to database
-                const { error } = await supabaseClient
+                // Add task back to database with all fields
+                const { data, error } = await supabaseClient
                     .from('tasks')
                     .insert([{
                         name: task.name,
@@ -5349,10 +5373,29 @@
                         urgent: task.urgent,
                         important: task.important,
                         completed: false,
-                        icon: task.icon
-                    }]);
+                        completed_by: null,
+                        icon: task.icon,
+                        first_step: task.first_step || null,
+                        completion_criteria: task.completion_criteria || null,
+                        deadline: task.deadline || null,
+                        organization_id: currentUser.organizationId
+                    }])
+                    .select()
+                    .single();
 
                 if (error) throw error;
+
+                // Add to tasks array immediately to avoid race condition
+                if (data) {
+                    // Ensure the task object has the correct structure
+                    const restoredTask = {
+                        ...data,
+                        completed: false,
+                        completed_by: null
+                    };
+                    tasks.unshift(restoredTask);
+                    render();
+                }
 
                 // Remove from bank
                 bankedTasks.splice(index, 1);
