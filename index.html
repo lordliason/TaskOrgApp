@@ -4528,12 +4528,16 @@
                 
                 if (incompleteTasks.length === 0 && completedTasks.length === 0) return;
                 
-                const message = incompleteTasks.length > 0
-                    ? `Reset day?\n\n• ${incompleteTasks.length} incomplete task(s) will be moved to the Task Bank\n• ${completedTasks.length} completed task(s) will be saved to Completed Tasks`
-                    : `Reset day?\n\n• ${completedTasks.length} completed task(s) will be saved to Completed Tasks`;
+                // Show options dialog
+                const option = await showResetDayOptions(incompleteTasks.length, completedTasks.length);
+                if (!option) return; // User cancelled
                 
-                if (confirm(message)) {
-                    await resetDay(incompleteTasks, completedTasks);
+                if (option === 'all') {
+                    // Remove all tasks - both incomplete and completed go to their banks
+                    await resetDay(incompleteTasks, completedTasks, 'all');
+                } else if (option === 'completed') {
+                    // Remove only completed tasks - they go to completed bank
+                    await resetDay([], completedTasks, 'completed');
                 }
             });
 
@@ -5109,8 +5113,12 @@
                     }
                 }
 
+                // Track if this is a transition from incomplete to completed (for points)
+                const wasIncomplete = !task.completed;
+                const isCompleting = completed && !task.completed;
+
                 // Don't do anything if completion status hasn't changed
-                if (task.completed === completed) {
+                if (task.completed === completed && (!completed || task.completed_by === completedBy)) {
                     console.log('Task completion status unchanged');
                     return;
                 }
@@ -5146,10 +5154,11 @@
                     }
                 }
 
-                // Award points when task is completed
-                if (completed && completedBy) {
+                // Award points when task transitions from incomplete to completed
+                // Only award if the task was previously incomplete and is now being completed
+                if (isCompleting && completedBy) {
                     const points = getTaskPoints(task.size);
-                    console.log('Awarding points:', completedBy, points);
+                    console.log('Awarding points for completing task:', completedBy, points, 'Task was incomplete:', wasIncomplete);
                     if (points > 0) {
                         // If both completed, award points to both players
                         if (completedBy === 'both') {
@@ -5237,51 +5246,88 @@
             }
         }
 
-        async function resetDay(incompleteTasks, completedTasks) {
+        function showResetDayOptions(incompleteCount, completedCount) {
+            return new Promise((resolve) => {
+                const message = `Reset day?\n\nChoose an option:\n\n` +
+                    `1. Remove ALL tasks\n` +
+                    `   • ${incompleteCount} incomplete task(s) → Task Bank\n` +
+                    `   • ${completedCount} completed task(s) → Completed Tasks\n\n` +
+                    `2. Remove COMPLETED tasks only\n` +
+                    `   • ${completedCount} completed task(s) → Completed Tasks\n` +
+                    `   • ${incompleteCount} incomplete task(s) will remain`;
+                
+                const choice = prompt(message + '\n\nEnter "1" for all tasks, "2" for completed only, or Cancel to abort:');
+                
+                if (choice === null) {
+                    resolve(null); // User cancelled
+                } else if (choice === '1' || choice.trim() === '1') {
+                    resolve('all');
+                } else if (choice === '2' || choice.trim() === '2') {
+                    resolve('completed');
+                } else {
+                    resolve(null); // Invalid input, treat as cancel
+                }
+            });
+        }
+
+        async function resetDay(incompleteTasksToRemove, completedTasksToRemove, mode = 'all') {
             try {
-                // Add incomplete tasks to the bank
-                if (incompleteTasks.length > 0) {
+                const tasksToDelete = [];
+                
+                // Add incomplete tasks to the bank (only if removing all)
+                if (mode === 'all' && incompleteTasksToRemove.length > 0) {
                     const bankedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    incompleteTasks.forEach(task => {
-                        bankedTasks.unshift({
-                            ...task,
-                            bankedDate: bankedDate,
-                            completed: false,
-                            completed_by: null
-                        });
+                    incompleteTasksToRemove.forEach(task => {
+                        // Check if task is not already in bankedTasks
+                        if (!bankedTasks.some(bt => bt.id === task.id)) {
+                            bankedTasks.unshift({
+                                ...task,
+                                bankedDate: bankedDate,
+                                completed: false,
+                                completed_by: null
+                            });
+                        }
+                        tasksToDelete.push(task.id);
                     });
                     localStorage.setItem('taskMatrixBank', JSON.stringify(bankedTasks));
                     renderTaskBank();
                 }
 
                 // Add completed tasks to completed tasks section (avoid duplicates)
-                if (completedTasks.length > 0) {
+                if (completedTasksToRemove.length > 0) {
                     const completedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    completedTasks.forEach(task => {
-                        // Only add if not already in completedTasks
+                    completedTasksToRemove.forEach(task => {
+                        // Only add if not already in the global completedTasks array
                         if (!completedTasks.some(ct => ct.id === task.id)) {
                             completedTasks.unshift({
                                 ...task,
                                 completedDate: completedDate,
-                                completed: true
+                                completed: true,
+                                completed_by: task.completed_by || null
                             });
                         }
+                        tasksToDelete.push(task.id);
                     });
+                    
                     localStorage.setItem('taskMatrixCompleted', JSON.stringify(completedTasks));
                     renderCompletedTasks();
                 }
 
-                // Delete all tasks from database
-                const { error } = await supabaseClient
-                    .from('tasks')
-                    .delete()
-                    .neq('id', '00000000-0000-0000-0000-000000000000')
-                    .eq('organization_id', currentUser.organizationId);
+                // Delete tasks from database based on mode
+                if (tasksToDelete.length > 0) {
+                    const { error } = await supabaseClient
+                        .from('tasks')
+                        .delete()
+                        .in('id', tasksToDelete)
+                        .eq('organization_id', currentUser.organizationId);
 
-                if (error) throw error;
+                    if (error) throw error;
+                }
                 
-                // Reset scores when resetting the day
-                await resetScores();
+                // Reset scores when resetting the day (only if removing all tasks)
+                if (mode === 'all') {
+                    await resetScores();
+                }
             } catch (error) {
                 console.error('Error resetting day:', error);
                 alert('Failed to reset day. Please try again.');
