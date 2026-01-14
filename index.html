@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/rrule@2.8.1/dist/es5/rrule.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rrule@2.8.1/dist/es5/rrule.js" defer onerror="console.warn('Failed to load RRule library')"></script>
     <script src="config.js"></script>
     <style>
         :root {
@@ -4308,6 +4308,15 @@
             passwordInput = document.getElementById('passwordInput');
             passwordBtn = document.getElementById('passwordBtn');
             passwordError = document.getElementById('passwordError');
+            
+            // Debug: Log if elements are found
+            console.log('Login elements found:', {
+                passwordGate: !!passwordGate,
+                usernameInput: !!usernameInput,
+                passwordInput: !!passwordInput,
+                passwordBtn: !!passwordBtn,
+                passwordError: !!passwordError
+            });
             loadingOverlay = document.getElementById('loadingOverlay');
             connectionStatus = document.getElementById('connectionStatus');
             statusDot = document.getElementById('statusDot');
@@ -5544,23 +5553,27 @@
                 // Handle recurring tasks: advance to next occurrence on completion
                 if (completed && task.recurrence_rule && task.deadline) {
                     try {
-                        const rule = RRule.fromString(task.recurrence_rule);
-                        // Get next occurrence after today (or current deadline if in future)
-                        const now = new Date();
-                        const currentDeadline = new Date(task.deadline);
-                        const referenceDate = currentDeadline > now ? currentDeadline : now;
-                        const nextDate = rule.after(referenceDate, false); // false = exclusive (next after reference)
-                        
-                        if (nextDate) {
-                            // Format as YYYY-MM-DD for date field
-                            const nextDateStr = nextDate.toISOString().split('T')[0];
-                            updateData.deadline = nextDateStr;
-                            updateData.completed = false;
-                            updateData.completed_by = null;
-                            console.log('Recurring task: advancing to next occurrence:', nextDateStr);
+                        if (typeof RRule !== 'undefined' && RRule.fromString) {
+                            const rule = RRule.fromString(task.recurrence_rule);
+                            // Get next occurrence after today (or current deadline if in future)
+                            const now = new Date();
+                            const currentDeadline = new Date(task.deadline);
+                            const referenceDate = currentDeadline > now ? currentDeadline : now;
+                            const nextDate = rule.after(referenceDate, false); // false = exclusive (next after reference)
+                            
+                            if (nextDate) {
+                                // Format as YYYY-MM-DD for date field
+                                const nextDateStr = nextDate.toISOString().split('T')[0];
+                                updateData.deadline = nextDateStr;
+                                updateData.completed = false;
+                                updateData.completed_by = null;
+                                console.log('Recurring task: advancing to next occurrence:', nextDateStr);
+                            } else {
+                                // No more occurrences, just mark as complete normally
+                                console.log('Recurring task: no more occurrences, marking as complete');
+                            }
                         } else {
-                            // No more occurrences, just mark as complete normally
-                            console.log('Recurring task: no more occurrences, marking as complete');
+                            console.warn('RRule library not loaded, skipping recurring task advancement');
                         }
                     } catch (error) {
                         console.error('Error processing recurring task:', error);
@@ -6722,6 +6735,12 @@
                 return null;
             }
 
+            // Check if RRule is available
+            if (typeof RRule === 'undefined' || !RRule.DAILY) {
+                console.warn('RRule library not loaded, cannot generate recurrence rule');
+                return null;
+            }
+
             const date = new Date(deadlineDate);
             if (isNaN(date.getTime())) {
                 return null;
@@ -6786,13 +6805,18 @@
             if (modalRepeatPreset && modalRepeatPreset.value !== 'never') {
                 if (modalRepeatPreset.value === 'custom' && customRRule && customRRule.value.trim()) {
                     // Validate custom RRULE
-                    try {
-                        const testRule = RRule.fromString(customRRule.value.trim());
+                    if (typeof RRule !== 'undefined' && RRule.fromString) {
+                        try {
+                            const testRule = RRule.fromString(customRRule.value.trim());
+                            recurrenceRule = customRRule.value.trim();
+                        } catch (error) {
+                            alert('Invalid RRULE format. Please check your custom recurrence rule.');
+                            modalAddTaskBtn.disabled = false;
+                            return;
+                        }
+                    } else {
+                        // If RRule not loaded, just use the string as-is
                         recurrenceRule = customRRule.value.trim();
-                    } catch (error) {
-                        alert('Invalid RRULE format. Please check your custom recurrence rule.');
-                        modalAddTaskBtn.disabled = false;
-                        return;
                     }
                 } else if (deadline) {
                     recurrenceRule = generateRRuleFromPreset(modalRepeatPreset.value, deadline);
@@ -6863,13 +6887,18 @@
             if (modalRepeatPreset && modalRepeatPreset.value !== 'never') {
                 if (modalRepeatPreset.value === 'custom' && customRRule && customRRule.value.trim()) {
                     // Validate custom RRULE
-                    try {
-                        const testRule = RRule.fromString(customRRule.value.trim());
+                    if (typeof RRule !== 'undefined' && RRule.fromString) {
+                        try {
+                            const testRule = RRule.fromString(customRRule.value.trim());
+                            recurrenceRule = customRRule.value.trim();
+                        } catch (error) {
+                            alert('Invalid RRULE format. Please check your custom recurrence rule.');
+                            modalAddTaskBtn.disabled = false;
+                            return;
+                        }
+                    } else {
+                        // If RRule not loaded, just use the string as-is
                         recurrenceRule = customRRule.value.trim();
-                    } catch (error) {
-                        alert('Invalid RRULE format. Please check your custom recurrence rule.');
-                        modalAddTaskBtn.disabled = false;
-                        return;
                     }
                 } else if (deadline) {
                     recurrenceRule = generateRRuleFromPreset(modalRepeatPreset.value, deadline);
