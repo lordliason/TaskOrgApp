@@ -962,6 +962,30 @@
             z-index: 5;
         }
 
+        .dots-container.dragging-active {
+            pointer-events: auto;
+        }
+
+        /* Grid snap indicators */
+        .snap-indicator {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-mario);
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0);
+            transition: all 0.2s ease;
+            pointer-events: none;
+            z-index: 999;
+            box-shadow: 0 0 8px var(--accent-mario);
+        }
+
+        .snap-indicator.visible {
+            opacity: 0.6;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
         .left-labels {
             display: flex;
             flex-direction: column;
@@ -1039,9 +1063,31 @@
         .task-dot {
             position: absolute;
             border-radius: 50%;
-            cursor: pointer;
+            cursor: grab;
             transition: all 0.2s ease;
             display: flex;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .task-dot:active {
+            cursor: grabbing;
+        }
+
+        .task-dot.dragging {
+            cursor: grabbing;
+            z-index: 1000;
+            opacity: 0.8;
+            transform: translate(-50%, -50%) scale(1.2);
+            transition: none;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .task-dot.dragging:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        .task-dot {
             align-items: center;
             justify-content: center;
             font-weight: 600;
@@ -6015,17 +6061,200 @@
             }
 
             // Tooltip events
-            dot.addEventListener('mouseenter', (e) => showTooltip(e, task));
+            dot.addEventListener('mouseenter', (e) => {
+                if (!dot.classList.contains('dragging')) {
+                    showTooltip(e, task);
+                }
+            });
             dot.addEventListener('mousemove', moveTooltip);
             dot.addEventListener('mouseleave', hideTooltip);
 
-            // Click to show view modal
-            dot.addEventListener('click', (e) => {
+            // Click to show view modal (only if not dragging)
+            let isDragging = false;
+            let dragStartX = 0;
+            let dragStartY = 0;
+            let initialLeftPercent = 0;
+            let initialTopPercent = 0;
+
+            dot.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return; // Only left mouse button
+                e.preventDefault();
                 e.stopPropagation();
-                showViewTaskModal(task);
+                
+                isDragging = false;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                
+                // Store initial position in percentages
+                initialLeftPercent = parseFloat(dot.style.left) || 50;
+                initialTopPercent = parseFloat(dot.style.top) || 50;
+                
+                dot.classList.add('dragging');
+                dotsContainer.classList.add('dragging-active');
+                hideTooltip();
+                
+                const handleDrag = (e) => {
+                    if (!dot.classList.contains('dragging')) return;
+                    
+                    const rect = dotsContainer.getBoundingClientRect();
+                    const deltaX = e.clientX - dragStartX;
+                    const deltaY = e.clientY - dragStartY;
+                    
+                    // Check if we've moved enough to consider it a drag
+                    if (!isDragging && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) {
+                        isDragging = true;
+                    }
+                    
+                    if (isDragging) {
+                        // Convert pixel delta to percentage delta
+                        const deltaLeftPercent = (deltaX / rect.width) * 100;
+                        const deltaTopPercent = (deltaY / rect.height) * 100;
+                        
+                        // Calculate new position
+                        const newLeftPercent = initialLeftPercent + deltaLeftPercent;
+                        const newTopPercent = initialTopPercent + deltaTopPercent;
+                        
+                        // Clamp to container bounds
+                        const clampedLeft = Math.max(0, Math.min(100, newLeftPercent));
+                        const clampedTop = Math.max(0, Math.min(100, newTopPercent));
+                        
+                        dot.style.left = `${clampedLeft}%`;
+                        dot.style.top = `${clampedTop}%`;
+                        
+                        // Show snap indicator
+                        updateSnapIndicator(clampedLeft, clampedTop);
+                    }
+                };
+
+                const handleDragEnd = async (e) => {
+                    if (!dot.classList.contains('dragging')) return;
+                    
+                    document.removeEventListener('mousemove', handleDrag);
+                    document.removeEventListener('mouseup', handleDragEnd);
+                    
+                    if (isDragging) {
+                        const leftPercent = parseFloat(dot.style.left);
+                        const topPercent = parseFloat(dot.style.top);
+                        
+                        // Calculate snapped position (1-5 scale)
+                        const snappedUrgent = snapToGrid(leftPercent, true);
+                        const snappedImportant = snapToGrid(topPercent, false);
+                        
+                        // Update task position
+                        await updateTaskPosition(task.id, snappedUrgent, snappedImportant);
+                        
+                        // Hide snap indicator
+                        hideSnapIndicator();
+                    } else {
+                        // It was just a click, show view modal
+                        showViewTaskModal(task);
+                    }
+                    
+                    dot.classList.remove('dragging');
+                    dotsContainer.classList.remove('dragging-active');
+                    isDragging = false;
+                };
+                
+                document.addEventListener('mousemove', handleDrag);
+                document.addEventListener('mouseup', handleDragEnd);
             });
 
             return dot;
+        }
+
+        // Snap percentage to grid (1-5 scale)
+        function snapToGrid(percent, isUrgent) {
+            // Grid positions: 10%, 30%, 50%, 70%, 90% correspond to 5, 4, 3, 2, 1
+            const gridPositions = [10, 30, 50, 70, 90];
+            const gridValues = [5, 4, 3, 2, 1];
+            
+            // Find closest grid position
+            let closestIndex = 0;
+            let minDistance = Math.abs(percent - gridPositions[0]);
+            
+            for (let i = 1; i < gridPositions.length; i++) {
+                const distance = Math.abs(percent - gridPositions[i]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestIndex = i;
+                }
+            }
+            
+            return gridValues[closestIndex];
+        }
+
+        // Convert grid value (1-5) to percentage
+        function gridValueToPercent(value, isUrgent) {
+            const gridPositions = [10, 30, 50, 70, 90];
+            const gridValues = [5, 4, 3, 2, 1];
+            const index = gridValues.indexOf(value);
+            return gridPositions[index] || 50;
+        }
+
+        // Update snap indicator position
+        let snapIndicator = null;
+        function updateSnapIndicator(leftPercent, topPercent) {
+            if (!snapIndicator) {
+                snapIndicator = document.createElement('div');
+                snapIndicator.className = 'snap-indicator';
+                dotsContainer.appendChild(snapIndicator);
+            }
+            
+            const snappedUrgent = snapToGrid(leftPercent, true);
+            const snappedImportant = snapToGrid(topPercent, false);
+            
+            const snappedLeft = gridValueToPercent(snappedUrgent, true);
+            const snappedTop = gridValueToPercent(snappedImportant, false);
+            
+            snapIndicator.style.left = `${snappedLeft}%`;
+            snapIndicator.style.top = `${snappedTop}%`;
+            snapIndicator.classList.add('visible');
+        }
+
+        function hideSnapIndicator() {
+            if (snapIndicator) {
+                snapIndicator.classList.remove('visible');
+                setTimeout(() => {
+                    if (snapIndicator && !snapIndicator.classList.contains('visible')) {
+                        snapIndicator.remove();
+                        snapIndicator = null;
+                    }
+                }, 200);
+            }
+        }
+
+        // Update task position in database
+        async function updateTaskPosition(taskId, urgent, important) {
+            try {
+                const task = tasks.find(t => t.id === taskId);
+                if (!task) return;
+
+                // Clamp values to 1-5
+                const clampedUrgent = Math.max(1, Math.min(5, Math.round(urgent)));
+                const clampedImportant = Math.max(1, Math.min(5, Math.round(important)));
+
+                const { error } = await supabaseClient
+                    .from('tasks')
+                    .update({
+                        urgent: clampedUrgent,
+                        important: clampedImportant,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', taskId)
+                    .eq('organization_id', currentUser.organizationId);
+
+                if (error) throw error;
+
+                // Update local task
+                task.urgent = clampedUrgent;
+                task.important = clampedImportant;
+
+                // Re-render matrix to show new position
+                renderMatrix();
+            } catch (error) {
+                console.error('Error updating task position:', error);
+                alert('Failed to update task position. Please try again.');
+            }
         }
 
         function showTooltip(e, task) {
