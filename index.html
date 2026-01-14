@@ -1720,6 +1720,230 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Reset Day Modal */
+        .reset-day-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 31, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .reset-day-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .reset-day-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .reset-day-content {
+                padding: 1.5rem;
+                max-width: 95%;
+            }
+
+            .reset-day-title {
+                font-size: 1.5rem;
+            }
+
+            .reset-day-option {
+                padding: 1.25rem;
+            }
+        }
+
+        .reset-day-modal.show .reset-day-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .reset-day-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .reset-day-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.75rem;
+            background: linear-gradient(135deg, var(--accent-mario), var(--accent-maria));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .reset-day-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .reset-day-options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .reset-day-option {
+            background: var(--bg-main);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reset-day-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--accent-mario), var(--accent-maria));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .reset-day-option:hover {
+            border-color: var(--accent-mario);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(74, 158, 255, 0.2);
+        }
+
+        .reset-day-option:hover::before {
+            opacity: 0.05;
+        }
+
+        .reset-day-option.selected {
+            border-color: var(--accent-mario);
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(255, 126, 179, 0.1));
+            box-shadow: 0 8px 24px rgba(74, 158, 255, 0.3);
+        }
+
+        .reset-day-option-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .reset-day-option-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .reset-day-option-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .reset-day-option-icon.all {
+            background: linear-gradient(135deg, var(--accent-mario), var(--accent-both));
+        }
+
+        .reset-day-option-icon.completed {
+            background: linear-gradient(135deg, var(--accent-maria), var(--accent-both));
+        }
+
+        .reset-day-option-details {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        .reset-day-option-details ul {
+            list-style: none;
+            padding: 0;
+            margin: 0.5rem 0 0 0;
+        }
+
+        .reset-day-option-details li {
+            padding: 0.25rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .reset-day-option-details li::before {
+            content: '→';
+            color: var(--accent-mario);
+            font-weight: bold;
+        }
+
+        .reset-day-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .reset-day-btn {
+            flex: 1;
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            font-family: inherit;
+        }
+
+        .reset-day-btn.primary {
+            background: linear-gradient(135deg, var(--accent-mario), var(--accent-maria));
+            color: white;
+        }
+
+        .reset-day-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(74, 158, 255, 0.4);
+        }
+
+        .reset-day-btn.secondary {
+            background: var(--bg-main);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .reset-day-btn.secondary:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-muted);
+        }
+
+        .reset-day-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
         /* Mobile Navigation Tabs */
         .mobile-nav {
             display: none;
@@ -3452,6 +3676,44 @@
     <div class="tooltip" id="tooltip">
         <div class="tooltip-name"></div>
         <div class="tooltip-meta"></div>
+    </div>
+
+    <!-- Reset Day Modal -->
+    <div class="reset-day-modal" id="resetDayModal">
+        <div class="reset-day-content">
+            <div class="reset-day-header">
+                <div class="reset-day-title">Reset Day</div>
+                <div class="reset-day-subtitle">Choose what to reset</div>
+            </div>
+            <div class="reset-day-options">
+                <div class="reset-day-option" data-option="all" id="resetOptionAll">
+                    <div class="reset-day-option-content">
+                        <div class="reset-day-option-title">
+                            <span class="reset-day-option-icon all">📋</span>
+                            Remove ALL Tasks
+                        </div>
+                        <div class="reset-day-option-details" id="resetOptionAllDetails">
+                            <!-- Details will be populated by JS -->
+                        </div>
+                    </div>
+                </div>
+                <div class="reset-day-option" data-option="completed" id="resetOptionCompleted">
+                    <div class="reset-day-option-content">
+                        <div class="reset-day-option-title">
+                            <span class="reset-day-option-icon completed">✅</span>
+                            Remove Completed Only
+                        </div>
+                        <div class="reset-day-option-details" id="resetOptionCompletedDetails">
+                            <!-- Details will be populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="reset-day-actions">
+                <button class="reset-day-btn secondary" id="resetDayCancelBtn">Cancel</button>
+                <button class="reset-day-btn primary" id="resetDayConfirmBtn" disabled>Confirm</button>
+            </div>
+        </div>
     </div>
 
     <!-- Task Options Menu -->
@@ -5248,25 +5510,100 @@
 
         function showResetDayOptions(incompleteCount, completedCount) {
             return new Promise((resolve) => {
-                const message = `Reset day?\n\nChoose an option:\n\n` +
-                    `1. Remove ALL tasks\n` +
-                    `   • ${incompleteCount} incomplete task(s) → Task Bank\n` +
-                    `   • ${completedCount} completed task(s) → Completed Tasks\n\n` +
-                    `2. Remove COMPLETED tasks only\n` +
-                    `   • ${completedCount} completed task(s) → Completed Tasks\n` +
-                    `   • ${incompleteCount} incomplete task(s) will remain`;
+                const modal = document.getElementById('resetDayModal');
+                const optionAll = document.getElementById('resetOptionAll');
+                const optionCompleted = document.getElementById('resetOptionCompleted');
+                const optionAllDetails = document.getElementById('resetOptionAllDetails');
+                const optionCompletedDetails = document.getElementById('resetOptionCompletedDetails');
+                const confirmBtn = document.getElementById('resetDayConfirmBtn');
+                const cancelBtn = document.getElementById('resetDayCancelBtn');
                 
-                const choice = prompt(message + '\n\nEnter "1" for all tasks, "2" for completed only, or Cancel to abort:');
+                let selectedOption = null;
                 
-                if (choice === null) {
-                    resolve(null); // User cancelled
-                } else if (choice === '1' || choice.trim() === '1') {
-                    resolve('all');
-                } else if (choice === '2' || choice.trim() === '2') {
-                    resolve('completed');
-                } else {
-                    resolve(null); // Invalid input, treat as cancel
-                }
+                // Update option details
+                optionAllDetails.innerHTML = `
+                    <ul>
+                        <li>${incompleteCount} incomplete task(s) → Task Bank</li>
+                        <li>${completedCount} completed task(s) → Completed Tasks</li>
+                    </ul>
+                `;
+                
+                optionCompletedDetails.innerHTML = `
+                    <ul>
+                        <li>${completedCount} completed task(s) → Completed Tasks</li>
+                        <li>${incompleteCount} incomplete task(s) will remain</li>
+                    </ul>
+                `;
+                
+                // Reset selection
+                selectedOption = null;
+                optionAll.classList.remove('selected');
+                optionCompleted.classList.remove('selected');
+                confirmBtn.disabled = true;
+                
+                // Option click handlers
+                const selectOption = (option) => {
+                    selectedOption = option;
+                    optionAll.classList.toggle('selected', option === 'all');
+                    optionCompleted.classList.toggle('selected', option === 'completed');
+                    confirmBtn.disabled = false;
+                };
+                
+                const handleOptionAllClick = () => selectOption('all');
+                const handleOptionCompletedClick = () => selectOption('completed');
+                
+                // Confirm handler
+                const handleConfirm = () => {
+                    if (selectedOption) {
+                        modal.classList.remove('show');
+                        cleanup();
+                        resolve(selectedOption);
+                    }
+                };
+                
+                // Cancel handler
+                const handleCancel = () => {
+                    modal.classList.remove('show');
+                    cleanup();
+                    resolve(null);
+                };
+                
+                // Backdrop click handler
+                const handleBackdropClick = (e) => {
+                    if (e.target === modal) {
+                        handleCancel();
+                    }
+                };
+                
+                // Keyboard handler (Escape to cancel)
+                const handleKeyDown = (e) => {
+                    if (e.key === 'Escape') {
+                        handleCancel();
+                    } else if (e.key === 'Enter' && selectedOption) {
+                        handleConfirm();
+                    }
+                };
+                
+                // Cleanup function
+                const cleanup = () => {
+                    optionAll.removeEventListener('click', handleOptionAllClick);
+                    optionCompleted.removeEventListener('click', handleOptionCompletedClick);
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    modal.removeEventListener('click', handleBackdropClick);
+                    document.removeEventListener('keydown', handleKeyDown);
+                };
+                
+                // Add event listeners
+                optionAll.addEventListener('click', handleOptionAllClick);
+                optionCompleted.addEventListener('click', handleOptionCompletedClick);
+                confirmBtn.addEventListener('click', handleConfirm);
+                cancelBtn.addEventListener('click', handleCancel);
+                modal.addEventListener('click', handleBackdropClick);
+                document.addEventListener('keydown', handleKeyDown);
+                
+                // Show modal
+                modal.classList.add('show');
             });
         }
 
