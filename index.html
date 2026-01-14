@@ -6227,23 +6227,42 @@
         async function updateTaskPosition(taskId, urgent, important) {
             try {
                 const task = tasks.find(t => t.id === taskId);
-                if (!task) return;
+                if (!task) {
+                    console.error('Task not found:', taskId);
+                    return;
+                }
+
+                // Check if currentUser and organizationId are available
+                if (!currentUser || !currentUser.organizationId) {
+                    console.error('User not authenticated or organizationId missing');
+                    alert('Please log in to update task positions.');
+                    return;
+                }
 
                 // Clamp values to 1-5
                 const clampedUrgent = Math.max(1, Math.min(5, Math.round(urgent)));
                 const clampedImportant = Math.max(1, Math.min(5, Math.round(important)));
 
-                const { error } = await supabaseClient
+                // Build the query
+                let query = supabaseClient
                     .from('tasks')
                     .update({
                         urgent: clampedUrgent,
-                        important: clampedImportant,
-                        updated_at: new Date().toISOString()
+                        important: clampedImportant
                     })
-                    .eq('id', taskId)
-                    .eq('organization_id', currentUser.organizationId);
+                    .eq('id', taskId);
 
-                if (error) throw error;
+                // Add organization_id filter if available
+                if (currentUser.organizationId) {
+                    query = query.eq('organization_id', currentUser.organizationId);
+                }
+
+                const { error, data } = await query;
+
+                if (error) {
+                    console.error('Supabase error:', error);
+                    throw error;
+                }
 
                 // Update local task
                 task.urgent = clampedUrgent;
@@ -6253,7 +6272,8 @@
                 renderMatrix();
             } catch (error) {
                 console.error('Error updating task position:', error);
-                alert('Failed to update task position. Please try again.');
+                const errorMessage = error?.message || 'Unknown error occurred';
+                alert(`Failed to update task position: ${errorMessage}. Please try again.`);
             }
         }
 
