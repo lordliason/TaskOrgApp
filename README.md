@@ -139,6 +139,41 @@ The app uses a 1-5 scale for Urgency and Importance, positioning tasks continuou
 | Delegate | High (4-5) | Low (1-2) | Consider delegating |
 | Eliminate | Low (1-2) | Low (1-2) | Consider dropping |
 
+## Testing
+
+The project includes comprehensive unit tests to ensure code quality and catch regressions.
+
+### Running Tests
+
+1. **Install dependencies** (if not already done):
+   ```bash
+   npm install
+   ```
+
+2. **Run all tests**:
+   ```bash
+   npm test
+   ```
+
+3. **Run tests in watch mode** (for development):
+   ```bash
+   npm run test:watch
+   ```
+
+4. **Generate coverage report**:
+   ```bash
+   npm run test:coverage
+   ```
+
+### Test Structure
+
+Tests are located in the `__tests__/` directory:
+- `task-management.test.js` - Tests for task CRUD operations
+- `decomposition.test.js` - Tests for task decomposition features
+- `helpers.test.js` - Tests for utility functions
+
+See `__tests__/README.md` for more details on writing and running tests.
+
 ## Troubleshooting
 
 **Chatbot keeps loading forever after clicking Enter?**
@@ -163,3 +198,8 @@ The app uses a 1-5 scale for Urgency and Importance, positioning tasks continuou
 **Forgot password?**
 - Clear your browser's localStorage, or
 - Change the password in `index.html` and redeploy
+
+**Tests failing?**
+- Make sure all dependencies are installed: `npm install`
+- Check that you're using Node.js version 14 or higher
+- Run `npm test` to see detailed error messages

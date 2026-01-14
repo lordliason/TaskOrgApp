@@ -943,5 +943,22 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
     }
 };
 
+// Export functions for testing
+module.exports.createTask = createTask;
+module.exports.splitTask = splitTask;
+module.exports.updateTask = updateTask;
+module.exports.getTasks = getTasks;
+module.exports.decomposeTask = decomposeTask;
+module.exports.refineDecomposition = refineDecomposition;
+module.exports.finalizeDecomposition = finalizeDecomposition;
+module.exports.calculateDeadline = calculateDeadline;
+module.exports.assignMatrixPositions = assignMatrixPositions;
+module.exports.suggestIntegrations = suggestIntegrations;
+module.exports.reviewDecomposition = reviewDecomposition;
+module.exports.checkCircularDependencies = checkCircularDependencies;
+module.exports.calculateConfidence = calculateConfidence;
+module.exports.generateSuggestions = generateSuggestions;
+module.exports.parseDeadline = parseDeadline;
+
 // Export as default for Vercel compatibility
 module.exports.default = module.exports;
