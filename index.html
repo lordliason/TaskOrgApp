@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/rrule@2.8.1/dist/es5/rrule.js"></script>
     <script src="config.js"></script>
     <style>
         :root {
@@ -345,6 +346,40 @@
 
         .form-textarea::placeholder {
             color: var(--text-muted);
+        }
+
+        /* Repeat Section */
+        .repeat-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .repeat-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            font-weight: 300;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0;
+        }
+
+        .repeat-toggle-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-mario);
+            color: var(--accent-mario);
+        }
+
+        .repeat-section-content {
+            margin-top: 0.625rem;
         }
 
         /* Assignee Buttons */
@@ -1130,6 +1165,23 @@
         .task-dot.m { width: 44px; height: 44px; font-size: 0.7rem; }
         .task-dot.l { width: 56px; height: 56px; font-size: 0.8rem; }
         .task-dot.xl { width: 72px; height: 72px; font-size: 0.9rem; }
+
+        /* Recurring indicator */
+        .recurring-indicator {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 0.7rem;
+            line-height: 1;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
 
         .task-dot .dot-icon {
             font-size: 1.2em;
@@ -3988,6 +4040,31 @@
             </div>
 
             <div class="form-section">
+                <label class="form-label">Deadline (optional)</label>
+                <input type="date" id="modalDeadline" class="form-input">
+            </div>
+
+            <div class="form-section">
+                <div class="repeat-section-header" id="repeatSectionHeader">
+                    <label class="form-label" style="margin-bottom: 0;">Repeat</label>
+                    <button type="button" class="repeat-toggle-btn" id="repeatToggleBtn">+</button>
+                </div>
+                <div class="repeat-section-content" id="repeatSectionContent" style="display: none;">
+                    <select id="modalRepeatPreset" class="form-input" style="margin-top: 0.625rem;">
+                        <option value="never">Never</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="weekdays">Every weekday</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                    <div id="customRepeatOptions" style="display: none; margin-top: 0.625rem;">
+                        <input type="text" id="customRRule" class="form-input" placeholder="RRULE string (e.g., FREQ=WEEKLY;BYDAY=TU)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
                 <label class="form-label">What is a small step you can do to start the task?</label>
                 <textarea id="modalFirstStep" class="form-textarea" placeholder="Enter a small first step to get started..."></textarea>
             </div>
@@ -4135,7 +4212,7 @@
         let taskBankHeader, taskBankList, bankToggle, bankCount;
         let completedTasksHeader, completedTasksList, completedToggle, completedCount;
         let leaderboardToggleBtn;
-        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria;
+        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria, modalDeadline, modalRepeatPreset, customRepeatOptions, customRRule, repeatToggleBtn, repeatSectionContent;
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
         let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
         let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn, viewTaskSplitBtn;
@@ -4259,6 +4336,12 @@
             modalAddTaskBtn = document.getElementById('modalAddTaskBtn');
             modalFirstStep = document.getElementById('modalFirstStep');
             modalCompletionCriteria = document.getElementById('modalCompletionCriteria');
+            modalDeadline = document.getElementById('modalDeadline');
+            modalRepeatPreset = document.getElementById('modalRepeatPreset');
+            customRepeatOptions = document.getElementById('customRepeatOptions');
+            customRRule = document.getElementById('customRRule');
+            repeatToggleBtn = document.getElementById('repeatToggleBtn');
+            repeatSectionContent = document.getElementById('repeatSectionContent');
             taskOptionsMenu = document.getElementById('taskOptionsMenu');
             taskOptionsClose = document.getElementById('taskOptionsClose');
             markCompleteGroup = document.getElementById('markCompleteGroup');
@@ -5158,6 +5241,26 @@
                 });
             });
 
+            // Repeat section toggle
+            if (repeatToggleBtn) {
+                repeatToggleBtn.addEventListener('click', () => {
+                    const isVisible = repeatSectionContent.style.display !== 'none';
+                    repeatSectionContent.style.display = isVisible ? 'none' : 'block';
+                    repeatToggleBtn.textContent = isVisible ? '+' : '−';
+                });
+            }
+
+            // Repeat preset change handler
+            if (modalRepeatPreset) {
+                modalRepeatPreset.addEventListener('change', (e) => {
+                    if (e.target.value === 'custom') {
+                        customRepeatOptions.style.display = 'block';
+                    } else {
+                        customRepeatOptions.style.display = 'none';
+                    }
+                });
+            }
+
             // Mobile navigation
             document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -5436,6 +5539,33 @@
                     updateData.completed_by = completedBy;
                 } else if (!completed) {
                     updateData.completed_by = null;
+                }
+
+                // Handle recurring tasks: advance to next occurrence on completion
+                if (completed && task.recurrence_rule && task.deadline) {
+                    try {
+                        const rule = RRule.fromString(task.recurrence_rule);
+                        // Get next occurrence after today (or current deadline if in future)
+                        const now = new Date();
+                        const currentDeadline = new Date(task.deadline);
+                        const referenceDate = currentDeadline > now ? currentDeadline : now;
+                        const nextDate = rule.after(referenceDate, false); // false = exclusive (next after reference)
+                        
+                        if (nextDate) {
+                            // Format as YYYY-MM-DD for date field
+                            const nextDateStr = nextDate.toISOString().split('T')[0];
+                            updateData.deadline = nextDateStr;
+                            updateData.completed = false;
+                            updateData.completed_by = null;
+                            console.log('Recurring task: advancing to next occurrence:', nextDateStr);
+                        } else {
+                            // No more occurrences, just mark as complete normally
+                            console.log('Recurring task: no more occurrences, marking as complete');
+                        }
+                    } catch (error) {
+                        console.error('Error processing recurring task:', error);
+                        // Fall back to normal completion if RRULE parsing fails
+                    }
                 }
 
                 console.log('Updating task:', id, updateData);
@@ -6014,8 +6144,9 @@
         }
 
         function createTaskDot(task) {
+            const isRecurring = task.recurrence_rule && task.recurrence_rule.trim() !== '';
             const dot = document.createElement('div');
-            dot.className = `task-dot ${task.assignee} ${task.size}${task.completed ? ' completed' : ''}`;
+            dot.className = `task-dot ${task.assignee} ${task.size}${task.completed ? ' completed' : ''}${isRecurring ? ' recurring' : ''}`;
             dot.dataset.id = task.id;
 
             // Positioning based on 1-5 scale
@@ -6036,29 +6167,39 @@
             dot.style.top = `${top}%`;
 
             // Content: checkmark if completed, icon if set, otherwise short name
+            const isRecurring = task.recurrence_rule && task.recurrence_rule.trim() !== '';
+            let content = '';
+            
             if (task.completed) {
                 if (task.completed_by === 'mario') {
-                    dot.innerHTML = `<div class="completion-indicator mario">✓</div>`;
+                    content = `<div class="completion-indicator mario">✓</div>`;
                 } else if (task.completed_by === 'maria') {
-                    dot.innerHTML = `<div class="completion-indicator maria">✓</div>`;
+                    content = `<div class="completion-indicator maria">✓</div>`;
                 } else if (task.completed_by === 'both') {
-                    dot.innerHTML = `<div class="completion-indicator both">✓</div>`;
+                    content = `<div class="completion-indicator both">✓</div>`;
                 } else {
                     // Fallback for tasks completed before this feature
-                    dot.innerHTML = `
+                    content = `
                         <svg width="50%" height="50%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                     `;
                 }
             } else if (task.icon) {
-                dot.innerHTML = `<span class="dot-icon">${task.icon}</span>`;
+                content = `<span class="dot-icon">${task.icon}</span>`;
             } else {
                 // Show truncated name based on size
                 const maxChars = { xs: 2, s: 3, m: 4, l: 5, xl: 6 };
                 const truncated = task.name.substring(0, maxChars[task.size] || 4);
-                dot.innerHTML = `<span class="dot-text">${truncated}</span>`;
+                content = `<span class="dot-text">${truncated}</span>`;
             }
+            
+            // Add recurring icon indicator
+            if (isRecurring && !task.completed) {
+                content += `<span class="recurring-indicator" title="Recurring task">♻️</span>`;
+            }
+            
+            dot.innerHTML = content;
 
             // Tooltip events
             dot.addEventListener('mouseenter', (e) => {
@@ -6488,6 +6629,35 @@
             modalFirstStep.value = task.first_step || '';
             modalCompletionCriteria.value = task.completion_criteria || '';
             
+            // Populate deadline
+            if (modalDeadline && task.deadline) {
+                modalDeadline.value = task.deadline;
+            } else if (modalDeadline) {
+                modalDeadline.value = '';
+            }
+            
+            // Populate recurrence
+            if (task.recurrence_rule) {
+                if (repeatSectionContent) {
+                    repeatSectionContent.style.display = 'block';
+                    if (repeatToggleBtn) repeatToggleBtn.textContent = '−';
+                }
+                // Try to detect preset or set to custom
+                if (modalRepeatPreset) {
+                    modalRepeatPreset.value = 'custom';
+                    if (customRRule) customRRule.value = task.recurrence_rule;
+                    if (customRepeatOptions) customRepeatOptions.style.display = 'block';
+                }
+            } else {
+                if (modalRepeatPreset) modalRepeatPreset.value = 'never';
+                if (customRRule) customRRule.value = '';
+                if (customRepeatOptions) customRepeatOptions.style.display = 'none';
+                if (repeatSectionContent) {
+                    repeatSectionContent.style.display = 'none';
+                    if (repeatToggleBtn) repeatToggleBtn.textContent = '+';
+                }
+            }
+            
             // Sync modal state
             syncModalState();
             
@@ -6510,6 +6680,12 @@
             modalTaskName.value = '';
             modalFirstStep.value = '';
             modalCompletionCriteria.value = '';
+            if (modalDeadline) modalDeadline.value = '';
+            if (modalRepeatPreset) modalRepeatPreset.value = 'never';
+            if (customRRule) customRRule.value = '';
+            if (customRepeatOptions) customRepeatOptions.style.display = 'none';
+            if (repeatSectionContent) repeatSectionContent.style.display = 'none';
+            if (repeatToggleBtn) repeatToggleBtn.textContent = '+';
         }
 
         function syncModalState() {
@@ -6540,6 +6716,58 @@
             });
         }
 
+        // Generate RRULE string from preset
+        function generateRRuleFromPreset(preset, deadlineDate) {
+            if (!deadlineDate || preset === 'never') {
+                return null;
+            }
+
+            const date = new Date(deadlineDate);
+            if (isNaN(date.getTime())) {
+                return null;
+            }
+
+            try {
+                let rule;
+                switch (preset) {
+                    case 'daily':
+                        rule = new RRule({
+                            freq: RRule.DAILY,
+                            dtstart: date
+                        });
+                        break;
+                    case 'weekly':
+                        const weekdayMap = [RRule.SU, RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA];
+                        rule = new RRule({
+                            freq: RRule.WEEKLY,
+                            dtstart: date,
+                            byweekday: [weekdayMap[date.getDay()]]
+                        });
+                        break;
+                    case 'monthly':
+                        rule = new RRule({
+                            freq: RRule.MONTHLY,
+                            dtstart: date,
+                            bymonthday: [date.getDate()]
+                        });
+                        break;
+                    case 'weekdays':
+                        rule = new RRule({
+                            freq: RRule.WEEKLY,
+                            dtstart: date,
+                            byweekday: [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR]
+                        });
+                        break;
+                    default:
+                        return null;
+                }
+                return rule.toString();
+            } catch (error) {
+                console.error('Error generating RRULE:', error);
+                return null;
+            }
+        }
+
         async function addTaskFromModal() {
             const name = modalTaskName.value.trim();
             if (!name) {
@@ -6548,6 +6776,28 @@
             }
 
             modalAddTaskBtn.disabled = true;
+
+            // Get deadline
+            const deadlineValue = modalDeadline ? modalDeadline.value : null;
+            const deadline = deadlineValue || null;
+
+            // Get recurrence rule
+            let recurrenceRule = null;
+            if (modalRepeatPreset && modalRepeatPreset.value !== 'never') {
+                if (modalRepeatPreset.value === 'custom' && customRRule && customRRule.value.trim()) {
+                    // Validate custom RRULE
+                    try {
+                        const testRule = RRule.fromString(customRRule.value.trim());
+                        recurrenceRule = customRRule.value.trim();
+                    } catch (error) {
+                        alert('Invalid RRULE format. Please check your custom recurrence rule.');
+                        modalAddTaskBtn.disabled = false;
+                        return;
+                    }
+                } else if (deadline) {
+                    recurrenceRule = generateRRuleFromPreset(modalRepeatPreset.value, deadline);
+                }
+            }
 
             const task = {
                 name: name,
@@ -6559,6 +6809,8 @@
                 icon: selectedIcon,
                 first_step: modalFirstStep.value.trim() || null,
                 completion_criteria: modalCompletionCriteria.value.trim() || null,
+                deadline: deadline,
+                recurrence_rule: recurrenceRule,
                 organization_id: currentUser.organizationId
             };
 
@@ -6602,6 +6854,28 @@
 
             modalAddTaskBtn.disabled = true;
 
+            // Get deadline
+            const deadlineValue = modalDeadline ? modalDeadline.value : null;
+            const deadline = deadlineValue || null;
+
+            // Get recurrence rule
+            let recurrenceRule = null;
+            if (modalRepeatPreset && modalRepeatPreset.value !== 'never') {
+                if (modalRepeatPreset.value === 'custom' && customRRule && customRRule.value.trim()) {
+                    // Validate custom RRULE
+                    try {
+                        const testRule = RRule.fromString(customRRule.value.trim());
+                        recurrenceRule = customRRule.value.trim();
+                    } catch (error) {
+                        alert('Invalid RRULE format. Please check your custom recurrence rule.');
+                        modalAddTaskBtn.disabled = false;
+                        return;
+                    }
+                } else if (deadline) {
+                    recurrenceRule = generateRRuleFromPreset(modalRepeatPreset.value, deadline);
+                }
+            }
+
             const updateData = {
                 name: name,
                 assignee: selectedAssignee,
@@ -6610,7 +6884,9 @@
                 important: selectedImportant,
                 icon: selectedIcon,
                 first_step: modalFirstStep.value.trim() || null,
-                completion_criteria: modalCompletionCriteria.value.trim() || null
+                completion_criteria: modalCompletionCriteria.value.trim() || null,
+                deadline: deadline,
+                recurrence_rule: recurrenceRule
             };
 
             try {
