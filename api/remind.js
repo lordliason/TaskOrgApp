@@ -61,15 +61,8 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        // Prepare SMS message (SMS has 160 character limit per segment, but we'll keep it concise)
-        let smsMessage = `📋 Task Reminder: ${taskName}`;
-        if (taskDetails) {
-            smsMessage += `\n${taskDetails}`;
-        }
-        if (appUrl) {
-            smsMessage += `\n${appUrl}`;
-        }
-        smsMessage += `\n\n- TaskOrgApp`;
+        // Prepare SMS message - just the task name
+        const smsMessage = `📋 Task Reminder: ${taskName}`;
 
         // Encode form data manually (URLSearchParams might not work in all Node.js versions)
         const encodeFormData = (data) => {
