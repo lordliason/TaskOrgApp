@@ -183,22 +183,27 @@ module.exports = async function handler(req, res) {
         if (!response.ok) {
             // Read response body as text first (can only be read once)
             const responseText = await response.text();
-            let errorData;
+            console.error('Resend API error:', responseText.substring(0, 500));
             
-            // Try to parse as JSON, but we already have the text if it fails
-            try {
-                errorData = JSON.parse(responseText);
-                console.error('Resend API error:', errorData);
-                return res.status(response.status).json({
-                    error: errorData.message || `Email API error: ${response.status}`
-                });
-            } catch (e) {
-                // Response is not JSON, use the text we already read
-                console.error('Resend API error (non-JSON):', responseText.substring(0, 500));
-                return res.status(response.status).json({
-                    error: `Email API error: ${response.status} ${response.statusText}`
-                });
-            }
+            // Fall back to mailto if Resend fails (e.g., domain not verified)
+            const allEmails = recipientEmails.join(',');
+            const mailtoSubject = encodeURIComponent(`Task Reminder: ${taskName}`);
+            const mailtoBody = encodeURIComponent(
+                `Hi ${recipient.charAt(0).toUpperCase() + recipient.slice(1)},\n\n` +
+                `This is a reminder about the following task:\n\n` +
+                `📋 Task: ${taskName}\n` +
+                (taskDetails ? `📝 Details: ${taskDetails}\n` : '') +
+                `\n` +
+                (appUrl ? `🔗 View in app: ${appUrl}\n\n` : '\n') +
+                `Best regards,\nTaskOrgApp`
+            );
+            
+            return res.status(200).json({
+                success: false,
+                fallback: true,
+                mailtoUrl: `mailto:${allEmails}?subject=${mailtoSubject}&body=${mailtoBody}`,
+                message: 'Email service unavailable. Opening email client instead.'
+            });
         }
 
         const data = await response.json();
