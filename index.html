@@ -6180,7 +6180,6 @@
             dot.style.top = `${top}%`;
 
             // Content: checkmark if completed, icon if set, otherwise short name
-            const isRecurring = task.recurrence_rule && task.recurrence_rule.trim() !== '';
             let content = '';
             
             if (task.completed) {
