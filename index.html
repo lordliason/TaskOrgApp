@@ -7231,10 +7231,13 @@
                         if (data.success) {
                             addChatbotMessage('assistant', `✅ Reminder sent to ${recipient.charAt(0).toUpperCase() + recipient.slice(1)}!`);
                         } else if (data.fallback && data.mailtoUrl) {
+                            // Legacy email fallback
                             addChatbotMessage('assistant', `📧 Email service not configured. Opening email client...`);
                             window.location.href = data.mailtoUrl;
                         } else {
-                            throw new Error(data.error || 'Failed to send reminder');
+                            // SMS failed - show error message
+                            const errorMsg = data.message || data.error || 'Failed to send reminder';
+                            throw new Error(errorMsg);
                         }
                     } catch (error) {
                         console.error('Error sending reminder:', error);
@@ -8722,7 +8725,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 }
 
                 if (data.success) {
-                    // Email sent successfully
+                    // SMS sent successfully
                     btn.innerHTML = `✅ Sent!`;
                     setTimeout(() => {
                         btn.innerHTML = originalText;
@@ -8730,7 +8733,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                         if (closeCallback) closeCallback();
                     }, 1500);
                 } else if (data.fallback && data.mailtoUrl) {
-                    // No email service configured, use mailto fallback
+                    // Legacy email fallback (for backwards compatibility)
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                     
@@ -8741,7 +8744,9 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                         if (closeCallback) closeCallback();
                     }, 500);
                 } else {
-                    throw new Error(data.error || 'Failed to send reminder');
+                    // SMS failed - show error message
+                    const errorMsg = data.message || data.error || 'Failed to send reminder';
+                    throw new Error(errorMsg);
                 }
 
             } catch (error) {

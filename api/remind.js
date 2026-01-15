@@ -71,23 +71,44 @@ module.exports = async function handler(req, res) {
         }
         smsMessage += `\n\n- TaskOrgApp`;
 
-        // Send SMS using Textbelt API
-        const formData = new URLSearchParams();
-        formData.append('phone', recipientPhone);
-        formData.append('message', smsMessage);
-        formData.append('key', textbeltApiKey);
+        // Encode form data manually (URLSearchParams might not work in all Node.js versions)
+        const encodeFormData = (data) => {
+            return Object.keys(data)
+                .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key]))
+                .join('&');
+        };
 
+        const formData = encodeFormData({
+            phone: recipientPhone,
+            message: smsMessage,
+            key: textbeltApiKey
+        });
+
+        console.log('Sending SMS to:', recipientPhone, 'with message length:', smsMessage.length);
+        
         const response = await fetch('https://textbelt.com/text', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: formData.toString()
+            body: formData
         });
 
+        let responseText;
+        try {
+            responseText = await response.text();
+            console.log('Textbelt API response status:', response.status);
+            console.log('Textbelt API response:', responseText.substring(0, 500));
+        } catch (textError) {
+            console.error('Failed to read response text:', textError);
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to read response from SMS service'
+            });
+        }
+
         if (!response.ok) {
-            const responseText = await response.text();
-            console.error('Textbelt API error:', responseText.substring(0, 500));
+            console.error('Textbelt API HTTP error:', response.status, responseText.substring(0, 500));
             
             return res.status(200).json({
                 success: false,
@@ -97,7 +118,18 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        const data = await response.json();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Failed to parse Textbelt response as JSON:', parseError);
+            console.error('Response text:', responseText);
+            return res.status(500).json({
+                success: false,
+                error: 'Invalid response from SMS service',
+                rawResponse: responseText.substring(0, 200)
+            });
+        }
         
         if (!data.success) {
             console.error('Textbelt API returned error:', data);
@@ -105,7 +137,8 @@ module.exports = async function handler(req, res) {
                 success: false,
                 fallback: true,
                 message: data.error || 'Failed to send SMS',
-                quotaRemaining: data.quotaRemaining
+                quotaRemaining: data.quotaRemaining,
+                errorDetails: data
             });
         }
         
