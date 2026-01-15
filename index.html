@@ -5733,10 +5733,11 @@
                     }
                     
                     // Send SMS notification to the other person when task is completed
-                    if (completed && completedBy && (completedBy === 'mario' || completedBy === 'maria')) {
-                        // Update task object with new completion status for notification
-                        const updatedTask = { ...task, completed: true, completed_by: completedBy };
-                        await sendCompletionNotification(updatedTask, completedBy);
+                    console.log('Checking if should send completion notification:', { completed, completedBy, taskName: task.name });
+                    if (completedBy === 'mario' || completedBy === 'maria') {
+                        console.log('Sending completion notification for task:', task.name, 'completed by:', completedBy);
+                        // Pass the original task with its assignee info
+                        sendCompletionNotification(task, completedBy);
                     }
                 }
 
@@ -8689,16 +8690,17 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
         async function sendCompletionNotification(task, completedBy) {
             try {
                 // Determine who should be notified
+                // When a task is completed, notify the OTHER person
                 let notifyRecipient = null;
                 
-                if (task.assignee === 'mario' && completedBy === 'maria') {
-                    // Task assigned to Mario, completed by Maria -> notify Mario
-                    notifyRecipient = 'mario';
-                } else if (task.assignee === 'maria' && completedBy === 'mario') {
-                    // Task assigned to Maria, completed by Mario -> notify Maria
+                if (task.assignee === 'mario') {
+                    // Task assigned to Mario -> notify Maria when it's completed
                     notifyRecipient = 'maria';
+                } else if (task.assignee === 'maria') {
+                    // Task assigned to Maria -> notify Mario when it's completed
+                    notifyRecipient = 'mario';
                 } else if (task.assignee === 'both') {
-                    // Task assigned to both, notify the other person
+                    // Task assigned to both -> notify the person who didn't complete it
                     if (completedBy === 'mario') {
                         notifyRecipient = 'maria';
                     } else if (completedBy === 'maria') {
@@ -8706,8 +8708,11 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     }
                 }
                 
+                console.log('Completion notification check:', { assignee: task.assignee, completedBy, notifyRecipient });
+                
                 // Only send notification if there's someone to notify
                 if (!notifyRecipient) {
+                    console.log('No recipient to notify');
                     return;
                 }
                 
