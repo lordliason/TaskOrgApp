@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Request body is required' });
         }
 
-        const { recipient, taskName, taskDetails, appUrl } = body;
+        const { recipient, taskName, taskDetails, appUrl, isCompletion, completedBy } = body;
 
         if (!recipient || !taskName) {
             return res.status(400).json({ error: 'Recipient and task name are required' });
@@ -61,8 +61,14 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        // Prepare SMS message - just the task name
-        const smsMessage = `📋 Task Reminder: ${taskName}`;
+        // Prepare SMS message - completion notification or reminder
+        let smsMessage;
+        if (isCompletion && completedBy) {
+            const completerName = completedBy.charAt(0).toUpperCase() + completedBy.slice(1);
+            smsMessage = `✅ Task completed by ${completerName}: ${taskName}`;
+        } else {
+            smsMessage = `📋 Task Reminder: ${taskName}`;
+        }
 
         // Encode form data manually (URLSearchParams might not work in all Node.js versions)
         const encodeFormData = (data) => {

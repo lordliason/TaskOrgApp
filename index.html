@@ -5731,6 +5731,13 @@
                             await updatePlayerScore(completedBy, points);
                         }
                     }
+                    
+                    // Send SMS notification to the other person when task is completed
+                    if (completed && completedBy && (completedBy === 'mario' || completedBy === 'maria')) {
+                        // Update task object with new completion status for notification
+                        const updatedTask = { ...task, completed: true, completed_by: completedBy };
+                        await sendCompletionNotification(updatedTask, completedBy);
+                    }
                 }
 
                 // Save/remove from completed tasks
@@ -8673,6 +8680,61 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
             } catch (error) {
                 console.error('Error splitting task:', error);
                 alert('Failed to split task: ' + (error.message || 'Please try again.'));
+            }
+        }
+
+        // ===========================================
+        // Send Completion Notification SMS
+        // ===========================================
+        async function sendCompletionNotification(task, completedBy) {
+            try {
+                // Determine who should be notified
+                let notifyRecipient = null;
+                
+                if (task.assignee === 'mario' && completedBy === 'maria') {
+                    // Task assigned to Mario, completed by Maria -> notify Mario
+                    notifyRecipient = 'mario';
+                } else if (task.assignee === 'maria' && completedBy === 'mario') {
+                    // Task assigned to Maria, completed by Mario -> notify Maria
+                    notifyRecipient = 'maria';
+                } else if (task.assignee === 'both') {
+                    // Task assigned to both, notify the other person
+                    if (completedBy === 'mario') {
+                        notifyRecipient = 'maria';
+                    } else if (completedBy === 'maria') {
+                        notifyRecipient = 'mario';
+                    }
+                }
+                
+                // Only send notification if there's someone to notify
+                if (!notifyRecipient) {
+                    return;
+                }
+                
+                // Send SMS notification with completion message
+                const response = await fetch('/api/remind', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        recipient: notifyRecipient,
+                        taskName: task.name,
+                        isCompletion: true,
+                        completedBy: completedBy
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log(`Completion notification sent to ${notifyRecipient}`);
+                } else {
+                    console.warn('Failed to send completion notification:', data.message || data.error);
+                }
+            } catch (error) {
+                // Don't show error to user - just log it
+                console.error('Error sending completion notification:', error);
             }
         }
 
