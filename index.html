@@ -2629,6 +2629,44 @@
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
+        .view-task-remind-group {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .view-task-action-btn.remind {
+            flex: 1;
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .view-task-action-btn.remind.mario {
+            background: rgba(74, 158, 255, 0.15);
+            color: var(--accent-mario);
+            border-color: rgba(74, 158, 255, 0.3);
+        }
+
+        .view-task-action-btn.remind.mario:hover {
+            background: rgba(74, 158, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+        }
+
+        .view-task-action-btn.remind.maria {
+            background: rgba(168, 85, 247, 0.15);
+            color: var(--accent-maria);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .view-task-action-btn.remind.maria:hover {
+            background: rgba(168, 85, 247, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        }
+
         .view-task-action-btn.split {
             background: #6b7280;
             color: white;
@@ -4163,6 +4201,10 @@
                     <!-- Undo Complete button (shown when task is completed) -->
                     <button class="view-task-action-btn undo" id="viewTaskUndoBtn" style="display: none;">Undo Completion</button>
                 </div>
+                <div class="view-task-remind-group">
+                    <button class="view-task-action-btn remind mario" id="viewTaskRemindMarioBtn">📧 Remind Mario</button>
+                    <button class="view-task-action-btn remind maria" id="viewTaskRemindMariaBtn">📧 Remind Maria</button>
+                </div>
                 <div class="view-task-secondary-actions">
                     <button class="view-task-action-btn primary" id="viewTaskEditBtn">Edit Task</button>
                     <button class="view-task-action-btn split" id="viewTaskSplitBtn">Split Task</button>
@@ -4256,6 +4298,7 @@
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
         let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
         let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn, viewTaskSplitBtn;
+        let viewTaskRemindMarioBtn, viewTaskRemindMariaBtn;
         let taskChatbotContainer, taskChatbotHeader, taskChatbotToggle, taskChatbotContent, taskChatbotMessages, taskChatbotInput, taskChatbotSend;
         let currentTaskForChat = null;
         let globalAiBtn, globalAiModal, globalAiClose, globalAiMessages, globalAiInput, globalAiSend;
@@ -4422,6 +4465,8 @@
             viewTaskUndoBtn = document.getElementById('viewTaskUndoBtn');
             viewTaskDeleteBtn = document.getElementById('viewTaskDeleteBtn');
             viewTaskSplitBtn = document.getElementById('viewTaskSplitBtn');
+            viewTaskRemindMarioBtn = document.getElementById('viewTaskRemindMarioBtn');
+            viewTaskRemindMariaBtn = document.getElementById('viewTaskRemindMariaBtn');
             
             // Chatbot elements
             taskChatbotContainer = document.getElementById('taskChatbotContainer');
@@ -5177,6 +5222,18 @@
                         deleteTask(selectedTaskForOptions.id);
                         closeViewTaskModal();
                     }
+                }
+            });
+
+            viewTaskRemindMarioBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    sendReminderFromViewModal('mario', selectedTaskForOptions);
+                }
+            });
+
+            viewTaskRemindMariaBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    sendReminderFromViewModal('maria', selectedTaskForOptions);
                 }
             });
 
@@ -8556,13 +8613,11 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
         // ===========================================
         // Send Task Reminder
         // ===========================================
-        async function sendReminder(recipient, task) {
-            if (!task) return;
+        async function sendReminderCore(recipient, task, btn, closeCallback) {
+            if (!task || !btn) return;
 
-            // Show loading state
-            const btn = recipient === 'mario' ? remindMarioBtn : remindMariaBtn;
             const originalText = btn.innerHTML;
-            btn.innerHTML = `<span class="remind-icon">⏳</span> Sending...`;
+            btn.innerHTML = `⏳ Sending...`;
             btn.disabled = true;
 
             try {
@@ -8594,11 +8649,11 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
 
                 if (data.success) {
                     // Email sent successfully
-                    btn.innerHTML = `<span class="remind-icon">✅</span> Sent!`;
+                    btn.innerHTML = `✅ Sent!`;
                     setTimeout(() => {
                         btn.innerHTML = originalText;
                         btn.disabled = false;
-                        closeTaskOptionsMenu();
+                        if (closeCallback) closeCallback();
                     }, 1500);
                 } else if (data.fallback && data.mailtoUrl) {
                     // No email service configured, use mailto fallback
@@ -8609,7 +8664,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     window.location.href = data.mailtoUrl;
                     
                     setTimeout(() => {
-                        closeTaskOptionsMenu();
+                        if (closeCallback) closeCallback();
                     }, 500);
                 } else {
                     throw new Error(data.error || 'Failed to send reminder');
@@ -8617,7 +8672,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
 
             } catch (error) {
                 console.error('Error sending reminder:', error);
-                btn.innerHTML = `<span class="remind-icon">❌</span> Failed`;
+                btn.innerHTML = `❌ Failed`;
                 
                 setTimeout(() => {
                     btn.innerHTML = originalText;
@@ -8627,6 +8682,18 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 // Show error message
                 alert(`Failed to send reminder: ${error.message || 'Please try again.'}`);
             }
+        }
+
+        // Send reminder from Task Options Menu
+        async function sendReminder(recipient, task) {
+            const btn = recipient === 'mario' ? remindMarioBtn : remindMariaBtn;
+            await sendReminderCore(recipient, task, btn, closeTaskOptionsMenu);
+        }
+
+        // Send reminder from View Task Modal
+        async function sendReminderFromViewModal(recipient, task) {
+            const btn = recipient === 'mario' ? viewTaskRemindMarioBtn : viewTaskRemindMariaBtn;
+            await sendReminderCore(recipient, task, btn, closeViewTaskModal);
         }
     </script>
 </body>
