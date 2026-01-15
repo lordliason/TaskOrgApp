@@ -172,20 +172,24 @@ module.exports = async function handler(req, res) {
         });
 
         if (!response.ok) {
+            // Read response body as text first (can only be read once)
+            const responseText = await response.text();
             let errorData;
+            
+            // Try to parse as JSON, but we already have the text if it fails
             try {
-                errorData = await response.json();
+                errorData = JSON.parse(responseText);
+                console.error('Resend API error:', errorData);
+                return res.status(response.status).json({
+                    error: errorData.message || `Email API error: ${response.status}`
+                });
             } catch (e) {
-                const text = await response.text();
-                console.error('Resend API error (non-JSON):', text.substring(0, 500));
+                // Response is not JSON, use the text we already read
+                console.error('Resend API error (non-JSON):', responseText.substring(0, 500));
                 return res.status(response.status).json({
                     error: `Email API error: ${response.status} ${response.statusText}`
                 });
             }
-            console.error('Resend API error:', errorData);
-            return res.status(response.status).json({
-                error: errorData.message || `Email API error: ${response.status}`
-            });
         }
 
         const data = await response.json();
