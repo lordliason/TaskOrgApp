@@ -39,14 +39,20 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Recipient and task name are required' });
         }
 
-        // Validate recipient
+        // Validate recipient - each person has multiple email addresses
         const validRecipients = {
-            'mario': 'mario.seddik@icloud.com',
-            'maria': 'maria1306@icloud.com'
+            'mario': [
+                'mario.seddik@icloud.com',
+                'mario.seddik@gmail.com'
+            ],
+            'maria': [
+                'maria1306@icloud.com',
+                'maria.k.mikhail@gmail.com'
+            ]
         };
 
-        const recipientEmail = validRecipients[recipient.toLowerCase()];
-        if (!recipientEmail) {
+        const recipientEmails = validRecipients[recipient.toLowerCase()];
+        if (!recipientEmails) {
             return res.status(400).json({ error: 'Invalid recipient. Must be "mario" or "maria"' });
         }
 
@@ -55,6 +61,8 @@ module.exports = async function handler(req, res) {
 
         if (!resendApiKey) {
             // Return a mailto fallback if no API key is configured
+            // Use all email addresses (comma-separated for mailto)
+            const allEmails = recipientEmails.join(',');
             const mailtoSubject = encodeURIComponent(`Task Reminder: ${taskName}`);
             const mailtoBody = encodeURIComponent(
                 `Hi ${recipient.charAt(0).toUpperCase() + recipient.slice(1)},\n\n` +
@@ -69,7 +77,7 @@ module.exports = async function handler(req, res) {
             return res.status(200).json({
                 success: false,
                 fallback: true,
-                mailtoUrl: `mailto:${recipientEmail}?subject=${mailtoSubject}&body=${mailtoBody}`,
+                mailtoUrl: `mailto:${allEmails}?subject=${mailtoSubject}&body=${mailtoBody}`,
                 message: 'Email service not configured. Use the mailto link instead.'
             });
         }
@@ -164,7 +172,7 @@ module.exports = async function handler(req, res) {
             },
             body: JSON.stringify({
                 from: 'TaskOrgApp <onboarding@resend.dev>',
-                to: [recipientEmail],
+                to: recipientEmails,
                 subject: `📋 Task Reminder: ${taskName}`,
                 html: emailHtml,
                 text: emailText
