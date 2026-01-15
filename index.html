@@ -1725,6 +1725,33 @@
             color: #8b5cf6;
         }
 
+        .task-option-btn.remind {
+            color: var(--text-primary);
+        }
+
+        .task-option-btn.remind:hover {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .task-option-btn.remind.mario:hover {
+            background: rgba(74, 158, 255, 0.1);
+            color: var(--accent-mario);
+        }
+
+        .task-option-btn.remind.maria:hover {
+            background: rgba(168, 85, 247, 0.1);
+            color: var(--accent-maria);
+        }
+
+        .task-option-btn.remind .remind-icon {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .task-option-btn svg {
             flex-shrink: 0;
         }
@@ -3871,6 +3898,19 @@
                     </svg>
                     Move to Bank
                 </button>
+                <div class="task-option-group" id="remindGroup">
+                    <div class="task-option-group-title">Send Reminder</div>
+                    <button class="task-option-btn remind mario" id="remindMarioBtn">
+                        <span class="remind-icon">📧</span>
+                        <div class="task-option-icon mario"></div>
+                        Remind Mario
+                    </button>
+                    <button class="task-option-btn remind maria" id="remindMariaBtn">
+                        <span class="remind-icon">📧</span>
+                        <div class="task-option-icon maria"></div>
+                        Remind Maria
+                    </button>
+                </div>
                 <button class="task-option-btn delete" id="deleteTaskBtn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 6h18"></path>
@@ -4222,6 +4262,7 @@
         let cachedApiKey = null;
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn, splitTaskBtn;
+        let remindMarioBtn, remindMariaBtn;
         let selectedTaskForOptions = null;
         let editingTaskId = null;
         let resizeHandle;
@@ -4362,6 +4403,8 @@
             deleteTaskBtn = document.getElementById('deleteTaskBtn');
             editTaskBtn = document.getElementById('editTaskBtn');
             splitTaskBtn = document.getElementById('splitTaskBtn');
+            remindMarioBtn = document.getElementById('remindMarioBtn');
+            remindMariaBtn = document.getElementById('remindMariaBtn');
             resizeHandle = document.getElementById('resizeHandle');
             modalTitle = document.getElementById('modalTitle');
             viewTaskModal = document.getElementById('viewTaskModal');
@@ -5192,6 +5235,18 @@
                 if (selectedTaskForOptions) {
                     splitTask(selectedTaskForOptions);
                     closeTaskOptionsMenu();
+                }
+            });
+
+            remindMarioBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    sendReminder('mario', selectedTaskForOptions);
+                }
+            });
+
+            remindMariaBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    sendReminder('maria', selectedTaskForOptions);
                 }
             });
 
@@ -8495,6 +8550,82 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
             } catch (error) {
                 console.error('Error splitting task:', error);
                 alert('Failed to split task: ' + (error.message || 'Please try again.'));
+            }
+        }
+
+        // ===========================================
+        // Send Task Reminder
+        // ===========================================
+        async function sendReminder(recipient, task) {
+            if (!task) return;
+
+            // Show loading state
+            const btn = recipient === 'mario' ? remindMarioBtn : remindMariaBtn;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<span class="remind-icon">⏳</span> Sending...`;
+            btn.disabled = true;
+
+            try {
+                // Build task details
+                const taskDetails = [];
+                if (task.first_step) taskDetails.push(`First step: ${task.first_step}`);
+                if (task.completion_criteria) taskDetails.push(`Done when: ${task.completion_criteria}`);
+                if (task.size) taskDetails.push(`Size: ${task.size.toUpperCase()}`);
+                
+                const detailsStr = taskDetails.length > 0 ? taskDetails.join(' | ') : '';
+                
+                // Get the app URL
+                const appUrl = window.location.origin;
+
+                const response = await fetch('/api/remind', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        recipient: recipient,
+                        taskName: task.name,
+                        taskDetails: detailsStr,
+                        appUrl: appUrl
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Email sent successfully
+                    btn.innerHTML = `<span class="remind-icon">✅</span> Sent!`;
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        closeTaskOptionsMenu();
+                    }, 1500);
+                } else if (data.fallback && data.mailtoUrl) {
+                    // No email service configured, use mailto fallback
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    
+                    // Open mailto link in new window
+                    window.location.href = data.mailtoUrl;
+                    
+                    setTimeout(() => {
+                        closeTaskOptionsMenu();
+                    }, 500);
+                } else {
+                    throw new Error(data.error || 'Failed to send reminder');
+                }
+
+            } catch (error) {
+                console.error('Error sending reminder:', error);
+                btn.innerHTML = `<span class="remind-icon">❌</span> Failed`;
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2000);
+
+                // Show error message
+                alert(`Failed to send reminder: ${error.message || 'Please try again.'}`);
             }
         }
     </script>
