@@ -7185,6 +7185,69 @@
             const loadingId = addChatbotMessage('loading', '');
 
             try {
+                // Check for remind command: "remind Mario" or "remind Maria"
+                const remindMatch = message.match(/^remind\s+(mario|maria)$/i);
+                if (remindMatch) {
+                    const recipient = remindMatch[1].toLowerCase();
+                    removeChatbotMessage(loadingId);
+                    
+                    // Call the remind API
+                    try {
+                        // Build task details
+                        const taskDetails = [];
+                        if (currentTaskForChat.first_step) taskDetails.push(`First step: ${currentTaskForChat.first_step}`);
+                        if (currentTaskForChat.completion_criteria) taskDetails.push(`Done when: ${currentTaskForChat.completion_criteria}`);
+                        if (currentTaskForChat.size) taskDetails.push(`Size: ${currentTaskForChat.size.toUpperCase()}`);
+                        
+                        const detailsStr = taskDetails.length > 0 ? taskDetails.join(' | ') : '';
+                        const appUrl = window.location.origin;
+
+                        const response = await fetch('/api/remind', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                recipient: recipient,
+                                taskName: currentTaskForChat.name,
+                                taskDetails: detailsStr,
+                                appUrl: appUrl
+                            })
+                        });
+
+                        let data;
+                        try {
+                            data = await response.json();
+                        } catch (parseError) {
+                            console.error('Failed to parse remind API response:', parseError);
+                            const text = await response.text().catch(() => 'Unknown error');
+                            throw new Error(`Failed to parse response: ${text.substring(0, 100)}`);
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(data.error || `Server error: ${response.status} ${response.statusText}`);
+                        }
+
+                        if (data.success) {
+                            addChatbotMessage('assistant', `✅ Reminder sent to ${recipient.charAt(0).toUpperCase() + recipient.slice(1)}!`);
+                        } else if (data.fallback && data.mailtoUrl) {
+                            addChatbotMessage('assistant', `📧 Email service not configured. Opening email client...`);
+                            window.location.href = data.mailtoUrl;
+                        } else {
+                            throw new Error(data.error || 'Failed to send reminder');
+                        }
+                    } catch (error) {
+                        console.error('Error sending reminder:', error);
+                        addChatbotMessage('assistant', `❌ Failed to send reminder: ${error.message || 'Please try again.'}`);
+                    } finally {
+                        // Re-enable input
+                        if (taskChatbotInput) taskChatbotInput.disabled = false;
+                        if (taskChatbotSend) taskChatbotSend.disabled = false;
+                        if (taskChatbotInput) taskChatbotInput.focus();
+                    }
+                    return;
+                }
+
                 // Build task context for the AI
                 const taskContext = buildTaskContext(currentTaskForChat);
                 
@@ -8645,7 +8708,18 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     })
                 });
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    console.error('Failed to parse remind API response:', parseError);
+                    const text = await response.text().catch(() => 'Unknown error');
+                    throw new Error(`Failed to parse response: ${text.substring(0, 100)}`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.error || `Server error: ${response.status} ${response.statusText}`);
+                }
 
                 if (data.success) {
                     // Email sent successfully
