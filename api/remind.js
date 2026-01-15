@@ -39,15 +39,17 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Recipient and task name are required' });
         }
 
-        // Validate recipient - each person has multiple email addresses
+        // Validate recipient - each person has multiple email addresses + SMS via Verizon gateway
         const validRecipients = {
             'mario': [
                 'mario.seddik@icloud.com',
-                'mario.seddik@gmail.com'
+                'mario.seddik@gmail.com',
+                '8458289353@vtext.com'  // Verizon SMS
             ],
             'maria': [
                 'maria1306@icloud.com',
-                'maria.k.mikhail@gmail.com'
+                'maria.k.mikhail@gmail.com',
+                '5186185155@vtext.com'  // Verizon SMS
             ]
         };
 
