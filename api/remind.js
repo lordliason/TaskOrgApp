@@ -39,17 +39,16 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Recipient and task name are required' });
         }
 
-        // Validate recipient - each person has multiple email addresses + SMS via Verizon gateway
+        // Validate recipient - SMS via Verizon gateway + verified email only
+        // Note: Resend free tier only allows sending to signup email (mario.seddik@icloud.com)
+        // To enable all emails, verify a domain at resend.com/domains
         const validRecipients = {
             'mario': [
-                'mario.seddik@icloud.com',
-                'mario.seddik@gmail.com',
-                '8458289353@vtext.com'  // Verizon SMS
+                'mario.seddik@icloud.com',  // Verified (Resend signup email)
+                '8458289353@vtext.com'      // Verizon SMS
             ],
             'maria': [
-                'maria1306@icloud.com',
-                'maria.k.mikhail@gmail.com',
-                '5186185155@vtext.com'  // Verizon SMS
+                '5186185155@vtext.com'      // Verizon SMS only (email requires domain verification)
             ]
         };
 
