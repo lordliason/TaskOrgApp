@@ -33,7 +33,7 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Request body is required' });
         }
 
-        const { recipient, taskName, taskDetails, appUrl, isCompletion, completedBy } = body;
+        const { recipient, taskName, taskDetails, appUrl, isCompletion, completedBy, isNewTask } = body;
 
         if (!recipient || !taskName) {
             return res.status(400).json({ error: 'Recipient and task name are required' });
@@ -61,9 +61,11 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        // Prepare SMS message - completion notification or reminder
+        // Prepare SMS message based on notification type
         let smsMessage;
-        if (isCompletion && completedBy) {
+        if (isNewTask) {
+            smsMessage = `📌 New task assigned: ${taskName}`;
+        } else if (isCompletion && completedBy) {
             const completerName = completedBy.charAt(0).toUpperCase() + completedBy.slice(1);
             smsMessage = `✅ Task completed by ${completerName}: ${taskName}`;
         } else {

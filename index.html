@@ -6973,6 +6973,10 @@
                     return;
                 }
 
+                // Send SMS notification to assignee(s) about the new task
+                console.log('Task created successfully, sending notification:', task.name, task.assignee);
+                sendNewTaskNotification(task);
+
                 closeAddTaskModal();
                 modalTaskName.focus();
             } catch (error) {
@@ -8681,6 +8685,55 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
             } catch (error) {
                 console.error('Error splitting task:', error);
                 alert('Failed to split task: ' + (error.message || 'Please try again.'));
+            }
+        }
+
+        // ===========================================
+        // Send New Task Assignment Notification SMS
+        // ===========================================
+        async function sendNewTaskNotification(task) {
+            try {
+                const recipients = [];
+                
+                // Determine who should be notified based on assignee
+                if (task.assignee === 'mario') {
+                    recipients.push('mario');
+                } else if (task.assignee === 'maria') {
+                    recipients.push('maria');
+                } else if (task.assignee === 'both') {
+                    recipients.push('mario', 'maria');
+                }
+                
+                console.log('New task notification:', { taskName: task.name, assignee: task.assignee, recipients });
+                
+                // Send notification to each recipient
+                for (const recipient of recipients) {
+                    try {
+                        const response = await fetch('/api/remind', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                recipient: recipient,
+                                taskName: task.name,
+                                isNewTask: true
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            console.log(`New task notification sent to ${recipient}`);
+                        } else {
+                            console.warn(`Failed to send new task notification to ${recipient}:`, data.message || data.error);
+                        }
+                    } catch (err) {
+                        console.error(`Error sending new task notification to ${recipient}:`, err);
+                    }
+                }
+            } catch (error) {
+                console.error('Error in sendNewTaskNotification:', error);
             }
         }
 
