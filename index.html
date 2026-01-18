@@ -1907,7 +1907,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
         }
 
         .list-header-right {
@@ -1928,6 +1928,69 @@
             background: var(--bg-card);
             padding: 0.25rem 0.625rem;
             border-radius: 12px;
+        }
+
+        /* Assignee Filter Toggle */
+        .assignee-filter {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-card);
+            padding: 0.25rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .assignee-filter-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .assignee-filter-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .assignee-filter-btn.active {
+            background: var(--bg-main);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .assignee-filter-btn.active.mario {
+            color: var(--accent-mario);
+        }
+
+        .assignee-filter-btn.active.maria {
+            color: var(--accent-maria);
+        }
+
+        .assignee-filter-btn .filter-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .assignee-filter-btn .filter-dot.mario {
+            background: var(--accent-mario);
+        }
+
+        .assignee-filter-btn .filter-dot.maria {
+            background: var(--accent-maria);
+        }
+
+        .assignee-filter-btn .filter-dot.both {
+            background: linear-gradient(135deg, var(--accent-mario) 50%, var(--accent-maria) 50%);
         }
 
         .task-group {
@@ -4185,6 +4248,22 @@
                 </div>
             </div>
 
+            <!-- Assignee Filter -->
+            <div class="assignee-filter" id="assigneeFilter">
+                <button class="assignee-filter-btn active" data-filter="all">
+                    <span class="filter-dot both"></span>
+                    All
+                </button>
+                <button class="assignee-filter-btn mario" data-filter="mario">
+                    <span class="filter-dot mario"></span>
+                    Mario
+                </button>
+                <button class="assignee-filter-btn maria" data-filter="maria">
+                    <span class="filter-dot maria"></span>
+                    Maria
+                </button>
+            </div>
+
             <div id="taskList"></div>
 
             <!-- Task Bank -->
@@ -4879,6 +4958,7 @@
         let selectedUrgent = 3;
         let selectedImportant = 3;
         let selectedIcon = null;
+        let taskFilterAssignee = 'all'; // Filter for task list: 'all', 'mario', or 'maria'
         let isConnected = false;
         let currentUser = null;
 
@@ -5662,6 +5742,22 @@
                     const activePeriod = document.querySelector('.period-btn.active').dataset.period;
                     loadLeaderboard(activePeriod);
                 }
+            });
+
+            // Assignee filter buttons
+            document.querySelectorAll('.assignee-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const filter = btn.dataset.filter;
+                    taskFilterAssignee = filter;
+                    
+                    // Update active state
+                    document.querySelectorAll('.assignee-filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Re-render task list with filter
+                    renderTaskList();
+                    updateTaskCount();
+                });
             });
 
             // Modal events
@@ -7944,16 +8040,25 @@
                 'eliminate': { label: 'Do last or Eliminate', tasks: [] }
             };
 
-            tasks.forEach(task => {
+            // Filter tasks by assignee
+            const filteredTasks = tasks.filter(task => {
+                if (taskFilterAssignee === 'all') return true;
+                if (taskFilterAssignee === 'mario') return task.assignee === 'mario' || task.assignee === 'both';
+                if (taskFilterAssignee === 'maria') return task.assignee === 'maria' || task.assignee === 'both';
+                return true;
+            });
+
+            filteredTasks.forEach(task => {
                 const quadrant = getQuadrant(task);
                 groups[quadrant].tasks.push(task);
             });
 
-            if (tasks.length === 0) {
+            if (filteredTasks.length === 0) {
+                const filterText = taskFilterAssignee === 'all' ? '' : ` for ${taskFilterAssignee.charAt(0).toUpperCase() + taskFilterAssignee.slice(1)}`;
                 taskList.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">○</div>
-                        <div class="empty-text">No tasks yet.<br>Add your first task!</div>
+                        <div class="empty-text">${tasks.length === 0 ? 'No tasks yet.<br>Add your first task!' : `No tasks${filterText}`}</div>
                     </div>
                 `;
                 return;
@@ -7998,8 +8103,21 @@
         }
 
         function updateTaskCount() {
-            const count = tasks.length;
-            taskCount.textContent = `${count} task${count !== 1 ? 's' : ''}`;
+            // Filter tasks by current assignee filter
+            const filteredTasks = tasks.filter(task => {
+                if (taskFilterAssignee === 'all') return true;
+                if (taskFilterAssignee === 'mario') return task.assignee === 'mario' || task.assignee === 'both';
+                if (taskFilterAssignee === 'maria') return task.assignee === 'maria' || task.assignee === 'both';
+                return true;
+            });
+            const count = filteredTasks.length;
+            const totalCount = tasks.length;
+            
+            if (taskFilterAssignee === 'all') {
+                taskCount.textContent = `${count} task${count !== 1 ? 's' : ''}`;
+            } else {
+                taskCount.textContent = `${count}/${totalCount} tasks`;
+            }
         }
 
         function escapeHtml(text) {
