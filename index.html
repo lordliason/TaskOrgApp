@@ -7484,12 +7484,132 @@
             document.head.appendChild(style);
         }
 
-        function autoFillPlan() {
+        async function autoFillPlan() {
+            // Get the autofill button and show loading state
+            const autoFillBtn = document.getElementById('autoFillPlanBtn');
+            const originalBtnContent = autoFillBtn ? autoFillBtn.innerHTML : '';
+            if (autoFillBtn) {
+                autoFillBtn.disabled = true;
+                autoFillBtn.innerHTML = '<span>🔄</span> Planning...';
+            }
+
+            try {
+                // Get current time
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinutes = now.getMinutes();
+
+                // Get available tasks (not completed, not banked)
+                const availableTasks = tasks.filter(t => !t.completed && !t.banked);
+
+                if (availableTasks.length === 0) {
+                    alert('No pending tasks to schedule. Great job staying on top of things!');
+                    return;
+                }
+
+                // Prepare task data for AI (include all relevant properties)
+                const taskData = availableTasks.map(t => ({
+                    id: t.id,
+                    name: t.name,
+                    assignee: t.assignee,
+                    size: t.size || 'm',
+                    urgent: t.urgent || 3,
+                    important: t.important || 3,
+                    location: t.location || null,
+                    deadline: t.deadline || null,
+                    depends_on: t.depends_on || null
+                }));
+
+                // Call the AI API to get smart scheduling
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: 'autofill daily plan',
+                        enableFunctions: true,
+                        taskContext: JSON.stringify({
+                            action: 'autofillDailyPlan',
+                            tasks: taskData,
+                            currentHour: currentHour,
+                            currentMinutes: currentMinutes
+                        })
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Check if AI returned a function call result
+                if (data.function_result && data.function_result.success && data.function_result.plan) {
+                    const aiPlan = data.function_result.plan;
+                    
+                    // Update todaysPlan with AI's recommendations
+                    todaysPlan = {
+                        mario: {
+                            morning: aiPlan.mario?.morning || [],
+                            afternoon: aiPlan.mario?.afternoon || [],
+                            evening: aiPlan.mario?.evening || []
+                        },
+                        maria: {
+                            morning: aiPlan.maria?.morning || [],
+                            afternoon: aiPlan.maria?.afternoon || [],
+                            evening: aiPlan.maria?.evening || []
+                        }
+                    };
+
+                    saveTodaysPlan();
+                    renderPlan();
+
+                    // Show success message with AI reasoning
+                    if (data.function_result.reasoning) {
+                        console.log('AI Scheduling Reasoning:', data.function_result.reasoning);
+                    }
+                } else if (data.function_result && !data.function_result.success) {
+                    // AI couldn't schedule (e.g., too late in day)
+                    alert(data.function_result.message || 'Could not create a plan at this time.');
+                } else {
+                    // Fallback to basic algorithm if AI didn't return expected format
+                    console.warn('AI response format unexpected, using fallback algorithm');
+                    fallbackAutoFillPlan();
+                }
+
+            } catch (error) {
+                console.error('AI auto-fill failed:', error);
+                // Fall back to basic algorithm
+                console.log('Falling back to basic scheduling algorithm');
+                fallbackAutoFillPlan();
+            } finally {
+                // Restore button state
+                if (autoFillBtn) {
+                    autoFillBtn.disabled = false;
+                    autoFillBtn.innerHTML = originalBtnContent;
+                }
+            }
+        }
+
+        // Fallback basic auto-fill (used when AI is unavailable)
+        function fallbackAutoFillPlan() {
             // Clear current plan
             todaysPlan = {
                 mario: { morning: [], afternoon: [], evening: [] },
                 maria: { morning: [], afternoon: [], evening: [] }
             };
+
+            // Get current time to determine available blocks
+            const currentHour = new Date().getHours();
+            let availableBlocks = [];
+            if (currentHour < 12) {
+                availableBlocks = ['morning', 'afternoon', 'evening'];
+            } else if (currentHour < 17) {
+                availableBlocks = ['afternoon', 'evening'];
+            } else {
+                availableBlocks = ['evening'];
+            }
 
             // Get available tasks sorted by priority
             const availableTasks = tasks.filter(t => !t.completed && !t.banked);
@@ -7507,18 +7627,44 @@
             };
             const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
 
-            // Distribute tasks across blocks by assignee
-            availableTasks.forEach(task => {
-                const taskTime = sizeMinutes[task.size] || 45;
-                const assignee = (task.assignee === 'mario' || task.assignee === 'maria') ? task.assignee : 'mario';
+            // Group tasks by location for clustering
+            const homeTasksFirst = [...availableTasks].sort((a, b) => {
+                // Prioritize by urgency/importance first
+                const aScore = (a.urgent || 3) * 2 + (a.important || 3);
+                const bScore = (b.urgent || 3) * 2 + (b.important || 3);
+                if (bScore !== aScore) return bScore - aScore;
+                
+                // Then cluster by location
+                const aHome = (a.location || '').toLowerCase().includes('home') ? 1 : 0;
+                const bHome = (b.location || '').toLowerCase().includes('home') ? 1 : 0;
+                return bHome - aHome;
+            });
 
-                // Find best block that has room
-                const blocks = ['morning', 'afternoon', 'evening'];
-                for (const block of blocks) {
-                    if (used[assignee][block] + taskTime <= budgets[block]) {
-                        todaysPlan[assignee][block].push(task.id);
-                        used[assignee][block] += taskTime;
-                        break;
+            // Distribute tasks across available blocks by assignee
+            homeTasksFirst.forEach(task => {
+                const taskTime = sizeMinutes[task.size] || 45;
+                
+                // For 'both' tasks, add to both Mario and Maria's schedules
+                if (task.assignee === 'both') {
+                    for (const block of availableBlocks) {
+                        // Check if both have room
+                        if (used.mario[block] + taskTime <= budgets[block] && 
+                            used.maria[block] + taskTime <= budgets[block]) {
+                            todaysPlan.mario[block].push(task.id);
+                            todaysPlan.maria[block].push(task.id);
+                            used.mario[block] += taskTime;
+                            used.maria[block] += taskTime;
+                            break;
+                        }
+                    }
+                } else {
+                    const assignee = task.assignee === 'maria' ? 'maria' : 'mario';
+                    for (const block of availableBlocks) {
+                        if (used[assignee][block] + taskTime <= budgets[block]) {
+                            todaysPlan[assignee][block].push(task.id);
+                            used[assignee][block] += taskTime;
+                            break;
+                        }
                     }
                 }
             });

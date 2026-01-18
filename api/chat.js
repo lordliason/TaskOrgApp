@@ -545,6 +545,199 @@ function finalizeDecomposition(decomposition) {
     };
 }
 
+// Autofill Daily Plan using AI
+async function autofillDailyPlan(params, apiKey) {
+    const { tasks, currentHour, currentMinutes } = params;
+    
+    // Determine which time blocks are still available based on current time
+    let availableBlocks = [];
+    if (currentHour < 12) {
+        availableBlocks = ['morning', 'afternoon', 'evening'];
+    } else if (currentHour < 17) {
+        availableBlocks = ['afternoon', 'evening'];
+    } else if (currentHour < 21) {
+        availableBlocks = ['evening'];
+    } else {
+        availableBlocks = []; // Too late, no blocks available
+    }
+    
+    if (availableBlocks.length === 0) {
+        return {
+            success: false,
+            message: "It's quite late! Consider planning for tomorrow instead.",
+            plan: null
+        };
+    }
+    
+    // Filter to only incomplete, non-banked tasks
+    const availableTasks = tasks.filter(t => !t.completed && !t.banked);
+    
+    if (availableTasks.length === 0) {
+        return {
+            success: false,
+            message: "No pending tasks to schedule. Great job staying on top of things!",
+            plan: null
+        };
+    }
+    
+    // Calculate remaining time in each block
+    const blockTimes = {
+        morning: { start: 8, end: 12 },
+        afternoon: { start: 12, end: 17 },
+        evening: { start: 17, end: 21 }
+    };
+    
+    const remainingMinutes = {};
+    availableBlocks.forEach(block => {
+        const blockInfo = blockTimes[block];
+        if (currentHour < blockInfo.start) {
+            remainingMinutes[block] = (blockInfo.end - blockInfo.start) * 60;
+        } else if (currentHour < blockInfo.end) {
+            remainingMinutes[block] = (blockInfo.end - currentHour) * 60 - currentMinutes;
+        } else {
+            remainingMinutes[block] = 0;
+        }
+    });
+    
+    // Build comprehensive task descriptions for AI
+    const sizeMinutes = { xs: 8, s: 20, m: 45, l: 90, xl: 150 };
+    const sizeLabels = { xs: 'Extra Small (~8min)', s: 'Small (~20min)', m: 'Medium (~45min)', l: 'Large (~90min)', xl: 'Extra Large (~150min)' };
+    
+    const taskDescriptions = availableTasks.map(t => {
+        const estimatedTime = sizeMinutes[t.size] || 45;
+        const deadlineInfo = t.deadline ? `, deadline: ${t.deadline}` : '';
+        const locationInfo = t.location ? `, location: ${t.location}` : '';
+        const dependsInfo = t.depends_on ? `, depends on another task` : '';
+        
+        return `- ID: ${t.id}
+  Name: "${t.name}"
+  Assignee: ${t.assignee} (${t.assignee === 'both' ? 'Mario & Maria together' : t.assignee === 'mario' ? 'Mario only' : 'Maria only'})
+  Size: ${sizeLabels[t.size] || t.size} (${estimatedTime} min)
+  Urgency: ${t.urgent || 3}/5, Importance: ${t.important || 3}/5
+  Priority Score: ${((t.urgent || 3) * 2 + (t.important || 3))}${deadlineInfo}${locationInfo}${dependsInfo}`;
+    }).join('\n\n');
+    
+    // Build the AI prompt
+    const prompt = `You are a smart daily planner assistant for Mario and Maria, a couple who share tasks. Your job is to intelligently fill their daily plan for the remaining time today.
+
+CURRENT TIME: ${currentHour}:${currentMinutes.toString().padStart(2, '0')}
+
+AVAILABLE TIME BLOCKS:
+${availableBlocks.map(block => `- ${block.charAt(0).toUpperCase() + block.slice(1)}: ~${remainingMinutes[block]} minutes remaining`).join('\n')}
+
+PENDING TASKS:
+${taskDescriptions}
+
+SCHEDULING RULES (in priority order):
+1. CURRENT TIME AWARENESS: Only schedule tasks in blocks that haven't passed. Current hour is ${currentHour}.
+2. PRIORITY FIRST: Higher urgency + importance tasks should be scheduled earlier in the day.
+3. DEADLINE AWARENESS: Tasks with imminent deadlines (today/tomorrow) get top priority.
+4. LOCATION CLUSTERING: Group tasks with the same location together (especially "home" tasks) to minimize context switching.
+5. "BOTH" TASKS TOGETHER: Tasks assigned to "both" should ideally be scheduled at the same time block for Mario AND Maria so they can work together.
+6. SIZE FITTING: Don't overfill blocks - respect the time estimates and available minutes.
+7. BALANCED WORKLOAD: Try to balance task count and total time between Mario and Maria.
+8. DEPENDENCIES: If a task depends on another, schedule the dependency first.
+
+RESPONSE FORMAT - Return ONLY valid JSON in this exact structure:
+{
+  "mario": {
+    "morning": ["task_id_1", "task_id_2"],
+    "afternoon": ["task_id_3"],
+    "evening": []
+  },
+  "maria": {
+    "morning": ["task_id_1"],
+    "afternoon": ["task_id_4"],
+    "evening": ["task_id_5"]
+  },
+  "reasoning": "Brief explanation of your scheduling decisions"
+}
+
+IMPORTANT:
+- Only include blocks that are available (${availableBlocks.join(', ')})
+- Use actual task IDs from the list above
+- For "both" assignee tasks, add the SAME task ID to BOTH Mario's and Maria's schedule in the SAME time block
+- Don't schedule more tasks than will fit in the available time
+- It's okay to leave some tasks unscheduled if there isn't enough time
+- Return ONLY the JSON, no markdown code blocks or extra text`;
+
+    // Call OpenAI
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [
+                { role: 'system', content: 'You are a scheduling assistant. Always respond with valid JSON only, no markdown formatting.' },
+                { role: 'user', content: prompt }
+            ],
+            max_tokens: 1000,
+            temperature: 0.3 // Lower temperature for more consistent structured output
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0]?.message?.content;
+
+    if (!aiResponse) {
+        throw new Error('No response from AI');
+    }
+
+    // Parse the AI response
+    let plan;
+    try {
+        // Clean up the response in case it has markdown code blocks
+        let cleanResponse = aiResponse.trim();
+        if (cleanResponse.startsWith('```')) {
+            cleanResponse = cleanResponse.replace(/```json?\n?/g, '').replace(/```\n?/g, '');
+        }
+        plan = JSON.parse(cleanResponse);
+    } catch (parseError) {
+        console.error('Failed to parse AI response:', aiResponse);
+        throw new Error('Failed to parse AI scheduling response');
+    }
+
+    // Validate the plan structure
+    if (!plan.mario || !plan.maria) {
+        throw new Error('Invalid plan structure from AI');
+    }
+
+    // Ensure all blocks exist
+    const emptyBlocks = { morning: [], afternoon: [], evening: [] };
+    plan.mario = { ...emptyBlocks, ...plan.mario };
+    plan.maria = { ...emptyBlocks, ...plan.maria };
+
+    // Filter out any invalid task IDs
+    const validTaskIds = new Set(availableTasks.map(t => t.id));
+    ['mario', 'maria'].forEach(person => {
+        ['morning', 'afternoon', 'evening'].forEach(block => {
+            if (Array.isArray(plan[person][block])) {
+                plan[person][block] = plan[person][block].filter(id => validTaskIds.has(id));
+            } else {
+                plan[person][block] = [];
+            }
+        });
+    });
+
+    return {
+        success: true,
+        plan: {
+            mario: plan.mario,
+            maria: plan.maria
+        },
+        reasoning: plan.reasoning || 'Plan generated based on priority, location clustering, and time constraints.',
+        message: `Daily plan created! ${plan.reasoning || ''}`
+    };
+}
+
 module.exports = async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -613,6 +806,29 @@ module.exports = async function handler(req, res) {
             hasTaskContext: !!taskContext, 
             enableFunctions 
         });
+
+        // Check for direct autofillDailyPlan request
+        if (taskContext) {
+            try {
+                const contextData = typeof taskContext === 'string' ? JSON.parse(taskContext) : taskContext;
+                if (contextData.action === 'autofillDailyPlan') {
+                    console.log('Direct autofillDailyPlan request detected');
+                    const result = await autofillDailyPlan({
+                        tasks: contextData.tasks,
+                        currentHour: contextData.currentHour,
+                        currentMinutes: contextData.currentMinutes
+                    }, apiKey);
+                    
+                    return res.status(200).json({
+                        function_call: { name: 'autofillDailyPlan' },
+                        function_result: result
+                    });
+                }
+            } catch (parseErr) {
+                // Not a JSON context or doesn't have action, continue with normal flow
+                console.log('taskContext is not autofillDailyPlan action, continuing normal flow');
+            }
+        }
 
         if (!message) {
             return res.status(400).json({ error: 'Message is required' });
@@ -788,6 +1004,23 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                         },
                         required: ['decomposition']
                     }
+                },
+                {
+                    name: 'autofillDailyPlan',
+                    description: 'Intelligently auto-fill the daily planner for Mario and Maria based on pending tasks, current time, priorities, locations, and scheduling constraints',
+                    parameters: {
+                        type: 'object',
+                        properties: {
+                            tasks: { 
+                                type: 'array', 
+                                description: 'Array of pending task objects with id, name, assignee, size, urgent, important, location, deadline, depends_on',
+                                items: { type: 'object' }
+                            },
+                            currentHour: { type: 'integer', description: 'Current hour (0-23)' },
+                            currentMinutes: { type: 'integer', description: 'Current minutes (0-59)' }
+                        },
+                        required: ['tasks', 'currentHour', 'currentMinutes']
+                    }
                 }
             ];
             requestBody.function_call = 'auto';
@@ -906,6 +1139,9 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     case 'finalizeDecomposition':
                         functionResult = finalizeDecomposition(args.decomposition);
                         break;
+                    case 'autofillDailyPlan':
+                        functionResult = await autofillDailyPlan(args, apiKey);
+                        break;
                     default:
                         throw new Error(`Unknown function: ${aiMessage.function_call.name}`);
                 }
@@ -959,6 +1195,7 @@ module.exports.checkCircularDependencies = checkCircularDependencies;
 module.exports.calculateConfidence = calculateConfidence;
 module.exports.generateSuggestions = generateSuggestions;
 module.exports.parseDeadline = parseDeadline;
+module.exports.autofillDailyPlan = autofillDailyPlan;
 
 // Export as default for Vercel compatibility
 module.exports.default = module.exports;
