@@ -716,7 +716,34 @@
             align-items: center;
         }
 
-        /* Leaderboard Toggle Button */
+        /* Panel Toggle Buttons */
+        .panel-toggle-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .panel-toggle-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-mario);
+        }
+
+        .panel-toggle-btn.active {
+            background: var(--accent-mario);
+            border-color: var(--accent-mario);
+            color: white;
+        }
+
+        /* Legacy class for backward compatibility */
         .leaderboard-toggle-btn {
             display: flex;
             align-items: center;
@@ -742,8 +769,9 @@
             border-color: var(--accent-mario);
         }
 
-        /* Hide leaderboard toggle on tablets/mobile (they have nav buttons) */
+        /* Hide panel toggle buttons on tablets/mobile (they have nav buttons) */
         @media (max-width: 1200px) {
+            .panel-toggle-btn,
             .leaderboard-toggle-btn {
                 display: none;
             }
@@ -1232,12 +1260,31 @@
             background: var(--bg-main);
             padding: 1.5rem;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .leaderboard-panel {
             background: var(--bg-main);
             padding: 1.5rem;
             overflow-y: auto;
+            display: none;
+        }
+
+        .leaderboard-panel.active {
+            display: flex;
+        }
+
+        .plan-panel {
+            background: var(--bg-main);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+        }
+
+        .plan-panel.active {
+            display: flex;
         }
 
         .leaderboard-header {
@@ -1390,13 +1437,6 @@
         }
 
         /* Today's Plan Panel */
-        .plan-panel {
-            background: var(--bg-main);
-            padding: 1.5rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
 
         .plan-header {
             margin-bottom: 1.5rem;
@@ -3748,7 +3788,8 @@
 
             .matrix-panel,
             .list-panel,
-            .leaderboard-panel {
+            .leaderboard-panel,
+            .plan-panel {
                 display: none;
                 min-height: calc(100vh - 70px);
                 min-height: calc(-webkit-fill-available - 70px);
@@ -3758,7 +3799,8 @@
 
             .matrix-panel.active,
             .list-panel.active,
-            .leaderboard-panel.active {
+            .leaderboard-panel.active,
+            .plan-panel.active {
                 display: flex;
             }
 
@@ -3932,6 +3974,11 @@
                 padding-top: 2.5rem;
             }
 
+            .plan-panel {
+                padding: 1rem;
+                padding-top: 2.5rem;
+            }
+
             .list-header {
                 margin-bottom: 1rem;
             }
@@ -3983,7 +4030,8 @@
             }
 
             .list-panel,
-            .leaderboard-panel {
+            .leaderboard-panel,
+            .plan-panel {
                 height: 100%;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
@@ -4022,7 +4070,8 @@
 
             .matrix-panel,
             .list-panel,
-            .leaderboard-panel {
+            .leaderboard-panel,
+            .plan-panel {
                 -webkit-overflow-scrolling: touch;
             }
 
@@ -4189,6 +4238,7 @@
                 <div class="list-title">Today's Tasks</div>
                 <div class="list-header-right">
                     <div class="task-count" id="taskCount">0 tasks</div>
+                    <button class="panel-toggle-btn" id="planToggleBtn" title="Today's Plan">📋</button>
                     <button class="leaderboard-toggle-btn" id="leaderboardToggleBtn" title="Leaderboard">🏆</button>
                 </div>
             </div>
@@ -4329,6 +4379,10 @@
                 <button class="plan-action-btn" id="clearPlanBtn">
                     <span>🗑️</span>
                     Clear
+                </button>
+                <button class="plan-action-btn" id="replanBtn">
+                    <span>🔄</span>
+                    Replan
                 </button>
                 <button class="plan-action-btn primary" id="autoFillPlanBtn">
                     <span>✨</span>
@@ -5576,18 +5630,46 @@
             });
 
             // Leaderboard toggle
+            // Plan toggle button
+            const planToggleBtn = document.getElementById('planToggleBtn');
+            if (planToggleBtn) {
+                planToggleBtn.addEventListener('click', () => {
+                    const isActive = planToggleBtn.classList.contains('active');
+                    if (isActive) {
+                        // Switch back to tasks
+                        planToggleBtn.classList.remove('active');
+                        leaderboardToggleBtn.classList.remove('active');
+                        document.querySelector('.list-panel').classList.add('active');
+                        document.querySelector('.leaderboard-panel').classList.remove('active');
+                        document.querySelector('.plan-panel').classList.remove('active');
+                    } else {
+                        // Switch to plan
+                        planToggleBtn.classList.add('active');
+                        leaderboardToggleBtn.classList.remove('active');
+                        document.querySelector('.list-panel').classList.remove('active');
+                        document.querySelector('.leaderboard-panel').classList.remove('active');
+                        document.querySelector('.plan-panel').classList.add('active');
+                        renderPlan();
+                    }
+                });
+            }
+
             leaderboardToggleBtn.addEventListener('click', () => {
                 const isActive = leaderboardToggleBtn.classList.contains('active');
                 if (isActive) {
                     // Switch back to tasks
                     leaderboardToggleBtn.classList.remove('active');
+                    if (planToggleBtn) planToggleBtn.classList.remove('active');
                     document.querySelector('.list-panel').classList.add('active');
                     document.querySelector('.leaderboard-panel').classList.remove('active');
+                    document.querySelector('.plan-panel').classList.remove('active');
                 } else {
                     // Switch to leaderboard
                     leaderboardToggleBtn.classList.add('active');
+                    if (planToggleBtn) planToggleBtn.classList.remove('active');
                     document.querySelector('.list-panel').classList.remove('active');
                     document.querySelector('.leaderboard-panel').classList.add('active');
+                    document.querySelector('.plan-panel').classList.remove('active');
                     // Load leaderboard data
                     const activePeriod = document.querySelector('.period-btn.active').dataset.period;
                     loadLeaderboard(activePeriod);
@@ -7220,10 +7302,84 @@
             }
         }
 
+        function replan() {
+            const currentHour = new Date().getHours();
+            let currentBlock = 'morning';
+            let remainingBlocks = [];
+
+            // Determine current time block and remaining blocks
+            if (currentHour < 12) {
+                currentBlock = 'morning';
+                remainingBlocks = ['morning', 'afternoon', 'evening'];
+            } else if (currentHour < 17) {
+                currentBlock = 'afternoon';
+                remainingBlocks = ['afternoon', 'evening'];
+            } else {
+                currentBlock = 'evening';
+                remainingBlocks = ['evening'];
+            }
+
+            // Get all currently planned tasks
+            const allPlannedTaskIds = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
+            const plannedTasks = tasks.filter(t => allPlannedTaskIds.includes(t.id));
+
+            // Filter out completed tasks
+            const remainingPlannedTasks = plannedTasks.filter(t => !t.completed);
+
+            // Get unplanned tasks that aren't completed
+            const unplannedTasks = tasks.filter(t => 
+                !t.completed && 
+                !t.banked && 
+                !allPlannedTaskIds.includes(t.id)
+            );
+
+            // Combine remaining planned and unplanned tasks
+            const tasksToReplan = [...remainingPlannedTasks, ...unplannedTasks];
+
+            // Sort by priority (urgent + important first)
+            tasksToReplan.sort((a, b) => {
+                const aScore = (a.urgent || 3) * 2 + (a.important || 3);
+                const bScore = (b.urgent || 3) * 2 + (b.important || 3);
+                return bScore - aScore;
+            });
+
+            // Clear current plan for remaining blocks only
+            remainingBlocks.forEach(block => {
+                todaysPlan[block] = [];
+            });
+
+            // Time budgets per block (in minutes) - adjusted for time of day
+            const budgets = { 
+                morning: currentHour < 12 ? (12 - currentHour) * 60 : 0,
+                afternoon: currentHour < 17 ? (17 - currentHour) * 60 : 0,
+                evening: currentHour < 17 ? 180 : (24 - currentHour) * 60
+            };
+            const used = { morning: 0, afternoon: 0, evening: 0 };
+            const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
+
+            // Distribute tasks across remaining blocks
+            tasksToReplan.forEach(task => {
+                const taskTime = sizeMinutes[task.size] || 45;
+
+                // Find best block that has room
+                for (const block of remainingBlocks) {
+                    if (used[block] + taskTime <= budgets[block]) {
+                        todaysPlan[block].push(task.id);
+                        used[block] += taskTime;
+                        break;
+                    }
+                }
+            });
+
+            saveTodaysPlan();
+            renderPlan();
+        }
+
         // Initialize plan event listeners
         function initPlanEventListeners() {
             const autoFillBtn = document.getElementById('autoFillPlanBtn');
             const clearPlanBtn = document.getElementById('clearPlanBtn');
+            const replanBtn = document.getElementById('replanBtn');
             const refreshBtn = document.getElementById('refreshSuggestionsBtn');
 
             if (autoFillBtn) {
@@ -7232,6 +7388,10 @@
 
             if (clearPlanBtn) {
                 clearPlanBtn.addEventListener('click', clearPlan);
+            }
+
+            if (replanBtn) {
+                replanBtn.addEventListener('click', replan);
             }
 
             if (refreshBtn) {
