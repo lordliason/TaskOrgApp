@@ -1514,11 +1514,88 @@
             font-weight: 500;
         }
 
+        /* Side-by-side Mario/Maria columns */
+        .plan-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
+        .plan-column {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .plan-column.mario {
+            border-top: 3px solid var(--accent-mario);
+        }
+
+        .plan-column.maria {
+            border-top: 3px solid var(--accent-maria);
+        }
+
+        .plan-column-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .plan-column-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.875rem;
+            color: white;
+        }
+
+        .plan-column-avatar.mario {
+            background: linear-gradient(135deg, var(--accent-mario), #357abd);
+        }
+
+        .plan-column-avatar.maria {
+            background: linear-gradient(135deg, var(--accent-maria), #d65d8c);
+        }
+
+        .plan-column-info {
+            flex: 1;
+        }
+
+        .plan-column-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-primary);
+        }
+
+        .plan-column-stats {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
         .plan-time-blocks {
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
             flex: 1;
+        }
+
+        @media (max-width: 900px) {
+            .plan-columns {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
         }
 
         .plan-time-block {
@@ -4166,63 +4243,109 @@
                 <div class="plan-date" id="planDate"></div>
             </div>
 
-            <div class="plan-stats">
-                <div class="plan-stat">
-                    <div class="plan-stat-value" id="planTaskCount">0</div>
-                    <div class="plan-stat-label">Planned</div>
+            <!-- Side-by-side Mario/Maria columns -->
+            <div class="plan-columns">
+                <!-- Mario's Column -->
+                <div class="plan-column mario">
+                    <div class="plan-column-header">
+                        <div class="plan-column-avatar mario">M</div>
+                        <div class="plan-column-info">
+                            <div class="plan-column-name">Mario</div>
+                            <div class="plan-column-stats" id="marioStats">0 tasks • 0h</div>
+                        </div>
+                    </div>
+                    <div class="plan-time-blocks">
+                        <!-- Morning Block -->
+                        <div class="plan-time-block" data-block="morning" data-assignee="mario">
+                            <div class="plan-time-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="5"/>
+                                    <line x1="12" y1="1" x2="12" y2="3"/>
+                                    <line x1="12" y1="21" x2="12" y2="23"/>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                    <line x1="1" y1="12" x2="3" y2="12"/>
+                                    <line x1="21" y1="12" x2="23" y2="12"/>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                </svg>
+                                Morning
+                            </div>
+                            <div class="plan-block-tasks" id="planMarioMorning"></div>
+                        </div>
+                        <!-- Afternoon Block -->
+                        <div class="plan-time-block" data-block="afternoon" data-assignee="mario">
+                            <div class="plan-time-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="5"/>
+                                    <line x1="12" y1="1" x2="12" y2="3"/>
+                                </svg>
+                                Afternoon
+                            </div>
+                            <div class="plan-block-tasks" id="planMarioAfternoon"></div>
+                        </div>
+                        <!-- Evening Block -->
+                        <div class="plan-time-block" data-block="evening" data-assignee="mario">
+                            <div class="plan-time-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                </svg>
+                                Evening
+                            </div>
+                            <div class="plan-block-tasks" id="planMarioEvening"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="plan-stat">
-                    <div class="plan-stat-value" id="planTimeEstimate">0h</div>
-                    <div class="plan-stat-label">Est. Time</div>
-                </div>
-            </div>
 
-            <div class="plan-time-blocks" id="planTimeBlocks">
-                <!-- Morning Block -->
-                <div class="plan-time-block" data-block="morning">
-                    <div class="plan-time-label">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="5"/>
-                            <line x1="12" y1="1" x2="12" y2="3"/>
-                            <line x1="12" y1="21" x2="12" y2="23"/>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                            <line x1="1" y1="12" x2="3" y2="12"/>
-                            <line x1="21" y1="12" x2="23" y2="12"/>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                        </svg>
-                        Morning
+                <!-- Maria's Column -->
+                <div class="plan-column maria">
+                    <div class="plan-column-header">
+                        <div class="plan-column-avatar maria">A</div>
+                        <div class="plan-column-info">
+                            <div class="plan-column-name">Maria</div>
+                            <div class="plan-column-stats" id="mariaStats">0 tasks • 0h</div>
+                        </div>
                     </div>
-                    <div class="plan-block-tasks" id="planMorningTasks">
-                        <div class="plan-task-slot" data-block="morning">+ Add task</div>
-                    </div>
-                </div>
-
-                <!-- Afternoon Block -->
-                <div class="plan-time-block" data-block="afternoon">
-                    <div class="plan-time-label">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="5"/>
-                            <line x1="12" y1="1" x2="12" y2="3"/>
-                        </svg>
-                        Afternoon
-                    </div>
-                    <div class="plan-block-tasks" id="planAfternoonTasks">
-                        <div class="plan-task-slot" data-block="afternoon">+ Add task</div>
-                    </div>
-                </div>
-
-                <!-- Evening Block -->
-                <div class="plan-time-block" data-block="evening">
-                    <div class="plan-time-label">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                        </svg>
-                        Evening
-                    </div>
-                    <div class="plan-block-tasks" id="planEveningTasks">
-                        <div class="plan-task-slot" data-block="evening">+ Add task</div>
+                    <div class="plan-time-blocks">
+                        <!-- Morning Block -->
+                        <div class="plan-time-block" data-block="morning" data-assignee="maria">
+                            <div class="plan-time-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="5"/>
+                                    <line x1="12" y1="1" x2="12" y2="3"/>
+                                    <line x1="12" y1="21" x2="12" y2="23"/>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                    <line x1="1" y1="12" x2="3" y2="12"/>
+                                    <line x1="21" y1="12" x2="23" y2="12"/>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                </svg>
+                                Morning
+                            </div>
+                            <div class="plan-block-tasks" id="planMariaMorning"></div>
+                        </div>
+                        <!-- Afternoon Block -->
+                        <div class="plan-time-block" data-block="afternoon" data-assignee="maria">
+                            <div class="plan-time-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="5"/>
+                                    <line x1="12" y1="1" x2="12" y2="3"/>
+                                </svg>
+                                Afternoon
+                            </div>
+                            <div class="plan-block-tasks" id="planMariaAfternoon"></div>
+                        </div>
+                        <!-- Evening Block -->
+                        <div class="plan-time-block" data-block="evening" data-assignee="maria">
+                            <div class="plan-time-label">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                                </svg>
+                                Evening
+                            </div>
+                            <div class="plan-block-tasks" id="planMariaEvening"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -6694,17 +6817,36 @@
             const savedDate = localStorage.getItem(PLAN_DATE_KEY);
             const today = new Date().toDateString();
 
+            // New structure: separate plans for mario and maria
+            const defaultPlan = {
+                mario: { morning: [], afternoon: [], evening: [] },
+                maria: { morning: [], afternoon: [], evening: [] }
+            };
+
             // Reset plan if it's a new day
             if (savedDate !== today) {
-                todaysPlan = { morning: [], afternoon: [], evening: [] };
+                todaysPlan = defaultPlan;
                 localStorage.setItem(PLAN_DATE_KEY, today);
                 localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(todaysPlan));
             } else {
                 const saved = localStorage.getItem(PLAN_STORAGE_KEY);
                 if (saved) {
-                    todaysPlan = JSON.parse(saved);
+                    const parsed = JSON.parse(saved);
+                    // Migrate old format to new format if needed
+                    if (parsed.morning !== undefined && !parsed.mario) {
+                        todaysPlan = defaultPlan;
+                        localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(todaysPlan));
+                    } else {
+                        todaysPlan = parsed;
+                    }
+                } else {
+                    todaysPlan = defaultPlan;
                 }
             }
+
+            // Ensure structure exists
+            if (!todaysPlan.mario) todaysPlan.mario = { morning: [], afternoon: [], evening: [] };
+            if (!todaysPlan.maria) todaysPlan.maria = { morning: [], afternoon: [], evening: [] };
         }
 
         function saveTodaysPlan() {
@@ -6723,10 +6865,15 @@
                 planDate.textContent = today.toLocaleDateString('en-US', options);
             }
 
-            // Render each time block
-            renderPlanBlock('morning', 'planMorningTasks');
-            renderPlanBlock('afternoon', 'planAfternoonTasks');
-            renderPlanBlock('evening', 'planEveningTasks');
+            // Render Mario's time blocks
+            renderPlanBlock('mario', 'morning', 'planMarioMorning');
+            renderPlanBlock('mario', 'afternoon', 'planMarioAfternoon');
+            renderPlanBlock('mario', 'evening', 'planMarioEvening');
+
+            // Render Maria's time blocks
+            renderPlanBlock('maria', 'morning', 'planMariaMorning');
+            renderPlanBlock('maria', 'afternoon', 'planMariaAfternoon');
+            renderPlanBlock('maria', 'evening', 'planMariaEvening');
 
             // Update stats
             updatePlanStats();
@@ -6738,18 +6885,18 @@
             updateTimeBlockStyling();
         }
 
-        function renderPlanBlock(blockName, containerId) {
+        function renderPlanBlock(assignee, blockName, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            const blockTasks = todaysPlan[blockName] || [];
+            const blockTasks = todaysPlan[assignee]?.[blockName] || [];
             container.innerHTML = '';
 
             // Render scheduled tasks
             blockTasks.forEach((taskId, index) => {
                 const task = tasks.find(t => t.id === taskId);
                 if (task) {
-                    const taskEl = createPlanTaskElement(task, blockName, index);
+                    const taskEl = createPlanTaskElement(task, assignee, blockName, index);
                     container.appendChild(taskEl);
                 }
             });
@@ -6758,12 +6905,13 @@
             const slot = document.createElement('div');
             slot.className = 'plan-task-slot';
             slot.dataset.block = blockName;
+            slot.dataset.assignee = assignee;
             slot.textContent = '+ Add task';
-            slot.addEventListener('click', () => openPlanTaskPicker(blockName));
+            slot.addEventListener('click', () => openPlanTaskPicker(assignee, blockName));
             container.appendChild(slot);
         }
 
-        function createPlanTaskElement(task, blockName, index) {
+        function createPlanTaskElement(task, assignee, blockName, index) {
             const div = document.createElement('div');
             div.className = 'plan-scheduled-task';
             if (task.completed) {
@@ -6779,10 +6927,9 @@
                     <div class="plan-task-name">${task.name}</div>
                     <div class="plan-task-meta">
                         <span class="plan-task-size">${sizeLabels[task.size] || task.size}</span>
-                        <span class="assignee-dot ${task.assignee}"></span>
                     </div>
                 </div>
-                <button class="plan-task-remove" data-block="${blockName}" data-index="${index}">
+                <button class="plan-task-remove" data-assignee="${assignee}" data-block="${blockName}" data-index="${index}">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -6801,48 +6948,84 @@
             const removeBtn = div.querySelector('.plan-task-remove');
             removeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                removeTaskFromPlan(blockName, index);
+                removeTaskFromPlan(assignee, blockName, index);
             });
 
             return div;
         }
 
-        function removeTaskFromPlan(blockName, index) {
-            todaysPlan[blockName].splice(index, 1);
-            saveTodaysPlan();
-            renderPlan();
+        function removeTaskFromPlan(assignee, blockName, index) {
+            if (todaysPlan[assignee] && todaysPlan[assignee][blockName]) {
+                todaysPlan[assignee][blockName].splice(index, 1);
+                saveTodaysPlan();
+                renderPlan();
+            }
         }
 
-        function addTaskToPlan(taskId, blockName) {
-            // Check if task is already in any block
-            const allPlannedTasks = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
+        function addTaskToPlan(taskId, assignee, blockName) {
+            // Get all planned tasks for this assignee
+            const assigneePlan = todaysPlan[assignee] || { morning: [], afternoon: [], evening: [] };
+            const allPlannedTasks = [...assigneePlan.morning, ...assigneePlan.afternoon, ...assigneePlan.evening];
+            
+            // Check if task is already in this assignee's plan
             if (allPlannedTasks.includes(taskId)) {
                 // Remove from old location first
-                Object.keys(todaysPlan).forEach(block => {
-                    todaysPlan[block] = todaysPlan[block].filter(id => id !== taskId);
+                ['morning', 'afternoon', 'evening'].forEach(block => {
+                    if (todaysPlan[assignee][block]) {
+                        todaysPlan[assignee][block] = todaysPlan[assignee][block].filter(id => id !== taskId);
+                    }
                 });
             }
 
-            todaysPlan[blockName].push(taskId);
+            // Ensure structure exists
+            if (!todaysPlan[assignee]) todaysPlan[assignee] = { morning: [], afternoon: [], evening: [] };
+            if (!todaysPlan[assignee][blockName]) todaysPlan[assignee][blockName] = [];
+
+            todaysPlan[assignee][blockName].push(taskId);
             saveTodaysPlan();
             renderPlan();
             closePlanTaskPicker();
         }
 
         function updatePlanStats() {
-            const allPlannedTasks = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
-            const plannedCount = allPlannedTasks.length;
-
-            // Calculate estimated time
             const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
-            let totalMinutes = 0;
 
-            allPlannedTasks.forEach(taskId => {
+            // Calculate Mario's stats
+            const marioTasks = [
+                ...(todaysPlan.mario?.morning || []),
+                ...(todaysPlan.mario?.afternoon || []),
+                ...(todaysPlan.mario?.evening || [])
+            ];
+            let marioMinutes = 0;
+            marioTasks.forEach(taskId => {
                 const task = tasks.find(t => t.id === taskId);
-                if (task) {
-                    totalMinutes += sizeMinutes[task.size] || 45;
-                }
+                if (task) marioMinutes += sizeMinutes[task.size] || 45;
             });
+            const marioHours = Math.floor(marioMinutes / 60);
+            const marioMins = Math.round(marioMinutes % 60);
+            const marioTimeStr = marioHours > 0 ? `${marioHours}h ${marioMins}m` : `${marioMins}m`;
+
+            // Calculate Maria's stats
+            const mariaTasks = [
+                ...(todaysPlan.maria?.morning || []),
+                ...(todaysPlan.maria?.afternoon || []),
+                ...(todaysPlan.maria?.evening || [])
+            ];
+            let mariaMinutes = 0;
+            mariaTasks.forEach(taskId => {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) mariaMinutes += sizeMinutes[task.size] || 45;
+            });
+            const mariaHours = Math.floor(mariaMinutes / 60);
+            const mariaMins = Math.round(mariaMinutes % 60);
+            const mariaTimeStr = mariaHours > 0 ? `${mariaHours}h ${mariaMins}m` : `${mariaMins}m`;
+
+            // Update display
+            const marioStatsEl = document.getElementById('marioStats');
+            const mariaStatsEl = document.getElementById('mariaStats');
+
+            if (marioStatsEl) marioStatsEl.textContent = `${marioTasks.length} tasks • ${marioTimeStr}`;
+            if (mariaStatsEl) mariaStatsEl.textContent = `${mariaTasks.length} tasks • ${mariaTimeStr}`;
 
             const hours = Math.floor(totalMinutes / 60);
             const mins = Math.round(totalMinutes % 60);
@@ -6859,7 +7042,8 @@
             const blocks = document.querySelectorAll('.plan-time-block');
             blocks.forEach(block => {
                 const blockName = block.dataset.block;
-                const hasTasks = todaysPlan[blockName] && todaysPlan[blockName].length > 0;
+                const assignee = block.dataset.assignee;
+                const hasTasks = todaysPlan[assignee]?.[blockName]?.length > 0;
                 block.classList.toggle('has-tasks', hasTasks);
             });
         }
@@ -6868,8 +7052,15 @@
             const container = document.getElementById('planSuggestionsList');
             if (!container) return;
 
-            // Get tasks not yet planned and not completed
-            const allPlannedTasks = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
+            // Get all planned tasks across both assignees
+            const allPlannedTasks = [
+                ...(todaysPlan.mario?.morning || []),
+                ...(todaysPlan.mario?.afternoon || []),
+                ...(todaysPlan.mario?.evening || []),
+                ...(todaysPlan.maria?.morning || []),
+                ...(todaysPlan.maria?.afternoon || []),
+                ...(todaysPlan.maria?.evening || [])
+            ];
             const availableTasks = tasks.filter(t => 
                 !t.completed && 
                 !t.banked && 
@@ -6912,17 +7103,19 @@
                     <button class="plan-suggestion-add" data-task-id="${task.id}">Add</button>
                 `;
 
-                // Quick add to current time block based on time of day
+                // Quick add to current time block based on time of day and task assignee
                 const addBtn = item.querySelector('.plan-suggestion-add');
                 addBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const currentBlock = getCurrentTimeBlock();
-                    addTaskToPlan(task.id, currentBlock);
+                    // Add to the correct assignee's plan (default to mario for 'both' tasks)
+                    const assignee = (task.assignee === 'mario' || task.assignee === 'maria') ? task.assignee : 'mario';
+                    addTaskToPlan(task.id, assignee, currentBlock);
                 });
 
-                // Click item to pick time block
+                // Click item to pick assignee and time block
                 item.addEventListener('click', () => {
-                    openPlanTaskPicker(null, task.id);
+                    openPlanTaskPicker(null, null, task.id);
                 });
 
                 container.appendChild(item);
@@ -6938,10 +7131,12 @@
 
         // Plan Task Picker Modal
         let planPickerModal = null;
+        let planPickerTargetAssignee = null;
         let planPickerTargetBlock = null;
         let planPickerTargetTaskId = null;
 
-        function openPlanTaskPicker(blockName, taskId = null) {
+        function openPlanTaskPicker(assignee, blockName, taskId = null) {
+            planPickerTargetAssignee = assignee;
             planPickerTargetBlock = blockName;
             planPickerTargetTaskId = taskId;
 
@@ -6953,48 +7148,74 @@
             const tasksList = planPickerModal.querySelector('.plan-picker-tasks');
 
             if (taskId) {
-                // Picking a time block for a specific task
-                modalTitle.textContent = 'Choose Time Block';
+                // Picking assignee and time block for a specific task
+                const task = tasks.find(t => t.id === taskId);
+                modalTitle.textContent = 'Add to Plan';
                 tasksList.innerHTML = '';
 
-                const blocks = [
-                    { name: 'morning', label: '🌅 Morning', desc: 'Before noon' },
-                    { name: 'afternoon', label: '☀️ Afternoon', desc: '12pm - 5pm' },
-                    { name: 'evening', label: '🌙 Evening', desc: 'After 5pm' }
+                // Show options for both Mario and Maria
+                const assignees = [
+                    { id: 'mario', name: 'Mario', icon: 'M', color: 'var(--accent-mario)' },
+                    { id: 'maria', name: 'Maria', icon: 'A', color: 'var(--accent-maria)' }
                 ];
 
-                blocks.forEach(block => {
-                    const item = document.createElement('div');
-                    item.className = 'plan-picker-item';
-                    item.innerHTML = `
-                        <div class="plan-picker-item-icon">${block.label.split(' ')[0]}</div>
-                        <div class="plan-picker-item-details">
-                            <div class="plan-picker-item-name">${block.label.split(' ')[1]}</div>
-                            <div class="plan-picker-item-meta">${block.desc}</div>
+                const blocks = [
+                    { name: 'morning', label: 'Morning', emoji: '🌅' },
+                    { name: 'afternoon', label: 'Afternoon', emoji: '☀️' },
+                    { name: 'evening', label: 'Evening', emoji: '🌙' }
+                ];
+
+                assignees.forEach(a => {
+                    const section = document.createElement('div');
+                    section.style.cssText = 'margin-bottom: 1rem;';
+                    section.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                            <div style="width: 24px; height: 24px; border-radius: 50%; background: ${a.color}; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.7rem; color: white;">${a.icon}</div>
+                            <span style="font-weight: 600;">${a.name}</span>
                         </div>
                     `;
-                    item.addEventListener('click', () => {
-                        addTaskToPlan(taskId, block.name);
+
+                    blocks.forEach(block => {
+                        const item = document.createElement('div');
+                        item.className = 'plan-picker-item';
+                        item.style.cssText = 'padding: 0.5rem 0.75rem;';
+                        item.innerHTML = `
+                            <div class="plan-picker-item-icon">${block.emoji}</div>
+                            <div class="plan-picker-item-details">
+                                <div class="plan-picker-item-name">${block.label}</div>
+                            </div>
+                        `;
+                        item.addEventListener('click', () => {
+                            addTaskToPlan(taskId, a.id, block.name);
+                        });
+                        section.appendChild(item);
                     });
-                    tasksList.appendChild(item);
+
+                    tasksList.appendChild(section);
                 });
-            } else {
-                // Picking a task for a specific time block
-                modalTitle.textContent = `Add to ${blockName.charAt(0).toUpperCase() + blockName.slice(1)}`;
+            } else if (assignee && blockName) {
+                // Picking a task for a specific assignee's time block
+                const assigneeName = assignee.charAt(0).toUpperCase() + assignee.slice(1);
+                modalTitle.textContent = `Add to ${assigneeName}'s ${blockName.charAt(0).toUpperCase() + blockName.slice(1)}`;
                 tasksList.innerHTML = '';
 
-                const allPlannedTasks = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
+                // Get tasks for this assignee that aren't already planned
+                const assigneePlan = todaysPlan[assignee] || { morning: [], afternoon: [], evening: [] };
+                const allPlannedForAssignee = [...assigneePlan.morning, ...assigneePlan.afternoon, ...assigneePlan.evening];
+                
+                // Show tasks assigned to this person (or 'both')
                 const availableTasks = tasks.filter(t => 
                     !t.completed && 
                     !t.banked && 
-                    !allPlannedTasks.includes(t.id)
+                    !allPlannedForAssignee.includes(t.id) &&
+                    (t.assignee === assignee || t.assignee === 'both')
                 );
 
                 if (availableTasks.length === 0) {
                     tasksList.innerHTML = `
                         <div class="plan-empty" style="padding: 2rem;">
                             <div style="font-size: 0.875rem; color: var(--text-muted);">
-                                No available tasks to add
+                                No available tasks for ${assigneeName}
                             </div>
                         </div>
                     `;
@@ -7011,7 +7232,7 @@
                             </div>
                         `;
                         item.addEventListener('click', () => {
-                            addTaskToPlan(task.id, blockName);
+                            addTaskToPlan(task.id, assignee, blockName);
                         });
                         tasksList.appendChild(item);
                     });
@@ -7025,6 +7246,7 @@
             if (planPickerModal) {
                 planPickerModal.classList.remove('active');
             }
+            planPickerTargetAssignee = null;
             planPickerTargetBlock = null;
             planPickerTargetTaskId = null;
         }
@@ -7150,7 +7372,10 @@
 
         function autoFillPlan() {
             // Clear current plan
-            todaysPlan = { morning: [], afternoon: [], evening: [] };
+            todaysPlan = {
+                mario: { morning: [], afternoon: [], evening: [] },
+                maria: { morning: [], afternoon: [], evening: [] }
+            };
 
             // Get available tasks sorted by priority
             const availableTasks = tasks.filter(t => !t.completed && !t.banked);
@@ -7162,19 +7387,23 @@
 
             // Time budgets per block (in minutes)
             const budgets = { morning: 180, afternoon: 180, evening: 120 };
-            const used = { morning: 0, afternoon: 0, evening: 0 };
+            const used = { 
+                mario: { morning: 0, afternoon: 0, evening: 0 },
+                maria: { morning: 0, afternoon: 0, evening: 0 }
+            };
             const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
 
-            // Distribute tasks across blocks
+            // Distribute tasks across blocks by assignee
             availableTasks.forEach(task => {
                 const taskTime = sizeMinutes[task.size] || 45;
+                const assignee = (task.assignee === 'mario' || task.assignee === 'maria') ? task.assignee : 'mario';
 
                 // Find best block that has room
                 const blocks = ['morning', 'afternoon', 'evening'];
                 for (const block of blocks) {
-                    if (used[block] + taskTime <= budgets[block]) {
-                        todaysPlan[block].push(task.id);
-                        used[block] += taskTime;
+                    if (used[assignee][block] + taskTime <= budgets[block]) {
+                        todaysPlan[assignee][block].push(task.id);
+                        used[assignee][block] += taskTime;
                         break;
                     }
                 }
@@ -7186,7 +7415,10 @@
 
         function clearPlan() {
             if (confirm('Clear all tasks from today\'s plan?')) {
-                todaysPlan = { morning: [], afternoon: [], evening: [] };
+                todaysPlan = {
+                    mario: { morning: [], afternoon: [], evening: [] },
+                    maria: { morning: [], afternoon: [], evening: [] }
+                };
                 saveTodaysPlan();
                 renderPlan();
             }
@@ -7194,27 +7426,26 @@
 
         function replan() {
             const currentHour = new Date().getHours();
-            let currentBlock = 'morning';
             let remainingBlocks = [];
 
-            // Determine current time block and remaining blocks
+            // Determine remaining blocks based on time
             if (currentHour < 12) {
-                currentBlock = 'morning';
                 remainingBlocks = ['morning', 'afternoon', 'evening'];
             } else if (currentHour < 17) {
-                currentBlock = 'afternoon';
                 remainingBlocks = ['afternoon', 'evening'];
             } else {
-                currentBlock = 'evening';
                 remainingBlocks = ['evening'];
             }
 
             // Get all currently planned tasks
-            const allPlannedTaskIds = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
-            const plannedTasks = tasks.filter(t => allPlannedTaskIds.includes(t.id));
-
-            // Filter out completed tasks
-            const remainingPlannedTasks = plannedTasks.filter(t => !t.completed);
+            const allPlannedTaskIds = [
+                ...(todaysPlan.mario?.morning || []),
+                ...(todaysPlan.mario?.afternoon || []),
+                ...(todaysPlan.mario?.evening || []),
+                ...(todaysPlan.maria?.morning || []),
+                ...(todaysPlan.maria?.afternoon || []),
+                ...(todaysPlan.maria?.evening || [])
+            ];
 
             // Get unplanned tasks that aren't completed
             const unplannedTasks = tasks.filter(t => 
@@ -7223,19 +7454,20 @@
                 !allPlannedTaskIds.includes(t.id)
             );
 
-            // Combine remaining planned and unplanned tasks
-            const tasksToReplan = [...remainingPlannedTasks, ...unplannedTasks];
-
             // Sort by priority (urgent + important first)
-            tasksToReplan.sort((a, b) => {
+            unplannedTasks.sort((a, b) => {
                 const aScore = (a.urgent || 3) * 2 + (a.important || 3);
                 const bScore = (b.urgent || 3) * 2 + (b.important || 3);
                 return bScore - aScore;
             });
 
             // Clear current plan for remaining blocks only
-            remainingBlocks.forEach(block => {
-                todaysPlan[block] = [];
+            ['mario', 'maria'].forEach(assignee => {
+                remainingBlocks.forEach(block => {
+                    if (todaysPlan[assignee]) {
+                        todaysPlan[assignee][block] = [];
+                    }
+                });
             });
 
             // Time budgets per block (in minutes) - adjusted for time of day
@@ -7244,18 +7476,23 @@
                 afternoon: currentHour < 17 ? (17 - currentHour) * 60 : 0,
                 evening: currentHour < 17 ? 180 : (24 - currentHour) * 60
             };
-            const used = { morning: 0, afternoon: 0, evening: 0 };
+            const used = { 
+                mario: { morning: 0, afternoon: 0, evening: 0 },
+                maria: { morning: 0, afternoon: 0, evening: 0 }
+            };
             const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
 
-            // Distribute tasks across remaining blocks
-            tasksToReplan.forEach(task => {
+            // Distribute tasks across remaining blocks by assignee
+            unplannedTasks.forEach(task => {
                 const taskTime = sizeMinutes[task.size] || 45;
+                const assignee = (task.assignee === 'mario' || task.assignee === 'maria') ? task.assignee : 'mario';
 
                 // Find best block that has room
                 for (const block of remainingBlocks) {
-                    if (used[block] + taskTime <= budgets[block]) {
-                        todaysPlan[block].push(task.id);
-                        used[block] += taskTime;
+                    if (used[assignee][block] + taskTime <= budgets[block]) {
+                        if (!todaysPlan[assignee]) todaysPlan[assignee] = { morning: [], afternoon: [], evening: [] };
+                        todaysPlan[assignee][block].push(task.id);
+                        used[assignee][block] += taskTime;
                         break;
                     }
                 }
