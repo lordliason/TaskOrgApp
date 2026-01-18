@@ -603,18 +603,40 @@ async function autofillDailyPlan(params, apiKey) {
     const sizeMinutes = { xs: 8, s: 20, m: 45, l: 90, xl: 150 };
     const sizeLabels = { xs: 'Extra Small (~8min)', s: 'Small (~20min)', m: 'Medium (~45min)', l: 'Large (~90min)', xl: 'Extra Large (~150min)' };
     
+    // Helper to determine if task is outside errand or home task
+    const outsideKeywords = ['store', 'shop', 'depot', 'car', 'dmv', 'plates', 'pick up', 'pickup', 'return', 'buy', 'get', 'grocery', 'groceries', 'mall', 'bank', 'post office', 'pharmacy', 'doctor', 'dentist', 'appointment', 'errand', 'drive', 'drop off', 'dropoff'];
+    const homeKeywords = ['home', 'house', 'clean', 'laundry', 'cook', 'paper', 'form', 'document', 'file', 'call', 'email', 'computer', 'online', 'video', 'work from', 'remote', 'desk'];
+    
+    function getTaskLocationType(task) {
+        const nameLower = (task.name || '').toLowerCase();
+        const locationLower = (task.location || '').toLowerCase();
+        const combined = nameLower + ' ' + locationLower;
+        
+        // Check for outside keywords
+        const isOutside = outsideKeywords.some(kw => combined.includes(kw));
+        // Check for home keywords  
+        const isHome = homeKeywords.some(kw => combined.includes(kw));
+        
+        if (isOutside && !isHome) return 'OUTSIDE ERRAND';
+        if (isHome && !isOutside) return 'HOME TASK';
+        if (isOutside && isHome) return 'OUTSIDE ERRAND'; // Outside takes priority if both
+        return 'UNSPECIFIED';
+    }
+    
     const taskDescriptions = availableTasks.map(t => {
         const estimatedTime = sizeMinutes[t.size] || 45;
         const deadlineInfo = t.deadline ? `, deadline: ${t.deadline}` : '';
         const locationInfo = t.location ? `, location: ${t.location}` : '';
         const dependsInfo = t.depends_on ? `, depends on another task` : '';
+        const locationType = getTaskLocationType(t);
         
         return `- ID: ${t.id}
   Name: "${t.name}"
   Assignee: ${t.assignee} (${t.assignee === 'both' ? 'Mario & Maria together' : t.assignee === 'mario' ? 'Mario only' : 'Maria only'})
   Size: ${sizeLabels[t.size] || t.size} (${estimatedTime} min)
   Urgency: ${t.urgent || 3}/5, Importance: ${t.important || 3}/5
-  Priority Score: ${((t.urgent || 3) * 2 + (t.important || 3))}${deadlineInfo}${locationInfo}${dependsInfo}`;
+  Priority Score: ${((t.urgent || 3) * 2 + (t.important || 3))}${deadlineInfo}${locationInfo}${dependsInfo}
+  Task Type: ${locationType}`;
     }).join('\n\n');
     
     // Build the AI prompt
@@ -632,7 +654,13 @@ SCHEDULING RULES (in priority order):
 1. CURRENT TIME AWARENESS: Only schedule tasks in blocks that haven't passed. Current hour is ${currentHour}.
 2. PRIORITY FIRST: Higher urgency + importance tasks should be scheduled earlier in the day.
 3. DEADLINE AWARENESS: Tasks with imminent deadlines (today/tomorrow) get top priority.
-4. LOCATION CLUSTERING: Group tasks with the same location together (especially "home" tasks) to minimize context switching.
+4. LOCATION CLUSTERING (CRITICAL): 
+   - Group ALL outside errands together in the SAME time block (stores, shopping, car tasks, DMV, picking things up, returning items, depot runs)
+   - Group ALL home tasks together in a SEPARATE time block (paperwork, cleaning, computer work, calls)
+   - NEVER mix home tasks with outside errands in the same time block
+   - If a task mentions a store, depot, car, plates, DMV, shopping, or pickup → it's an OUTSIDE errand
+   - If a task is paperwork, computer work, cleaning inside, or doesn't require leaving → it's a HOME task
+   - Schedule outside errands consecutively so the person can do them in one trip
 5. "BOTH" TASKS TOGETHER: Tasks assigned to "both" should ideally be scheduled at the same time block for Mario AND Maria so they can work together.
 6. SIZE FITTING: Don't overfill blocks - respect the time estimates and available minutes.
 7. BALANCED WORKLOAD: Try to balance task count and total time between Mario and Maria.
@@ -659,6 +687,9 @@ IMPORTANT:
 - For "both" assignee tasks, add the SAME task ID to BOTH Mario's and Maria's schedule in the SAME time block
 - Don't schedule more tasks than will fit in the available time
 - It's okay to leave some tasks unscheduled if there isn't enough time
+- CRITICAL: Group all "OUTSIDE ERRAND" tasks together in one time block, and all "HOME TASK" tasks together in a different block
+- Example: If someone has "Get drills from depot" (outside) and "Return plates" (outside), put them in the SAME block so they can do both errands in one trip
+- Example: If someone has "Refill papers" (home) and "Clean car" (outside), put them in DIFFERENT blocks
 - Return ONLY the JSON, no markdown code blocks or extra text`;
 
     // Call OpenAI
