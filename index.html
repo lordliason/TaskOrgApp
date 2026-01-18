@@ -1389,6 +1389,352 @@
             font-size: 1rem;
         }
 
+        /* Today's Plan Panel */
+        .plan-panel {
+            background: var(--bg-main);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .plan-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .plan-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .plan-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .plan-date {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .plan-time-blocks {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .plan-time-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .plan-time-block:hover {
+            border-color: var(--accent-mario);
+        }
+
+        .plan-time-block.has-tasks {
+            border-left: 3px solid var(--accent-mario);
+        }
+
+        .plan-time-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .plan-time-label svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .plan-task-slot {
+            min-height: 60px;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .plan-task-slot:hover {
+            border-color: var(--accent-mario);
+            background: rgba(108, 99, 255, 0.05);
+        }
+
+        .plan-task-slot.filled {
+            border: none;
+            background: transparent;
+            min-height: auto;
+            justify-content: flex-start;
+            cursor: default;
+        }
+
+        .plan-scheduled-task {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-hover);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .plan-scheduled-task:last-child {
+            margin-bottom: 0;
+        }
+
+        .plan-scheduled-task:hover {
+            transform: translateX(4px);
+        }
+
+        .plan-task-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .plan-task-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .plan-task-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .plan-task-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .plan-task-size {
+            background: var(--bg-card);
+            padding: 0.125rem 0.375rem;
+            border-radius: 4px;
+            font-size: 0.65rem;
+        }
+
+        .plan-task-remove {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .plan-task-remove:hover {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+
+        .plan-suggestions {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .plan-suggestions-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .plan-suggestion-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .plan-suggestion-item:hover {
+            border-color: var(--accent-mario);
+            background: var(--bg-hover);
+        }
+
+        .plan-suggestion-icon {
+            font-size: 0.875rem;
+        }
+
+        .plan-suggestion-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .plan-suggestion-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .plan-suggestion-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .plan-suggestion-add {
+            background: var(--accent-mario);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .plan-suggestion-add:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .plan-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .plan-stat {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.875rem;
+            text-align: center;
+        }
+
+        .plan-stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-mario);
+        }
+
+        .plan-stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .plan-empty {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .plan-empty-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .plan-empty-text {
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .plan-generate-btn {
+            background: var(--accent-mario);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .plan-generate-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .plan-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .plan-action-btn {
+            flex: 1;
+            padding: 0.625rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+        }
+
+        .plan-action-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-mario);
+        }
+
+        .plan-action-btn.primary {
+            background: var(--accent-mario);
+            border-color: var(--accent-mario);
+            color: white;
+        }
+
+        .plan-action-btn.primary:hover {
+            opacity: 0.9;
+        }
+
         .list-header {
             display: flex;
             justify-content: space-between;
@@ -2085,19 +2431,19 @@
 
         .mobile-nav-inner {
             display: flex;
-            gap: 0.5rem;
-            max-width: 400px;
+            gap: 0.375rem;
+            max-width: 420px;
             margin: 0 auto;
         }
 
         .mobile-nav-btn {
             flex: 1;
-            padding: 0.75rem;
+            padding: 0.625rem 0.5rem;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             background: transparent;
             color: var(--text-muted);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             cursor: pointer;
             display: flex;
@@ -2986,6 +3332,26 @@
                 display: none !important;
             }
 
+            .plan-panel {
+                grid-column: 3;
+                width: 280px;
+                max-width: 280px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 1rem;
+            }
+
+            .plan-panel.active {
+                display: flex !important;
+            }
+
+            .plan-panel:not(.active) {
+                display: none !important;
+            }
+
             .floating-add-btn {
                 display: flex;
                 bottom: 1.5rem;
@@ -3092,6 +3458,26 @@
             }
 
             .leaderboard-panel:not(.active) {
+                display: none !important;
+            }
+
+            .plan-panel {
+                grid-column: 3;
+                border-left: 1px solid var(--border);
+                width: 340px;
+                max-width: 340px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .plan-panel.active {
+                display: flex !important;
+            }
+
+            .plan-panel:not(.active) {
                 display: none !important;
             }
 
@@ -3202,6 +3588,27 @@
             }
 
             .leaderboard-panel:not(.active) {
+                display: none !important;
+            }
+
+            .plan-panel {
+                grid-column: 3;
+                border-left: 1px solid var(--border);
+                width: 260px;
+                max-width: 260px;
+                height: 100vh;
+                height: -webkit-fill-available;
+                max-height: 100vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 1rem;
+            }
+
+            .plan-panel.active {
+                display: flex !important;
+            }
+
+            .plan-panel:not(.active) {
                 display: none !important;
             }
 
@@ -3833,6 +4240,102 @@
                 <!-- Leaderboard entries will be populated here -->
             </div>
         </div>
+
+        <!-- Right Panel: Today's Plan -->
+        <div class="plan-panel" id="planPanel">
+            <div class="plan-header">
+                <div class="plan-title">
+                    <span>📋</span>
+                    <span>Today's Plan</span>
+                </div>
+                <div class="plan-date" id="planDate"></div>
+            </div>
+
+            <div class="plan-stats">
+                <div class="plan-stat">
+                    <div class="plan-stat-value" id="planTaskCount">0</div>
+                    <div class="plan-stat-label">Planned</div>
+                </div>
+                <div class="plan-stat">
+                    <div class="plan-stat-value" id="planTimeEstimate">0h</div>
+                    <div class="plan-stat-label">Est. Time</div>
+                </div>
+            </div>
+
+            <div class="plan-time-blocks" id="planTimeBlocks">
+                <!-- Morning Block -->
+                <div class="plan-time-block" data-block="morning">
+                    <div class="plan-time-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                        Morning
+                    </div>
+                    <div class="plan-block-tasks" id="planMorningTasks">
+                        <div class="plan-task-slot" data-block="morning">+ Add task</div>
+                    </div>
+                </div>
+
+                <!-- Afternoon Block -->
+                <div class="plan-time-block" data-block="afternoon">
+                    <div class="plan-time-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                        </svg>
+                        Afternoon
+                    </div>
+                    <div class="plan-block-tasks" id="planAfternoonTasks">
+                        <div class="plan-task-slot" data-block="afternoon">+ Add task</div>
+                    </div>
+                </div>
+
+                <!-- Evening Block -->
+                <div class="plan-time-block" data-block="evening">
+                    <div class="plan-time-label">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                        Evening
+                    </div>
+                    <div class="plan-block-tasks" id="planEveningTasks">
+                        <div class="plan-task-slot" data-block="evening">+ Add task</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Suggestions -->
+            <div class="plan-suggestions" id="planSuggestions">
+                <div class="plan-suggestions-header">
+                    <span>💡 Suggested Tasks</span>
+                    <button class="plan-action-btn" id="refreshSuggestionsBtn" style="flex: 0; padding: 0.375rem 0.625rem;">
+                        ↻
+                    </button>
+                </div>
+                <div id="planSuggestionsList">
+                    <!-- Suggestions will be populated here -->
+                </div>
+            </div>
+
+            <div class="plan-actions">
+                <button class="plan-action-btn" id="clearPlanBtn">
+                    <span>🗑️</span>
+                    Clear
+                </button>
+                <button class="plan-action-btn primary" id="autoFillPlanBtn">
+                    <span>✨</span>
+                    Auto-Fill
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Tooltip -->
@@ -4220,6 +4723,7 @@
     <div class="tablet-nav" id="tabletNav">
         <button class="tablet-nav-btn active" data-panel="matrix">Matrix</button>
         <button class="tablet-nav-btn" data-panel="list">Tasks</button>
+        <button class="tablet-nav-btn" data-panel="plan">📋</button>
         <button class="tablet-nav-btn" data-panel="leaderboard">🏆</button>
     </div>
 
@@ -4244,6 +4748,15 @@
                     <line x1="3" y1="18" x2="3.01" y2="18"></line>
                 </svg>
                 Tasks
+            </button>
+            <button class="mobile-nav-btn" data-panel="plan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Plan
             </button>
             <button class="mobile-nav-btn" data-panel="leaderboard">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -4326,6 +4839,15 @@
         let selectedIcon = null;
         let isConnected = false;
         let currentUser = null;
+
+        // Today's Plan State
+        let todaysPlan = {
+            morning: [],
+            afternoon: [],
+            evening: []
+        };
+        const PLAN_STORAGE_KEY = 'taskMatrixTodaysPlan';
+        const PLAN_DATE_KEY = 'taskMatrixPlanDate';
 
         // Simple password hashing function (client-side, for demo purposes)
         // In production, this should be done server-side with proper bcrypt
@@ -4725,11 +5247,13 @@
             try {
                 updateTodayDate();
                 setupEventListeners();
+                initPlanEventListeners();
                 await loadTasks();
                 await loadTodayScores();
                 setupRealtimeSubscription();
                 renderTaskBank();
                 renderCompletedTasks();
+                loadTodaysPlan();
                 if (loadingOverlay) {
                     loadingOverlay.classList.add('hidden');
                 }
@@ -5395,9 +5919,11 @@
                     const matrixPanel = document.querySelector('.matrix-panel');
                     const listPanel = document.querySelector('.list-panel');
                     const leaderboardPanel = document.querySelector('.leaderboard-panel');
+                    const planPanel = document.querySelector('.plan-panel');
                     if (matrixPanel) matrixPanel.classList.toggle('active', panel === 'matrix');
                     if (listPanel) listPanel.classList.toggle('active', panel === 'list');
                     if (leaderboardPanel) leaderboardPanel.classList.toggle('active', panel === 'leaderboard');
+                    if (planPanel) planPanel.classList.toggle('active', panel === 'plan');
 
                     // Load leaderboard data when switching to leaderboard tab
                     if (panel === 'leaderboard') {
@@ -5406,6 +5932,11 @@
                             const activePeriod = activePeriodBtn.dataset.period;
                             loadLeaderboard(activePeriod);
                         }
+                    }
+
+                    // Load plan data when switching to plan tab
+                    if (panel === 'plan') {
+                        renderPlan();
                     }
                 });
             });
@@ -5435,6 +5966,7 @@
                 const matrixPanel = document.querySelector('.matrix-panel');
                 const listPanel = document.querySelector('.list-panel');
                 const leaderboardPanel = document.querySelector('.leaderboard-panel');
+                const planPanel = document.querySelector('.plan-panel');
 
                 // Handle different screen sizes
                 if (window.innerWidth <= 767) {
@@ -5445,6 +5977,7 @@
                     if (matrixPanel) matrixPanel.classList.add('active');
                     if (listPanel) listPanel.classList.remove('active');
                     if (leaderboardPanel) leaderboardPanel.classList.remove('active');
+                    if (planPanel) planPanel.classList.remove('active');
                     document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
                         btn.classList.toggle('active', btn.dataset.panel === 'matrix');
                     });
@@ -5456,6 +5989,7 @@
                     if (matrixPanel) matrixPanel.classList.add('active');
                     if (listPanel) listPanel.classList.add('active');
                     if (leaderboardPanel) leaderboardPanel.classList.remove('active');
+                    if (planPanel) planPanel.classList.remove('active');
                     document.querySelectorAll('.panel-switch-btn').forEach(btn => {
                         btn.classList.toggle('active', btn.dataset.panel === 'list');
                     });
@@ -5467,6 +6001,7 @@
                     if (matrixPanel) matrixPanel.classList.remove('active');
                     if (listPanel) listPanel.classList.remove('active');
                     if (leaderboardPanel) leaderboardPanel.classList.remove('active');
+                    if (planPanel) planPanel.classList.remove('active');
                 }
             });
 
@@ -5505,9 +6040,11 @@
                     const matrixPanel = document.querySelector('.matrix-panel');
                     const listPanel = document.querySelector('.list-panel');
                     const leaderboardPanel = document.querySelector('.leaderboard-panel');
+                    const planPanel = document.querySelector('.plan-panel');
                     if (matrixPanel) matrixPanel.classList.toggle('active', panel === 'matrix');
                     if (listPanel) listPanel.classList.toggle('active', panel === 'list');
                     if (leaderboardPanel) leaderboardPanel.classList.toggle('active', panel === 'leaderboard');
+                    if (planPanel) planPanel.classList.toggle('active', panel === 'plan');
 
                     // Load leaderboard data when switching to leaderboard tab
                     if (panel === 'leaderboard') {
@@ -5516,6 +6053,11 @@
                             const activePeriod = activePeriodBtn.dataset.period;
                             loadLeaderboard(activePeriod);
                         }
+                    }
+
+                    // Load plan data when switching to plan tab
+                    if (panel === 'plan') {
+                        renderPlan();
                     }
                 });
             });
@@ -5532,13 +6074,20 @@
                     // Show/hide panels (matrix is always visible on landscape tablet)
                     const listPanel = document.querySelector('.list-panel');
                     const leaderboardPanel = document.querySelector('.leaderboard-panel');
+                    const planPanel = document.querySelector('.plan-panel');
                     if (listPanel) listPanel.classList.toggle('active', panel === 'list');
                     if (leaderboardPanel) leaderboardPanel.classList.toggle('active', panel === 'leaderboard');
+                    if (planPanel) planPanel.classList.toggle('active', panel === 'plan');
 
                     // Load leaderboard data when switching to leaderboard tab
                     if (panel === 'leaderboard') {
                         const activePeriod = document.querySelector('.period-btn.active').dataset.period;
                         loadLeaderboard(activePeriod);
+                    }
+
+                    // Load plan data when switching to plan tab
+                    if (panel === 'plan') {
+                        renderPlan();
                     }
                 });
             });
@@ -6163,6 +6712,531 @@
             renderMatrix();
             renderTaskList();
             updateTaskCount();
+        }
+
+        // ===========================================
+        // Today's Plan Functions
+        // ===========================================
+
+        function loadTodaysPlan() {
+            const savedDate = localStorage.getItem(PLAN_DATE_KEY);
+            const today = new Date().toDateString();
+
+            // Reset plan if it's a new day
+            if (savedDate !== today) {
+                todaysPlan = { morning: [], afternoon: [], evening: [] };
+                localStorage.setItem(PLAN_DATE_KEY, today);
+                localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(todaysPlan));
+            } else {
+                const saved = localStorage.getItem(PLAN_STORAGE_KEY);
+                if (saved) {
+                    todaysPlan = JSON.parse(saved);
+                }
+            }
+        }
+
+        function saveTodaysPlan() {
+            localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(todaysPlan));
+            localStorage.setItem(PLAN_DATE_KEY, new Date().toDateString());
+        }
+
+        function renderPlan() {
+            loadTodaysPlan();
+
+            // Update date display
+            const planDate = document.getElementById('planDate');
+            if (planDate) {
+                const today = new Date();
+                const options = { weekday: 'long', month: 'long', day: 'numeric' };
+                planDate.textContent = today.toLocaleDateString('en-US', options);
+            }
+
+            // Render each time block
+            renderPlanBlock('morning', 'planMorningTasks');
+            renderPlanBlock('afternoon', 'planAfternoonTasks');
+            renderPlanBlock('evening', 'planEveningTasks');
+
+            // Update stats
+            updatePlanStats();
+
+            // Render suggestions
+            renderPlanSuggestions();
+
+            // Update time block styling
+            updateTimeBlockStyling();
+        }
+
+        function renderPlanBlock(blockName, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const blockTasks = todaysPlan[blockName] || [];
+            container.innerHTML = '';
+
+            // Render scheduled tasks
+            blockTasks.forEach((taskId, index) => {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    const taskEl = createPlanTaskElement(task, blockName, index);
+                    container.appendChild(taskEl);
+                }
+            });
+
+            // Add empty slot for adding more tasks
+            const slot = document.createElement('div');
+            slot.className = 'plan-task-slot';
+            slot.dataset.block = blockName;
+            slot.textContent = '+ Add task';
+            slot.addEventListener('click', () => openPlanTaskPicker(blockName));
+            container.appendChild(slot);
+        }
+
+        function createPlanTaskElement(task, blockName, index) {
+            const div = document.createElement('div');
+            div.className = 'plan-scheduled-task';
+            if (task.completed) {
+                div.style.opacity = '0.5';
+                div.style.textDecoration = 'line-through';
+            }
+
+            const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
+
+            div.innerHTML = `
+                <span class="plan-task-icon">${task.icon || '📌'}</span>
+                <div class="plan-task-details">
+                    <div class="plan-task-name">${task.name}</div>
+                    <div class="plan-task-meta">
+                        <span class="plan-task-size">${sizeLabels[task.size] || task.size}</span>
+                        <span class="assignee-dot ${task.assignee}"></span>
+                    </div>
+                </div>
+                <button class="plan-task-remove" data-block="${blockName}" data-index="${index}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            `;
+
+            // Click task to view details
+            div.addEventListener('click', (e) => {
+                if (!e.target.closest('.plan-task-remove')) {
+                    openViewTaskModal(task);
+                }
+            });
+
+            // Remove button handler
+            const removeBtn = div.querySelector('.plan-task-remove');
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeTaskFromPlan(blockName, index);
+            });
+
+            return div;
+        }
+
+        function removeTaskFromPlan(blockName, index) {
+            todaysPlan[blockName].splice(index, 1);
+            saveTodaysPlan();
+            renderPlan();
+        }
+
+        function addTaskToPlan(taskId, blockName) {
+            // Check if task is already in any block
+            const allPlannedTasks = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
+            if (allPlannedTasks.includes(taskId)) {
+                // Remove from old location first
+                Object.keys(todaysPlan).forEach(block => {
+                    todaysPlan[block] = todaysPlan[block].filter(id => id !== taskId);
+                });
+            }
+
+            todaysPlan[blockName].push(taskId);
+            saveTodaysPlan();
+            renderPlan();
+            closePlanTaskPicker();
+        }
+
+        function updatePlanStats() {
+            const allPlannedTasks = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
+            const plannedCount = allPlannedTasks.length;
+
+            // Calculate estimated time
+            const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
+            let totalMinutes = 0;
+
+            allPlannedTasks.forEach(taskId => {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    totalMinutes += sizeMinutes[task.size] || 45;
+                }
+            });
+
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = Math.round(totalMinutes % 60);
+            const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+            const countEl = document.getElementById('planTaskCount');
+            const timeEl = document.getElementById('planTimeEstimate');
+
+            if (countEl) countEl.textContent = plannedCount;
+            if (timeEl) timeEl.textContent = timeStr;
+        }
+
+        function updateTimeBlockStyling() {
+            const blocks = document.querySelectorAll('.plan-time-block');
+            blocks.forEach(block => {
+                const blockName = block.dataset.block;
+                const hasTasks = todaysPlan[blockName] && todaysPlan[blockName].length > 0;
+                block.classList.toggle('has-tasks', hasTasks);
+            });
+        }
+
+        function renderPlanSuggestions() {
+            const container = document.getElementById('planSuggestionsList');
+            if (!container) return;
+
+            // Get tasks not yet planned and not completed
+            const allPlannedTasks = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
+            const availableTasks = tasks.filter(t => 
+                !t.completed && 
+                !t.banked && 
+                !allPlannedTasks.includes(t.id)
+            );
+
+            // Sort by priority (urgent + important first)
+            availableTasks.sort((a, b) => {
+                const aScore = (a.urgent || 3) + (a.important || 3);
+                const bScore = (b.urgent || 3) + (b.important || 3);
+                return bScore - aScore;
+            });
+
+            // Show top 5 suggestions
+            const suggestions = availableTasks.slice(0, 5);
+
+            if (suggestions.length === 0) {
+                container.innerHTML = `
+                    <div class="plan-empty" style="padding: 1rem;">
+                        <div style="font-size: 0.875rem; color: var(--text-muted);">
+                            ${tasks.length === 0 ? 'No tasks yet. Add some tasks to get started!' : 'All tasks are planned! 🎉'}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
+
+            suggestions.forEach(task => {
+                const item = document.createElement('div');
+                item.className = 'plan-suggestion-item';
+                item.innerHTML = `
+                    <span class="plan-suggestion-icon">${task.icon || '📌'}</span>
+                    <div class="plan-suggestion-details">
+                        <div class="plan-suggestion-name">${task.name}</div>
+                        <div class="plan-suggestion-meta">${sizeLabels[task.size] || task.size}</div>
+                    </div>
+                    <button class="plan-suggestion-add" data-task-id="${task.id}">Add</button>
+                `;
+
+                // Quick add to current time block based on time of day
+                const addBtn = item.querySelector('.plan-suggestion-add');
+                addBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const currentBlock = getCurrentTimeBlock();
+                    addTaskToPlan(task.id, currentBlock);
+                });
+
+                // Click item to pick time block
+                item.addEventListener('click', () => {
+                    openPlanTaskPicker(null, task.id);
+                });
+
+                container.appendChild(item);
+            });
+        }
+
+        function getCurrentTimeBlock() {
+            const hour = new Date().getHours();
+            if (hour < 12) return 'morning';
+            if (hour < 17) return 'afternoon';
+            return 'evening';
+        }
+
+        // Plan Task Picker Modal
+        let planPickerModal = null;
+        let planPickerTargetBlock = null;
+        let planPickerTargetTaskId = null;
+
+        function openPlanTaskPicker(blockName, taskId = null) {
+            planPickerTargetBlock = blockName;
+            planPickerTargetTaskId = taskId;
+
+            if (!planPickerModal) {
+                createPlanPickerModal();
+            }
+
+            const modalTitle = planPickerModal.querySelector('.plan-picker-title');
+            const tasksList = planPickerModal.querySelector('.plan-picker-tasks');
+
+            if (taskId) {
+                // Picking a time block for a specific task
+                modalTitle.textContent = 'Choose Time Block';
+                tasksList.innerHTML = '';
+
+                const blocks = [
+                    { name: 'morning', label: '🌅 Morning', desc: 'Before noon' },
+                    { name: 'afternoon', label: '☀️ Afternoon', desc: '12pm - 5pm' },
+                    { name: 'evening', label: '🌙 Evening', desc: 'After 5pm' }
+                ];
+
+                blocks.forEach(block => {
+                    const item = document.createElement('div');
+                    item.className = 'plan-picker-item';
+                    item.innerHTML = `
+                        <div class="plan-picker-item-icon">${block.label.split(' ')[0]}</div>
+                        <div class="plan-picker-item-details">
+                            <div class="plan-picker-item-name">${block.label.split(' ')[1]}</div>
+                            <div class="plan-picker-item-meta">${block.desc}</div>
+                        </div>
+                    `;
+                    item.addEventListener('click', () => {
+                        addTaskToPlan(taskId, block.name);
+                    });
+                    tasksList.appendChild(item);
+                });
+            } else {
+                // Picking a task for a specific time block
+                modalTitle.textContent = `Add to ${blockName.charAt(0).toUpperCase() + blockName.slice(1)}`;
+                tasksList.innerHTML = '';
+
+                const allPlannedTasks = [...todaysPlan.morning, ...todaysPlan.afternoon, ...todaysPlan.evening];
+                const availableTasks = tasks.filter(t => 
+                    !t.completed && 
+                    !t.banked && 
+                    !allPlannedTasks.includes(t.id)
+                );
+
+                if (availableTasks.length === 0) {
+                    tasksList.innerHTML = `
+                        <div class="plan-empty" style="padding: 2rem;">
+                            <div style="font-size: 0.875rem; color: var(--text-muted);">
+                                No available tasks to add
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
+                    availableTasks.forEach(task => {
+                        const item = document.createElement('div');
+                        item.className = 'plan-picker-item';
+                        item.innerHTML = `
+                            <div class="plan-picker-item-icon">${task.icon || '📌'}</div>
+                            <div class="plan-picker-item-details">
+                                <div class="plan-picker-item-name">${task.name}</div>
+                                <div class="plan-picker-item-meta">${sizeLabels[task.size] || task.size}</div>
+                            </div>
+                        `;
+                        item.addEventListener('click', () => {
+                            addTaskToPlan(task.id, blockName);
+                        });
+                        tasksList.appendChild(item);
+                    });
+                }
+            }
+
+            planPickerModal.classList.add('active');
+        }
+
+        function closePlanTaskPicker() {
+            if (planPickerModal) {
+                planPickerModal.classList.remove('active');
+            }
+            planPickerTargetBlock = null;
+            planPickerTargetTaskId = null;
+        }
+
+        function createPlanPickerModal() {
+            planPickerModal = document.createElement('div');
+            planPickerModal.className = 'plan-picker-modal';
+            planPickerModal.innerHTML = `
+                <div class="plan-picker-content">
+                    <div class="plan-picker-header">
+                        <div class="plan-picker-title">Select Task</div>
+                        <button class="plan-picker-close">&times;</button>
+                    </div>
+                    <div class="plan-picker-tasks"></div>
+                </div>
+            `;
+
+            // Close button
+            planPickerModal.querySelector('.plan-picker-close').addEventListener('click', closePlanTaskPicker);
+
+            // Click outside to close
+            planPickerModal.addEventListener('click', (e) => {
+                if (e.target === planPickerModal) {
+                    closePlanTaskPicker();
+                }
+            });
+
+            document.body.appendChild(planPickerModal);
+
+            // Add modal styles dynamically
+            const style = document.createElement('style');
+            style.textContent = `
+                .plan-picker-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: none;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    padding: 1rem;
+                }
+                .plan-picker-modal.active {
+                    display: flex;
+                }
+                .plan-picker-content {
+                    background: var(--bg-main);
+                    border-radius: 16px;
+                    width: 100%;
+                    max-width: 400px;
+                    max-height: 70vh;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                }
+                .plan-picker-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 1rem 1.25rem;
+                    border-bottom: 1px solid var(--border);
+                }
+                .plan-picker-title {
+                    font-weight: 600;
+                    font-size: 1.125rem;
+                    color: var(--text-primary);
+                }
+                .plan-picker-close {
+                    background: none;
+                    border: none;
+                    font-size: 1.5rem;
+                    color: var(--text-muted);
+                    cursor: pointer;
+                    padding: 0;
+                    line-height: 1;
+                }
+                .plan-picker-close:hover {
+                    color: var(--text-primary);
+                }
+                .plan-picker-tasks {
+                    overflow-y: auto;
+                    padding: 0.75rem;
+                    flex: 1;
+                }
+                .plan-picker-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.875rem;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    margin-bottom: 0.5rem;
+                }
+                .plan-picker-item:hover {
+                    background: var(--bg-hover);
+                }
+                .plan-picker-item:last-child {
+                    margin-bottom: 0;
+                }
+                .plan-picker-item-icon {
+                    font-size: 1.25rem;
+                }
+                .plan-picker-item-details {
+                    flex: 1;
+                }
+                .plan-picker-item-name {
+                    font-weight: 500;
+                    color: var(--text-primary);
+                    margin-bottom: 0.125rem;
+                }
+                .plan-picker-item-meta {
+                    font-size: 0.75rem;
+                    color: var(--text-muted);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function autoFillPlan() {
+            // Clear current plan
+            todaysPlan = { morning: [], afternoon: [], evening: [] };
+
+            // Get available tasks sorted by priority
+            const availableTasks = tasks.filter(t => !t.completed && !t.banked);
+            availableTasks.sort((a, b) => {
+                const aScore = (a.urgent || 3) * 2 + (a.important || 3);
+                const bScore = (b.urgent || 3) * 2 + (b.important || 3);
+                return bScore - aScore;
+            });
+
+            // Time budgets per block (in minutes)
+            const budgets = { morning: 180, afternoon: 180, evening: 120 };
+            const used = { morning: 0, afternoon: 0, evening: 0 };
+            const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
+
+            // Distribute tasks across blocks
+            availableTasks.forEach(task => {
+                const taskTime = sizeMinutes[task.size] || 45;
+
+                // Find best block that has room
+                const blocks = ['morning', 'afternoon', 'evening'];
+                for (const block of blocks) {
+                    if (used[block] + taskTime <= budgets[block]) {
+                        todaysPlan[block].push(task.id);
+                        used[block] += taskTime;
+                        break;
+                    }
+                }
+            });
+
+            saveTodaysPlan();
+            renderPlan();
+        }
+
+        function clearPlan() {
+            if (confirm('Clear all tasks from today\'s plan?')) {
+                todaysPlan = { morning: [], afternoon: [], evening: [] };
+                saveTodaysPlan();
+                renderPlan();
+            }
+        }
+
+        // Initialize plan event listeners
+        function initPlanEventListeners() {
+            const autoFillBtn = document.getElementById('autoFillPlanBtn');
+            const clearPlanBtn = document.getElementById('clearPlanBtn');
+            const refreshBtn = document.getElementById('refreshSuggestionsBtn');
+
+            if (autoFillBtn) {
+                autoFillBtn.addEventListener('click', autoFillPlan);
+            }
+
+            if (clearPlanBtn) {
+                clearPlanBtn.addEventListener('click', clearPlan);
+            }
+
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', renderPlanSuggestions);
+            }
         }
 
         function renderMatrix() {
