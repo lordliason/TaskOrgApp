@@ -4747,6 +4747,22 @@
             </div>
 
             <div class="form-section">
+                <label class="form-label">Location (optional)</label>
+                <input type="text" id="modalLocation" class="form-input" placeholder="e.g., Home, Office, Grocery Store...">
+            </div>
+
+            <div class="form-section">
+                <label class="form-label">Depends On (optional)</label>
+                <select id="modalDependsOn" class="form-input">
+                    <option value="">No dependency</option>
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+                <div class="dependency-hint" id="dependencyHint" style="display: none; margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                    This task can only start after the selected task is completed
+                </div>
+            </div>
+
+            <div class="form-section">
                 <div class="repeat-section-header" id="repeatSectionHeader">
                     <label class="form-label" style="margin-bottom: 0;">Repeat</label>
                     <button type="button" class="repeat-toggle-btn" id="repeatToggleBtn">+</button>
@@ -4928,7 +4944,7 @@
         let taskBankHeader, taskBankList, bankToggle, bankCount;
         let completedTasksHeader, completedTasksList, completedToggle, completedCount;
         let leaderboardToggleBtn;
-        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria, modalDeadline, modalRepeatPreset, customRepeatOptions, customRRule, repeatToggleBtn, repeatSectionContent;
+        let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria, modalDeadline, modalLocation, modalDependsOn, modalRepeatPreset, customRepeatOptions, customRRule, repeatToggleBtn, repeatSectionContent;
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
         let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
         let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn, viewTaskSplitBtn;
@@ -5074,6 +5090,8 @@
             modalFirstStep = document.getElementById('modalFirstStep');
             modalCompletionCriteria = document.getElementById('modalCompletionCriteria');
             modalDeadline = document.getElementById('modalDeadline');
+            modalLocation = document.getElementById('modalLocation');
+            modalDependsOn = document.getElementById('modalDependsOn');
             modalRepeatPreset = document.getElementById('modalRepeatPreset');
             customRepeatOptions = document.getElementById('customRepeatOptions');
             customRRule = document.getElementById('customRRule');
@@ -8213,11 +8231,55 @@
         // ===========================================
         // Modal Functions
         // ===========================================
+        function populateDependencyDropdown(excludeTaskId = null) {
+            if (!modalDependsOn) return;
+            
+            // Clear existing options except the first "No dependency" option
+            modalDependsOn.innerHTML = '<option value="">No dependency</option>';
+            
+            // Get incomplete tasks to show as options
+            const availableTasks = tasks.filter(t => 
+                !t.completed && 
+                t.id !== excludeTaskId
+            );
+            
+            // Sort by name
+            availableTasks.sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Add options
+            availableTasks.forEach(task => {
+                const option = document.createElement('option');
+                option.value = task.id;
+                const icon = task.icon ? `${task.icon} ` : '';
+                const assigneeLabel = task.assignee === 'mario' ? '(M)' : task.assignee === 'maria' ? '(A)' : '(Both)';
+                option.textContent = `${icon}${task.name} ${assigneeLabel}`;
+                modalDependsOn.appendChild(option);
+            });
+            
+            // Show hint when a dependency is selected
+            modalDependsOn.addEventListener('change', () => {
+                const hint = document.getElementById('dependencyHint');
+                if (hint) {
+                    hint.style.display = modalDependsOn.value ? 'block' : 'none';
+                }
+            });
+        }
+
         function openAddTaskModal() {
             editingTaskId = null;
             if (modalTitle) modalTitle.textContent = 'Add Task';
             modalAddTaskBtn.textContent = 'Add Task';
             modalTaskName.value = '';
+            
+            // Clear location and dependency fields
+            if (modalLocation) modalLocation.value = '';
+            if (modalDependsOn) {
+                populateDependencyDropdown();
+                modalDependsOn.value = '';
+                const hint = document.getElementById('dependencyHint');
+                if (hint) hint.style.display = 'none';
+            }
+            
             addTaskModal.classList.add('show');
             modalTaskName.focus();
 
@@ -8245,6 +8307,17 @@
                 modalDeadline.value = task.deadline;
             } else if (modalDeadline) {
                 modalDeadline.value = '';
+            }
+            
+            // Populate location
+            if (modalLocation) {
+                modalLocation.value = task.location || '';
+            }
+            
+            // Populate dependency dropdown
+            if (modalDependsOn) {
+                populateDependencyDropdown(task.id); // Exclude current task from options
+                modalDependsOn.value = task.depends_on || '';
             }
             
             // Populate recurrence
@@ -8292,6 +8365,10 @@
             modalFirstStep.value = '';
             modalCompletionCriteria.value = '';
             if (modalDeadline) modalDeadline.value = '';
+            if (modalLocation) modalLocation.value = '';
+            if (modalDependsOn) modalDependsOn.value = '';
+            const dependencyHint = document.getElementById('dependencyHint');
+            if (dependencyHint) dependencyHint.style.display = 'none';
             if (modalRepeatPreset) modalRepeatPreset.value = 'never';
             if (customRRule) customRRule.value = '';
             if (customRepeatOptions) customRepeatOptions.style.display = 'none';
@@ -8421,6 +8498,10 @@
                 }
             }
 
+            // Get location and dependency
+            const locationValue = modalLocation ? modalLocation.value.trim() : null;
+            const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
+
             const task = {
                 name: name,
                 assignee: selectedAssignee,
@@ -8432,6 +8513,8 @@
                 first_step: modalFirstStep.value.trim() || null,
                 completion_criteria: modalCompletionCriteria.value.trim() || null,
                 deadline: deadline,
+                location: locationValue || null,
+                depends_on: dependsOnValue || null,
                 recurrence_rule: recurrenceRule,
                 organization_id: currentUser.organizationId
             };
@@ -8507,6 +8590,10 @@
                 }
             }
 
+            // Get location and dependency
+            const locationValue = modalLocation ? modalLocation.value.trim() : null;
+            const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
+
             const updateData = {
                 name: name,
                 assignee: selectedAssignee,
@@ -8517,6 +8604,8 @@
                 first_step: modalFirstStep.value.trim() || null,
                 completion_criteria: modalCompletionCriteria.value.trim() || null,
                 deadline: deadline,
+                location: locationValue || null,
+                depends_on: dependsOnValue || null,
                 recurrence_rule: recurrenceRule
             };
 
@@ -9926,6 +10015,36 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     </div>
                 </div>
             `;
+
+            // Location
+            if (task.location) {
+                propertiesHTML += `
+                    <div class="view-task-property">
+                        <div class="view-task-property-label">Location</div>
+                        <div class="view-task-property-value">
+                            📍 ${escapeHtml(task.location)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Depends On
+            if (task.depends_on) {
+                const dependentTask = tasks.find(t => t.id === task.depends_on);
+                if (dependentTask) {
+                    const depIcon = dependentTask.icon ? `${dependentTask.icon} ` : '';
+                    const depStatus = dependentTask.completed ? '✓' : '○';
+                    propertiesHTML += `
+                        <div class="view-task-property">
+                            <div class="view-task-property-label">Depends On</div>
+                            <div class="view-task-property-value" style="cursor: pointer;" onclick="showViewTaskModalById('${dependentTask.id}')">
+                                ${depStatus} ${depIcon}${escapeHtml(dependentTask.name)}
+                                ${dependentTask.completed ? '<span style="color: var(--accent-mario); margin-left: 0.5rem;">(Done)</span>' : '<span style="color: var(--text-muted); margin-left: 0.5rem;">(Pending)</span>'}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
 
             // First Step
             if (task.first_step) {
