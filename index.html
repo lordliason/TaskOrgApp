@@ -1491,6 +1491,14 @@
 
         .plan-header {
             margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .plan-header-left {
+            flex: 1;
         }
 
         .plan-title {
@@ -1512,6 +1520,48 @@
             font-size: 0.875rem;
             color: var(--text-secondary);
             font-weight: 500;
+        }
+
+        .plan-model-selector {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+        }
+
+        .plan-model-selector-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .plan-model-selector-dropdown {
+            padding: 0.35rem 0.6rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 120px;
+        }
+
+        .plan-model-selector-dropdown:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-mario);
+        }
+
+        .plan-model-selector-dropdown:focus {
+            outline: none;
+            border-color: var(--accent-mario);
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+        }
+
+        .plan-model-selector-dropdown option {
+            background: var(--bg-card);
+            color: var(--text-primary);
         }
 
         /* Side-by-side Mario/Maria columns */
@@ -4360,11 +4410,23 @@
         <!-- Right Panel: Today's Plan -->
         <div class="plan-panel" id="planPanel">
             <div class="plan-header">
-                <div class="plan-title">
-                    <span>📋</span>
-                    <span>Today's Plan</span>
+                <div class="plan-header-left">
+                    <div class="plan-title">
+                        <span>📋</span>
+                        <span>Today's Plan</span>
+                    </div>
+                    <div class="plan-date" id="planDate"></div>
                 </div>
-                <div class="plan-date" id="planDate"></div>
+                <div class="plan-model-selector">
+                    <span class="plan-model-selector-label">AI Model:</span>
+                    <select class="plan-model-selector-dropdown" id="planModelSelector">
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Side-by-side Mario/Maria columns -->
@@ -5010,6 +5072,7 @@
         let currentTaskForChat = null;
         let globalAiBtn, globalAiModal, globalAiClose, globalAiMessages, globalAiInput, globalAiSend;
         let modelSelector;
+        let planModelSelector;
         let cachedApiKey = null;
         
         // Model selection functions
@@ -5023,6 +5086,14 @@
         function setSelectedModel(model) {
             localStorage.setItem('selectedOpenAIModel', model);
             console.log('Model changed to:', model);
+            
+            // Sync both selectors
+            if (modelSelector) {
+                modelSelector.value = model;
+            }
+            if (planModelSelector) {
+                planModelSelector.value = model;
+            }
         }
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn, splitTaskBtn;
@@ -5218,11 +5289,21 @@
             globalAiInput = document.getElementById('globalAiInput');
             globalAiSend = document.getElementById('globalAiSend');
             modelSelector = document.getElementById('modelSelector');
+            planModelSelector = document.getElementById('planModelSelector');
             
-            // Initialize model selector with stored preference
+            // Initialize model selectors with stored preference
+            const currentModel = getSelectedModel();
+            
             if (modelSelector) {
-                modelSelector.value = getSelectedModel();
+                modelSelector.value = currentModel;
                 modelSelector.addEventListener('change', (e) => {
+                    setSelectedModel(e.target.value);
+                });
+            }
+            
+            if (planModelSelector) {
+                planModelSelector.value = currentModel;
+                planModelSelector.addEventListener('change', (e) => {
                     setSelectedModel(e.target.value);
                 });
             }
