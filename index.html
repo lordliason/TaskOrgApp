@@ -2821,6 +2821,51 @@
             transform: scale(1.1);
         }
 
+        .global-ai-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .model-selector-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.8);
+            white-space: nowrap;
+        }
+
+        .model-selector-dropdown {
+            padding: 0.35rem 0.6rem;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.75rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 120px;
+        }
+
+        .model-selector-dropdown:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .model-selector-dropdown:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .model-selector-dropdown option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
         .global-ai-messages {
             flex: 1;
             overflow-y: auto;
@@ -4598,7 +4643,19 @@
                 <span>🤖</span>
                 <span>AI Assistant</span>
             </div>
-            <button class="global-ai-close" id="globalAiClose">×</button>
+            <div class="global-ai-header-controls">
+                <div class="model-selector">
+                    <span class="model-selector-label">Model:</span>
+                    <select class="model-selector-dropdown" id="modelSelector">
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                    </select>
+                </div>
+                <button class="global-ai-close" id="globalAiClose">×</button>
+            </div>
         </div>
         <div class="global-ai-messages" id="globalAiMessages">
             <div class="chatbot-message chatbot-message-assistant">
@@ -4952,7 +5009,21 @@
         let taskChatbotContainer, taskChatbotHeader, taskChatbotToggle, taskChatbotContent, taskChatbotMessages, taskChatbotInput, taskChatbotSend;
         let currentTaskForChat = null;
         let globalAiBtn, globalAiModal, globalAiClose, globalAiMessages, globalAiInput, globalAiSend;
+        let modelSelector;
         let cachedApiKey = null;
+        
+        // Model selection functions
+        const DEFAULT_MODEL = 'gpt-3.5-turbo';
+        
+        function getSelectedModel() {
+            const stored = localStorage.getItem('selectedOpenAIModel');
+            return stored || DEFAULT_MODEL;
+        }
+        
+        function setSelectedModel(model) {
+            localStorage.setItem('selectedOpenAIModel', model);
+            console.log('Model changed to:', model);
+        }
         let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn, splitTaskBtn;
         let remindMarioBtn, remindMariaBtn;
@@ -5146,6 +5217,15 @@
             globalAiMessages = document.getElementById('globalAiMessages');
             globalAiInput = document.getElementById('globalAiInput');
             globalAiSend = document.getElementById('globalAiSend');
+            modelSelector = document.getElementById('modelSelector');
+            
+            // Initialize model selector with stored preference
+            if (modelSelector) {
+                modelSelector.value = getSelectedModel();
+                modelSelector.addEventListener('change', (e) => {
+                    setSelectedModel(e.target.value);
+                });
+            }
 
             // Quadrant mapping
             quadrants = {
@@ -7529,6 +7609,7 @@
                     body: JSON.stringify({
                         message: 'autofill daily plan',
                         enableFunctions: true,
+                        model: getSelectedModel(),
                         taskContext: JSON.stringify({
                             action: 'autofillDailyPlan',
                             tasks: taskData,
@@ -8992,6 +9073,7 @@
                         body: JSON.stringify({
                             taskContext: taskContext,
                             message: message,
+                            model: getSelectedModel(),
                             enableFunctions: true  // Enable AI function calling for task management
                         })
                     });
@@ -9037,7 +9119,7 @@
                             'Authorization': `Bearer ${apiKey}`
                         },
                         body: JSON.stringify({
-                            model: 'gpt-3.5-turbo',
+                            model: getSelectedModel(),
                             messages: [
                                 {
                                     role: 'system',
@@ -9658,6 +9740,7 @@
                         body: JSON.stringify({
                             taskContext: taskContext,
                             message: message,
+                            model: getSelectedModel(),
                             enableFunctions: true,  // Enable AI function calling for task management
                             conversationHistory: conversationHistory.slice(-6) // Last 6 messages for context
                         })
@@ -9703,7 +9786,7 @@
                             'Authorization': `Bearer ${apiKey}`
                         },
                         body: JSON.stringify({
-                            model: 'gpt-3.5-turbo',
+                            model: getSelectedModel(),
                             messages: [
                                 {
                                     role: 'system',
@@ -9974,6 +10057,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                                     body: JSON.stringify({
                                         taskContext: taskContext,
                                         message: `Execute ${functionCall.name} with arguments: ${JSON.stringify(args)}`,
+                                        model: getSelectedModel(),
                                         enableFunctions: true
                                     })
                                 });

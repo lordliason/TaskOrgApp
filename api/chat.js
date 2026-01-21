@@ -546,7 +546,7 @@ function finalizeDecomposition(decomposition) {
 }
 
 // Autofill Daily Plan using AI
-async function autofillDailyPlan(params, apiKey) {
+async function autofillDailyPlan(params, apiKey, model = 'gpt-3.5-turbo') {
     const { tasks, currentHour, currentMinutes } = params;
     
     // Determine which time blocks are still available based on current time
@@ -700,7 +700,7 @@ IMPORTANT:
             'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
+            model: model,
             messages: [
                 { role: 'system', content: 'You are a scheduling assistant. Always respond with valid JSON only, no markdown formatting.' },
                 { role: 'user', content: prompt }
@@ -830,12 +830,17 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Request body is required' });
         }
 
-        const { taskContext, message, enableFunctions = false, conversationHistory = [], pendingDecomposition = null, organizationId = null } = body;
+        const { taskContext, message, enableFunctions = false, conversationHistory = [], pendingDecomposition = null, organizationId = null, model = 'gpt-3.5-turbo' } = body;
+        
+        // Validate model selection - only allow supported OpenAI models
+        const validModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini'];
+        const selectedModel = validModels.includes(model) ? model : 'gpt-3.5-turbo';
 
         console.log('Received request:', { 
             hasMessage: !!message, 
             hasTaskContext: !!taskContext, 
-            enableFunctions 
+            enableFunctions,
+            model: selectedModel
         });
 
         // Check for direct autofillDailyPlan request
@@ -848,7 +853,7 @@ module.exports = async function handler(req, res) {
                         tasks: contextData.tasks,
                         currentHour: contextData.currentHour,
                         currentMinutes: contextData.currentMinutes
-                    }, apiKey);
+                    }, apiKey, selectedModel);
                     
                     return res.status(200).json({
                         function_call: { name: 'autofillDailyPlan' },
@@ -867,7 +872,7 @@ module.exports = async function handler(req, res) {
 
         // Prepare the request body
         const requestBody = {
-            model: 'gpt-3.5-turbo',
+            model: selectedModel,
             messages: [
                 {
                     role: 'system',
