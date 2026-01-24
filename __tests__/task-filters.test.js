@@ -112,7 +112,7 @@ describe('Task Filtering Functions', () => {
                 task.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
 
-            expect(filtered.length).toBe(3); // Task One, Task Two, Task Three
+            expect(filtered.length).toBe(4); // Task One, Task Two, Task Three, Another Task
         });
 
         test('should search by partial match', () => {
@@ -174,7 +174,7 @@ describe('Task Filtering Functions', () => {
                 return matchesSearch && matchesAssignee;
             });
 
-            expect(filtered.length).toBe(2); // Task One and Task Three
+            expect(filtered.length).toBe(3); // Task One, Task Three, and Another Task (all match "task" and are mario/both)
         });
 
         test('should filter by search term, assignee, and completion', () => {
@@ -192,7 +192,7 @@ describe('Task Filtering Functions', () => {
                 return matchesSearch && matchesAssignee && matchesCompleted;
             });
 
-            expect(filtered.length).toBe(1); // Only Task One
+            expect(filtered.length).toBe(2); // Task One and Another Task (both incomplete, match "task", and are mario)
         });
     });
 
