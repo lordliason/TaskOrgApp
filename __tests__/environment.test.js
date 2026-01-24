@@ -41,11 +41,18 @@ describe('Environment Management', () => {
         `;
 
         // Mock localStorage
+        const storage = {};
         const localStorageMock = {
-            getItem: jest.fn(),
-            setItem: jest.fn(),
-            removeItem: jest.fn(),
-            clear: jest.fn()
+            getItem: jest.fn((key) => storage[key] || null),
+            setItem: jest.fn((key, value) => {
+                storage[key] = value;
+            }),
+            removeItem: jest.fn((key) => {
+                delete storage[key];
+            }),
+            clear: jest.fn(() => {
+                Object.keys(storage).forEach(key => delete storage[key]);
+            })
         };
         Object.defineProperty(window, 'localStorage', {
             value: localStorageMock,

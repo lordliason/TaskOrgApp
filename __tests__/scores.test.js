@@ -147,10 +147,13 @@ describe('Score Tracking Functions', () => {
                 { player: 'maria', points: 15, tasks_completed: 3, date: today }
             ];
 
-            mockSupabaseClient.eq.mockResolvedValue({
-                data: mockScores,
-                error: null
-            });
+            // Mock the second .eq() call to return the promise
+            mockSupabaseClient.eq
+                .mockReturnValueOnce(mockSupabaseClient) // First .eq() returns chain
+                .mockResolvedValueOnce({ // Second .eq() returns promise
+                    data: mockScores,
+                    error: null
+                });
 
             const { data, error } = await mockSupabaseClient
                 .from('scores')
@@ -166,10 +169,13 @@ describe('Score Tracking Functions', () => {
         test('should handle empty scores', async () => {
             const today = new Date().toISOString().split('T')[0];
 
-            mockSupabaseClient.eq.mockResolvedValue({
-                data: [],
-                error: null
-            });
+            // Mock the second .eq() call to return the promise
+            mockSupabaseClient.eq
+                .mockReturnValueOnce(mockSupabaseClient) // First .eq() returns chain
+                .mockResolvedValueOnce({ // Second .eq() returns promise
+                    data: [],
+                    error: null
+                });
 
             const { data, error } = await mockSupabaseClient
                 .from('scores')
@@ -184,10 +190,13 @@ describe('Score Tracking Functions', () => {
         test('should handle load error', async () => {
             const today = new Date().toISOString().split('T')[0];
 
-            mockSupabaseClient.eq.mockResolvedValue({
-                data: null,
-                error: { message: 'Load failed' }
-            });
+            // Mock the second .eq() call to return the promise
+            mockSupabaseClient.eq
+                .mockReturnValueOnce(mockSupabaseClient) // First .eq() returns chain
+                .mockResolvedValueOnce({ // Second .eq() returns promise
+                    data: null,
+                    error: { message: 'Load failed' }
+                });
 
             const { data, error } = await mockSupabaseClient
                 .from('scores')

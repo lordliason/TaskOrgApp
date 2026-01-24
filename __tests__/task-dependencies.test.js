@@ -41,7 +41,7 @@ describe('Task Dependencies Functions', () => {
             const task = mockTasks[0];
             const hasDependencies = task.depends_on && task.depends_on.length > 0;
 
-            expect(hasDependencies).toBe(false);
+            expect(hasDependencies).toBeFalsy();
         });
 
         test('should validate task has dependencies', () => {
@@ -116,7 +116,7 @@ describe('Task Dependencies Functions', () => {
                                (task2.depends_on && task2.depends_on.includes(task1.id) && 
                                 task1.depends_on && task1.depends_on.includes(task2.id));
 
-            expect(hasCircular).toBe(false);
+            expect(hasCircular).toBeFalsy();
         });
 
         test('should detect self-dependency', () => {

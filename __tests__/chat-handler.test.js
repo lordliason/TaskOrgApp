@@ -16,9 +16,9 @@ describe('Chat API Handler', () => {
     let mockReq, mockRes;
 
     beforeEach(() => {
-        // Reset mocks
-        fetch.mockClear();
-        fs.readFileSync.mockClear();
+        // Reset mocks - use mockReset to clear both calls and implementations
+        fetch.mockReset();
+        fs.readFileSync.mockReset();
         
         // Create mock request object
         mockReq = {
@@ -29,13 +29,15 @@ describe('Chat API Handler', () => {
             }
         };
 
-        // Create mock response object
+        // Create mock response object - reset json mock for each test
         mockRes = {
             status: jest.fn().mockReturnThis(),
             json: jest.fn().mockReturnThis(),
             setHeader: jest.fn().mockReturnThis(),
             end: jest.fn()
         };
+        // Clear json mock calls to ensure clean state
+        mockRes.json.mockClear();
 
         // Reset environment
         delete process.env.OPENAI_API_KEY;
@@ -612,14 +614,17 @@ describe('Chat API Handler', () => {
             await chatHandler(mockReq, mockRes);
 
             // Verify response contains the choices - check all json calls
+            expect(mockRes.json).toHaveBeenCalled();
             const jsonCalls = mockRes.json.mock.calls;
+            
+            // The handler should call res.json() with the full OpenAI response
+            // Check all calls to find the one with choices
             const responseCall = jsonCalls.find(call => {
-                return call[0] && call[0].choices;
+                return call && call[0] && call[0].choices;
             });
+            
             expect(responseCall).toBeDefined();
-            if (responseCall) {
-                expect(responseCall[0].choices).toEqual(mockResponse.choices);
-            }
+            expect(responseCall[0].choices).toEqual(mockResponse.choices);
         });
     });
 
@@ -693,14 +698,16 @@ describe('Chat API Handler', () => {
             await chatHandler(mockReq, mockRes);
 
             // Find the error response - should have error property
+            expect(mockRes.json).toHaveBeenCalled();
             const jsonCalls = mockRes.json.mock.calls;
+            
+            // Find the call that has error (the error response)
             const errorCall = jsonCalls.find(call => {
-                return call[0] && call[0].error;
+                return call && call[0] && call[0].error;
             });
+            
             expect(errorCall).toBeDefined();
-            if (errorCall) {
-                expect(errorCall[0].error).toBe('Network error');
-            }
+            expect(errorCall[0].error).toBe('Network error');
         });
     });
 });
