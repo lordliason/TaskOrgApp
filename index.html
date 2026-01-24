@@ -5461,6 +5461,7 @@
         // ===========================================
         let supabaseClient = null;
         let passwordGate, usernameInput, passwordInput, passwordBtn, passwordError, loadingOverlay;
+        let createAccountGate, environmentPickerGate, createEnvironmentGate;
         let connectionStatus, statusDot, statusText, clearAllBtn, taskList, taskCount, tooltip;
         let dotsContainer, resetPointsBtn, resetDayBtn, todayDateEl;
         let taskBankHeader, taskBankList, bankToggle, bankCount;
@@ -5593,10 +5594,13 @@
         // Function to get DOM elements
         function initDOMElements() {
             passwordGate = document.getElementById('passwordGate');
-            usernameInput = document.getElementById('usernameInput');
+            usernameInput = document.getElementById('emailInput'); // Using emailInput instead of usernameInput
             passwordInput = document.getElementById('passwordInput');
-            passwordBtn = document.getElementById('passwordBtn');
+            passwordBtn = document.getElementById('loginBtn'); // Using loginBtn instead of passwordBtn
             passwordError = document.getElementById('passwordError');
+            createAccountGate = document.getElementById('createAccountGate');
+            environmentPickerGate = document.getElementById('environmentPickerGate');
+            createEnvironmentGate = document.getElementById('createEnvironmentGate');
             
             // Debug: Log if elements are found
             console.log('Login elements found:', {
