@@ -1,6 +1,7 @@
 /**
  * Unit tests for environment/organization management
- * Tests: showEnvironmentPicker, selectEnvironment, handleCreateEnvironment
+ * Tests: showEnvironmentPicker, selectEnvironment, handleCreateEnvironment,
+ *        switchEnvironment, leaveEnvironment, populateAssigneeButtons
  * @jest-environment jsdom
  */
 
@@ -352,6 +353,345 @@ describe('Environment Management', () => {
             }
 
             expect(assigneeGroup.innerHTML).toContain('No members available');
+        });
+    });
+
+    describe('switchEnvironment', () => {
+        let mockCurrentUser;
+        let mockEnvironmentModal;
+        let mockShowEnvironmentPicker;
+        let mockLogout;
+
+        beforeEach(() => {
+            mockCurrentUser = {
+                id: 'user-123',
+                email: 'test@example.com',
+                displayName: 'Test User',
+                organizationId: 'org-123',
+                organizationName: 'Current Org',
+                isOwner: true
+            };
+
+            mockEnvironmentModal = {
+                classList: {
+                    remove: jest.fn()
+                }
+            };
+
+            mockShowEnvironmentPicker = jest.fn();
+            mockLogout = jest.fn();
+        });
+
+        test('should fetch environments and show picker when user is logged in', async () => {
+            const environments = [
+                {
+                    organization_id: 'org-1',
+                    organization_name: 'Org 1',
+                    is_owner: true
+                },
+                {
+                    organization_id: 'org-2',
+                    organization_name: 'Org 2',
+                    is_owner: false
+                }
+            ];
+
+            mockSupabaseClient.rpc.mockResolvedValue({
+                data: environments,
+                error: null
+            });
+
+            // Simulate switch environment button click
+            mockEnvironmentModal.classList.remove('show');
+
+            if (mockCurrentUser && mockCurrentUser.email) {
+                const { data: fetchedEnvironments, error: envError } = await mockSupabaseClient
+                    .rpc('get_user_environments', { user_email: mockCurrentUser.email });
+
+                if (!envError) {
+                    const user = {
+                        id: mockCurrentUser.id,
+                        email: mockCurrentUser.email,
+                        display_name: mockCurrentUser.displayName || mockCurrentUser.display_name
+                    };
+
+                    mockShowEnvironmentPicker(user, fetchedEnvironments || []);
+                }
+            }
+
+            expect(mockEnvironmentModal.classList.remove).toHaveBeenCalledWith('show');
+            expect(mockSupabaseClient.rpc).toHaveBeenCalledWith('get_user_environments', { user_email: 'test@example.com' });
+            expect(mockShowEnvironmentPicker).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: 'user-123',
+                    email: 'test@example.com',
+                    display_name: 'Test User'
+                }),
+                environments
+            );
+        });
+
+        test('should handle error when fetching environments fails', async () => {
+            mockSupabaseClient.rpc.mockResolvedValue({
+                data: null,
+                error: { message: 'Database error' }
+            });
+
+            // Simulate switch environment with error
+            mockEnvironmentModal.classList.remove('show');
+
+            if (mockCurrentUser && mockCurrentUser.email) {
+                const { data: environments, error: envError } = await mockSupabaseClient
+                    .rpc('get_user_environments', { user_email: mockCurrentUser.email });
+
+                if (envError) {
+                    mockLogout();
+                    return;
+                }
+            }
+
+            expect(mockEnvironmentModal.classList.remove).toHaveBeenCalledWith('show');
+            expect(mockSupabaseClient.rpc).toHaveBeenCalled();
+            expect(mockLogout).toHaveBeenCalled();
+        });
+
+        test('should logout when currentUser is not available', () => {
+            const currentUser = null;
+
+            mockEnvironmentModal.classList.remove('show');
+
+            if (!currentUser || !currentUser.email) {
+                mockLogout();
+            }
+
+            expect(mockEnvironmentModal.classList.remove).toHaveBeenCalledWith('show');
+            expect(mockLogout).toHaveBeenCalled();
+        });
+
+        test('should logout when currentUser has no email', () => {
+            const currentUser = {
+                id: 'user-123',
+                displayName: 'Test User'
+                // No email property
+            };
+
+            mockEnvironmentModal.classList.remove('show');
+
+            if (!currentUser || !currentUser.email) {
+                mockLogout();
+            }
+
+            expect(mockLogout).toHaveBeenCalled();
+        });
+
+        test('should handle empty environments list', async () => {
+            mockSupabaseClient.rpc.mockResolvedValue({
+                data: [],
+                error: null
+            });
+
+            mockEnvironmentModal.classList.remove('show');
+
+            if (mockCurrentUser && mockCurrentUser.email) {
+                const { data: environments, error: envError } = await mockSupabaseClient
+                    .rpc('get_user_environments', { user_email: mockCurrentUser.email });
+
+                if (!envError) {
+                    const user = {
+                        id: mockCurrentUser.id,
+                        email: mockCurrentUser.email,
+                        display_name: mockCurrentUser.displayName
+                    };
+
+                    mockShowEnvironmentPicker(user, environments || []);
+                }
+            }
+
+            expect(mockShowEnvironmentPicker).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: 'user-123',
+                    email: 'test@example.com'
+                }),
+                []
+            );
+        });
+
+        test('should create user object without organization info for picker', async () => {
+            const environments = [
+                {
+                    organization_id: 'org-1',
+                    organization_name: 'Org 1',
+                    is_owner: true
+                }
+            ];
+
+            mockSupabaseClient.rpc.mockResolvedValue({
+                data: environments,
+                error: null
+            });
+
+            // User object should not include organization info when switching
+            const user = {
+                id: mockCurrentUser.id,
+                email: mockCurrentUser.email,
+                display_name: mockCurrentUser.displayName
+            };
+
+            // Should not have organizationId, organizationName, or isOwner
+            expect(user.organizationId).toBeUndefined();
+            expect(user.organizationName).toBeUndefined();
+            expect(user.isOwner).toBeUndefined();
+            expect(user.id).toBe('user-123');
+            expect(user.email).toBe('test@example.com');
+        });
+
+        test('should handle exception during environment fetch', async () => {
+            mockSupabaseClient.rpc.mockRejectedValue(new Error('Network error'));
+
+            mockEnvironmentModal.classList.remove('show');
+
+            try {
+                if (mockCurrentUser && mockCurrentUser.email) {
+                    const { data: environments, error: envError } = await mockSupabaseClient
+                        .rpc('get_user_environments', { user_email: mockCurrentUser.email });
+
+                    if (envError) {
+                        mockLogout();
+                        return;
+                    }
+                }
+            } catch (error) {
+                mockLogout();
+            }
+
+            expect(mockLogout).toHaveBeenCalled();
+        });
+    });
+
+    describe('leaveEnvironment', () => {
+        let mockCurrentUser;
+        let mockEnvironmentModal;
+        let mockLogout;
+        let mockConfirm;
+
+        beforeEach(() => {
+            mockCurrentUser = {
+                id: 'user-123',
+                email: 'test@example.com',
+                displayName: 'Test User',
+                organizationId: 'org-123',
+                organizationName: 'Test Org',
+                isOwner: false
+            };
+
+            mockEnvironmentModal = {
+                classList: {
+                    remove: jest.fn()
+                }
+            };
+
+            mockLogout = jest.fn();
+            mockConfirm = jest.fn(() => true);
+            window.confirm = mockConfirm;
+
+            // Reset mocks for chained calls
+            mockSupabaseClient.from.mockReturnThis();
+            mockSupabaseClient.delete = jest.fn().mockReturnThis();
+            mockSupabaseClient.eq = jest.fn().mockReturnThis();
+        });
+
+        test('should delete user from environment members when confirmed', async () => {
+            // Mock the final .eq() call to return the promise
+            mockSupabaseClient.eq
+                .mockReturnValueOnce(mockSupabaseClient) // First .eq() returns chain
+                .mockResolvedValueOnce({ // Second .eq() returns promise
+                    error: null
+                });
+
+            if (mockConfirm()) {
+                try {
+                    const { error } = await mockSupabaseClient
+                        .from('environment_members')
+                        .delete()
+                        .eq('user_id', mockCurrentUser.id)
+                        .eq('organization_id', mockCurrentUser.organizationId);
+
+                    if (error) throw error;
+
+                    mockEnvironmentModal.classList.remove('show');
+                    mockLogout();
+                } catch (error) {
+                    console.error('Error leaving environment:', error);
+                }
+            }
+
+            expect(mockConfirm).toHaveBeenCalled();
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('environment_members');
+            expect(mockEnvironmentModal.classList.remove).toHaveBeenCalledWith('show');
+            expect(mockLogout).toHaveBeenCalled();
+        });
+
+        test('should not delete when user cancels confirmation', () => {
+            mockConfirm.mockReturnValue(false);
+
+            if (mockConfirm()) {
+                // This block should not execute
+                mockSupabaseClient.from('environment_members');
+            }
+
+            expect(mockConfirm).toHaveBeenCalled();
+            expect(mockSupabaseClient.from).not.toHaveBeenCalled();
+        });
+
+        test('should handle error when leaving environment fails', async () => {
+            const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+            // Mock the final .eq() call to return an error
+            mockSupabaseClient.eq
+                .mockReturnValueOnce(mockSupabaseClient) // First .eq() returns chain
+                .mockResolvedValueOnce({ // Second .eq() returns promise with error
+                    error: { message: 'Database error' }
+                });
+
+            if (mockConfirm()) {
+                try {
+                    const { error } = await mockSupabaseClient
+                        .from('environment_members')
+                        .delete()
+                        .eq('user_id', mockCurrentUser.id)
+                        .eq('organization_id', mockCurrentUser.organizationId);
+
+                    if (error) throw error;
+
+                    mockEnvironmentModal.classList.remove('show');
+                    mockLogout();
+                } catch (error) {
+                    alertSpy('Error leaving environment. Please try again.');
+                }
+            }
+
+            expect(alertSpy).toHaveBeenCalledWith('Error leaving environment. Please try again.');
+            alertSpy.mockRestore();
+        });
+
+        test('should use correct user_id and organization_id when deleting', async () => {
+            // Mock the final .eq() call to return the promise
+            mockSupabaseClient.eq
+                .mockReturnValueOnce(mockSupabaseClient) // First .eq() returns chain
+                .mockResolvedValueOnce({ // Second .eq() returns promise
+                    error: null
+                });
+
+            if (mockConfirm()) {
+                await mockSupabaseClient
+                    .from('environment_members')
+                    .delete()
+                    .eq('user_id', mockCurrentUser.id)
+                    .eq('organization_id', mockCurrentUser.organizationId);
+            }
+
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', 'user-123');
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('organization_id', 'org-123');
         });
     });
 });

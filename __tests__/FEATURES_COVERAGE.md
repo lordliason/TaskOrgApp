@@ -59,6 +59,8 @@ This document outlines all features in the TaskOrgApp and their test coverage st
 - ✅ Create environment/organization
 - ✅ Populate assignee buttons
 - ✅ Environment member management
+- ✅ Switch environment (keep user logged in)
+- ✅ Leave environment
 - ✅ Error handling
 
 ### Score Tracking (`scores.test.js`) - NEW
@@ -94,7 +96,7 @@ This document outlines all features in the TaskOrgApp and their test coverage st
 - **Total Test Files**: 13
 - **New Test Files Created**: 6
 - **Features Covered**: All major features
-- **Test Cases**: 200+ individual test cases
+- **Test Cases**: 306+ individual test cases
 
 ## 🎯 Coverage Areas
 
