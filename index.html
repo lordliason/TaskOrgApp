@@ -6611,49 +6611,93 @@
 
         async function loadLeaderboard(period = 'today') {
             try {
+                const container = document.getElementById('leaderboardContent');
+                if (!container) {
+                    console.error('Leaderboard content container not found');
+                    return;
+                }
+
+                // Check if user is logged in
+                if (!currentUser) {
+                    container.innerHTML = '<div class="leaderboard-empty">Please log in to view leaderboard</div>';
+                    return;
+                }
+
                 const { start, end } = getDateRange(period);
 
-                const { data, error } = await supabaseClient
+                // Build query - try with organization_id first, fallback to without if column doesn't exist
+                let query = supabaseClient
                     .from('scores')
                     .select('player, points, tasks_completed, date')
-                    .eq('organization_id', currentUser.organizationId)
                     .gte('date', start)
                     .lte('date', end);
 
-                if (error) throw error;
+                // Only filter by organization_id if it exists and currentUser has it
+                if (currentUser.organizationId) {
+                    query = query.eq('organization_id', currentUser.organizationId);
+                }
 
-                // Aggregate scores by player
-                const aggregatedScores = {};
-                data.forEach(score => {
-                    if (!aggregatedScores[score.player]) {
-                        aggregatedScores[score.player] = {
-                            points: 0,
-                            tasks: 0,
-                            days: 0
-                        };
+                const { data, error } = await query;
+
+                if (error) {
+                    // If error is about missing column, try without organization_id filter
+                    if (error.message && error.message.includes('organization_id')) {
+                        console.warn('organization_id column not found, querying without filter');
+                        const { data: fallbackData, error: fallbackError } = await supabaseClient
+                            .from('scores')
+                            .select('player, points, tasks_completed, date')
+                            .gte('date', start)
+                            .lte('date', end);
+                        
+                        if (fallbackError) throw fallbackError;
+                        return processLeaderboardData(fallbackData, period, container);
                     }
-                    aggregatedScores[score.player].points += score.points;
-                    aggregatedScores[score.player].tasks += score.tasks_completed;
-                    aggregatedScores[score.player].days += 1;
-                });
+                    throw error;
+                }
 
-                // Convert to array and sort by points
-                const leaderboardData = Object.entries(aggregatedScores)
-                    .map(([player, stats]) => ({
-                        player,
-                        points: stats.points,
-                        tasks: stats.tasks,
-                        days: stats.days,
-                        avgPoints: Math.round(stats.points / stats.days)
-                    }))
-                    .sort((a, b) => b.points - a.points);
-
-                displayLeaderboard(leaderboardData, period);
+                processLeaderboardData(data, period, container);
             } catch (error) {
                 console.error('Error loading leaderboard:', error);
-                document.getElementById('leaderboardContent').innerHTML =
-                    '<div class="leaderboard-empty">Unable to load leaderboard data</div>';
+                const container = document.getElementById('leaderboardContent');
+                if (container) {
+                    container.innerHTML = `<div class="leaderboard-empty">Unable to load leaderboard data: ${error.message || 'Unknown error'}</div>`;
+                }
             }
+        }
+
+        function processLeaderboardData(data, period, container) {
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="leaderboard-empty">No scores yet for this period</div>';
+                return;
+            }
+
+            // Aggregate scores by player
+            const aggregatedScores = {};
+            data.forEach(score => {
+                if (!aggregatedScores[score.player]) {
+                    aggregatedScores[score.player] = {
+                        points: 0,
+                        tasks: 0,
+                        days: 0
+                    };
+                }
+                aggregatedScores[score.player].points += score.points || 0;
+                aggregatedScores[score.player].tasks += score.tasks_completed || 0;
+                aggregatedScores[score.player].days += 1;
+            });
+
+            // Convert to array and sort by points
+            const leaderboardData = Object.entries(aggregatedScores)
+                .map(([player, stats]) => ({
+                    player,
+                    points: stats.points,
+                    tasks: stats.tasks,
+                    days: stats.days,
+                    avgPoints: stats.days > 0 ? Math.round(stats.points / stats.days) : 0
+                }))
+                .sort((a, b) => b.points - a.points);
+
+            displayLeaderboard(leaderboardData, period);
         }
 
         function displayLeaderboard(data, period) {
@@ -6794,9 +6838,23 @@
                     document.querySelector('.leaderboard-panel').classList.add('active');
                     document.querySelector('.plan-panel').classList.remove('active');
                     // Load leaderboard data
-                    const activePeriod = document.querySelector('.period-btn.active').dataset.period;
+                    const activePeriodBtn = document.querySelector('.period-btn.active');
+                    const activePeriod = activePeriodBtn ? activePeriodBtn.dataset.period : 'today';
                     loadLeaderboard(activePeriod);
                 }
+            });
+
+            // Period selector buttons for leaderboard
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update active state
+                    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Reload leaderboard with new period
+                    const period = btn.dataset.period || 'today';
+                    loadLeaderboard(period);
+                });
             });
 
             // Assignee filter buttons
