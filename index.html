@@ -7467,9 +7467,42 @@
             }
 
             if (switchEnvironmentBtn) {
-                switchEnvironmentBtn.addEventListener('click', () => {
+                switchEnvironmentBtn.addEventListener('click', async () => {
                     environmentModal.classList.remove('show');
-                    logout(); // This will take them back to environment picker
+                    
+                    // Keep user logged in, just show environment picker
+                    if (currentUser && currentUser.email) {
+                        try {
+                            // Get user's environments
+                            const { data: environments, error: envError } = await supabaseClient
+                                .rpc('get_user_environments', { user_email: currentUser.email });
+
+                            if (envError) {
+                                console.error('Error fetching environments:', envError);
+                                // Fallback to logout if we can't get environments
+                                logout();
+                                return;
+                            }
+
+                            // Create user object for showEnvironmentPicker
+                            // The organization info will be updated when a new environment is selected
+                            const user = {
+                                id: currentUser.id,
+                                email: currentUser.email,
+                                display_name: currentUser.displayName || currentUser.display_name
+                            };
+
+                            // Show environment picker (user stays logged in)
+                            showEnvironmentPicker(user, environments || []);
+                        } catch (error) {
+                            console.error('Error switching environment:', error);
+                            // Fallback to logout on error
+                            logout();
+                        }
+                    } else {
+                        // If no currentUser, just logout
+                        logout();
+                    }
                 });
             }
 
