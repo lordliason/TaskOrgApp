@@ -43,7 +43,7 @@ describe('Task Decomposition Functions', () => {
 
             const result = decomposeTask(taskDescription);
 
-            expect(result.parentTask.assignee).toBe('both');
+            expect(result.parentTask.assignee).toBe('all');
             expect(result.parentTask.size).toBe('xl');
             expect(result.parentTask.urgent).toBe(3);
             expect(result.parentTask.important).toBe(3);
@@ -320,7 +320,7 @@ describe('Task Decomposition Functions', () => {
 
             const result = refineDecomposition(originalDecomposition, userAnswers);
 
-            expect(result.parentTask.first_step).toBe('Research options');
+            expect(result.parentTask.first_step).toBe('research options');
         });
 
         test('should recalculate deadlines when parent deadline changes', () => {
@@ -337,20 +337,23 @@ describe('Task Decomposition Functions', () => {
 
             const userAnswers = [
                 {
-                    question: 'What\'s the deadline?',
+                    question: 'What\'s the overall deadline?',
                     response: '2025-12-31'
                 }
             ];
 
             const result = refineDecomposition(originalDecomposition, userAnswers);
 
+            // The deadline should be parsed and set
             expect(result.parentTask.deadline).toBeTruthy();
-            // Subtasks should have recalculated deadlines
-            result.subtasks.forEach(subtask => {
-                if (subtask.deadline) {
-                    expect(subtask.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-                }
-            });
+            // Subtasks should have recalculated deadlines if parent deadline was set
+            if (result.parentTask.deadline) {
+                result.subtasks.forEach(subtask => {
+                    if (subtask.deadline) {
+                        expect(subtask.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+                    }
+                });
+            }
         });
 
         test('should preserve original structure when no relevant answers', () => {
@@ -388,9 +391,9 @@ describe('Task Decomposition Functions', () => {
                     assignee: 'both'
                 },
                 subtasks: [
-                    { id: 'subtask_1', assignee: 'mario', deadline: '2025-12-31', depends_on: null },
-                    { id: 'subtask_2', assignee: 'maria', deadline: null, depends_on: ['subtask_1'] },
-                    { id: 'subtask_3', assignee: 'both', deadline: '2025-12-30', depends_on: null }
+                    { id: 'subtask_1', name: 'Subtask 1', assignee: 'mario', deadline: '2025-12-31', depends_on: null },
+                    { id: 'subtask_2', name: 'Subtask 2', assignee: 'maria', deadline: null, depends_on: ['subtask_1'] },
+                    { id: 'subtask_3', name: 'Subtask 3', assignee: 'both', deadline: '2025-12-30', depends_on: null }
                 ]
             };
 
@@ -413,9 +416,9 @@ describe('Task Decomposition Functions', () => {
                     name: 'Test Task'
                 },
                 subtasks: [
-                    { id: 'subtask_1', assignee: 'mario', deadline: '2025-12-31', depends_on: null },
-                    { id: 'subtask_2', assignee: 'maria', deadline: null, depends_on: ['subtask_1'] },
-                    { id: 'subtask_3', assignee: 'mario', deadline: '2025-12-30', depends_on: null }
+                    { id: 'subtask_1', name: 'Subtask 1', assignee: 'mario', deadline: '2025-12-31', depends_on: null },
+                    { id: 'subtask_2', name: 'Subtask 2', assignee: 'maria', deadline: null, depends_on: ['subtask_1'] },
+                    { id: 'subtask_3', name: 'Subtask 3', assignee: 'mario', deadline: '2025-12-30', depends_on: null }
                 ]
             };
 
@@ -451,8 +454,8 @@ describe('Task Decomposition Functions', () => {
                     name: 'Test Task'
                 },
                 subtasks: [
-                    { id: 'subtask_1', assignee: 'mario', urgent: 5, important: 5 },
-                    { id: 'subtask_2', assignee: 'maria', urgent: 1, important: 1 }
+                    { id: 'subtask_1', name: 'Subtask 1', assignee: 'mario', urgent: 5, important: 5 },
+                    { id: 'subtask_2', name: 'Subtask 2', assignee: 'maria', urgent: 1, important: 1 }
                 ]
             };
 
@@ -473,7 +476,7 @@ describe('Task Decomposition Functions', () => {
                     name: 'My Special Task'
                 },
                 subtasks: [
-                    { id: 'subtask_1', assignee: 'mario' }
+                    { id: 'subtask_1', name: 'Subtask 1', assignee: 'mario' }
                 ]
             };
 

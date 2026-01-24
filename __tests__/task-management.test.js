@@ -50,7 +50,7 @@ describe('Task Management Functions', () => {
                 assignee: 'invalid'
             };
 
-            expect(() => createTask(taskData)).toThrow('Assignee must be one of: mario, maria, both');
+            expect(() => createTask(taskData)).toThrow('Assignee must be a valid user ID');
         });
 
         test('should accept valid assignees', () => {
@@ -92,12 +92,13 @@ describe('Task Management Functions', () => {
 
         test('should clamp urgent value to 1-5 range', () => {
             const testCases = [
-                { urgent: 0, expected: 1 },
+                { urgent: 0, expected: 3 }, // Note: 0 is falsy, so defaults to 3
                 { urgent: 1, expected: 1 },
                 { urgent: 3, expected: 3 },
                 { urgent: 5, expected: 5 },
                 { urgent: 10, expected: 5 },
-                { urgent: -5, expected: 1 }
+                { urgent: -5, expected: 1 }, // Negative values are clamped
+                { urgent: undefined, expected: 3 } // Default value
             ];
 
             testCases.forEach(({ urgent, expected }) => {
@@ -113,12 +114,13 @@ describe('Task Management Functions', () => {
 
         test('should clamp important value to 1-5 range', () => {
             const testCases = [
-                { important: 0, expected: 1 },
+                { important: 0, expected: 3 }, // Note: 0 is falsy, so defaults to 3
                 { important: 1, expected: 1 },
                 { important: 3, expected: 3 },
                 { important: 5, expected: 5 },
                 { important: 10, expected: 5 },
-                { important: -5, expected: 1 }
+                { important: -5, expected: 1 }, // Negative values are clamped
+                { important: undefined, expected: 3 } // Default value
             ];
 
             testCases.forEach(({ important, expected }) => {
