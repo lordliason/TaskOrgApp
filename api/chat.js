@@ -1,891 +1,172 @@
 // Vercel Serverless Function for OpenAI Chat with Function Calling
-// This keeps the API key secure on the server side
+// Thin handler: business logic lives in api/lib/
 
-// Task Management Functions (same as in test-openai.js)
-function createTask(taskData, organizationId = null) {
-    // Validate required fields
-    if (!taskData.name || !taskData.assignee) {
-        throw new Error('Task name and assignee are required');
-    }
+const config = require('./lib/config');
+const {
+    createTask,
+    splitTask,
+    updateTask,
+    getTasks,
+    decomposeTask,
+    refineDecomposition,
+    finalizeDecomposition,
+    autofillDailyPlan
+} = require('./lib/tasks');
 
-    // For multi-environment support, validate assignee against organization members
-    // Accept user IDs, 'all', or legacy values for backward compatibility
-    const validAssignees = ['mario', 'maria', 'both', 'all'];
-    if (!validAssignees.includes(taskData.assignee) && !taskData.assignee.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        throw new Error(`Assignee must be a valid user ID, 'all', or one of: ${validAssignees.join(', ')}`);
-    }
+const { reviewDecomposition } = require('./lib/utils/decomposeHelpers');
+const { calculateDeadline, parseDeadline } = require('./lib/utils/dateCalc');
+const { assignMatrixPositions, suggestIntegrations } = require('./lib/utils/matrixPositions');
+const {
+    checkCircularDependencies,
+    calculateConfidence,
+    generateSuggestions
+} = require('./lib/utils/decomposeHelpers');
 
-    // Validate size values
-    const validSizes = ['xs', 's', 'm', 'l', 'xl'];
-    if (taskData.size && !validSizes.includes(taskData.size)) {
-        throw new Error(`Size must be one of: ${validSizes.join(', ')}`);
-    }
+const VALID_MODELS = config.openai.validModels;
 
-    // Set defaults and validate ranges
-    const task = {
-        name: taskData.name,
-        assignee: taskData.assignee,
-        size: taskData.size || 'm',
-        urgent: Math.max(1, Math.min(5, taskData.urgent || 3)),
-        important: Math.max(1, Math.min(5, taskData.important || 3)),
-        completed: false,
-        icon: taskData.icon || null,
-        first_step: taskData.first_step || null,
-        completion_criteria: taskData.completion_criteria || null
-    };
-
-    return task;
-}
-
-function splitTask(taskId, splitDescription, organizationId = null) {
-    if (!taskId) {
-        throw new Error('Task ID is required');
-    }
-
-    if (!splitDescription || !splitDescription.part1 || !splitDescription.part2) {
-        throw new Error('Split description must include both part1 and part2 task names');
-    }
-
-    // In the real app, you'd query the database for the original task
-    // For now, we'll create mock subtasks
-    const task1 = {
-        name: splitDescription.part1,
-        assignee: 'mario', // This should come from the original task
-        size: splitDescription.size1 || 'm',
-        urgent: 3,
-        important: 3,
-        completed: false,
-        icon: '📋',
-        first_step: splitDescription.firstStep1 || null,
-        completion_criteria: splitDescription.completionCriteria1 || null
-    };
-
-    const task2 = {
-        name: splitDescription.part2,
-        assignee: 'mario', // This should come from the original task
-        size: splitDescription.size2 || 'm',
-        urgent: 3,
-        important: 3,
-        completed: false,
-        icon: '📋',
-        first_step: splitDescription.firstStep2 || null,
-        completion_criteria: splitDescription.completionCriteria2 || null
-    };
-
-    return {
-        originalTaskId: taskId,
-        newTasks: [task1, task2],
-        message: `Task has been split into two subtasks.`
-    };
-}
-
-function updateTask(taskId, updates, organizationId = null) {
-    if (!taskId) {
-        throw new Error('Task ID is required');
-    }
-
-    // Validate updates
-    const validUpdates = {};
-    const validAssignees = ['mario', 'maria', 'both'];
-    const validSizes = ['xs', 's', 'm', 'l', 'xl'];
-
-    if (updates.name !== undefined) validUpdates.name = updates.name;
-    if (updates.assignee !== undefined) {
-        if (!validAssignees.includes(updates.assignee)) {
-            throw new Error(`Assignee must be one of: ${validAssignees.join(', ')}`);
+const FUNCTION_DEFINITIONS = [
+    {
+        name: 'createTask',
+        description: 'Create a new task in the TaskOrgApp system',
+        parameters: {
+            type: 'object',
+            properties: {
+                name: { type: 'string', description: 'The name/title of the task' },
+                assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Who the task is assigned to' },
+                size: { type: 'string', enum: ['xs', 's', 'm', 'l', 'xl'], description: 'The estimated size/complexity' },
+                urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
+                important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
+                icon: { type: 'string', description: 'Emoji icon for the task' },
+                first_step: { type: 'string', description: 'The first step to start working on this task' },
+                completion_criteria: { type: 'string', description: 'What needs to be true for completion' }
+            },
+            required: ['name', 'assignee']
         }
-        validUpdates.assignee = updates.assignee;
-    }
-    if (updates.size !== undefined) {
-        if (!validSizes.includes(updates.size)) {
-            throw new Error(`Size must be one of: ${validSizes.join(', ')}`);
-        }
-        validUpdates.size = updates.size;
-    }
-    if (updates.urgent !== undefined) {
-        validUpdates.urgent = Math.max(1, Math.min(5, updates.urgent));
-    }
-    if (updates.important !== undefined) {
-        validUpdates.important = Math.max(1, Math.min(5, updates.important));
-    }
-    if (updates.completed !== undefined) validUpdates.completed = Boolean(updates.completed);
-    if (updates.icon !== undefined) validUpdates.icon = updates.icon;
-    if (updates.first_step !== undefined) validUpdates.first_step = updates.first_step;
-    if (updates.completion_criteria !== undefined) validUpdates.completion_criteria = updates.completion_criteria;
-
-    return {
-        taskId: taskId,
-        updates: validUpdates,
-        message: `Task updated successfully.`
-    };
-}
-
-function getTasks(filters = {}, organizationId = null) {
-    // In the real app, this would query your Supabase database
-    // For now, return a mock response
-    return {
-        tasks: [
-            {
-                id: 'task_001',
-                name: 'Sample task',
-                assignee: 'mario',
-                completed: false
-            }
-        ],
-        count: 1,
-        message: 'Tasks retrieved successfully.'
-    };
-}
-
-function decomposeTask(taskDescription, organizationId = null) {
-    if (!taskDescription || !taskDescription.name) {
-        throw new Error('Task name is required for decomposition');
-    }
-
-    // Generate a unique parent task ID
-    const parentTaskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Create the parent task (the original large task)
-    const parentTask = {
-        id: parentTaskId,
-        name: taskDescription.name,
-        assignee: taskDescription.assignee || 'all', // Default to 'all' for decomposed tasks
-        size: 'xl', // Large tasks are decomposed
-        urgent: taskDescription.urgent || 3,
-        important: taskDescription.important || 3,
-        completed: false,
-        icon: taskDescription.icon || '📋',
-        first_step: taskDescription.firstStep || null,
-        completion_criteria: taskDescription.completionCriteria || null,
-        deadline: taskDescription.deadline || null,
-        depends_on: null,
-        parent_task_id: null,
-        organization_id: organizationId,
-        created_at: new Date().toISOString()
-    };
-
-    // For dynamic assignee assignment, we'll use a simple round-robin approach
-    // In a real implementation, this would query the database for organization members
-    const defaultAssignees = ['mario', 'maria']; // Fallback for backward compatibility
-
-    // Generate 3-6 subtasks based on the task description
-    const subtasks = [];
-    const subtaskCount = Math.floor(Math.random() * 4) + 3; // 3-6 subtasks
-
-    for (let i = 0; i < subtaskCount; i++) {
-        const subtaskId = `task_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`;
-        const subtask = {
-            id: subtaskId,
-            name: `Subtask ${i + 1} for "${taskDescription.name}"`,
-            assignee: defaultAssignees[i % defaultAssignees.length], // Round-robin assignment
-            size: ['s', 'm', 'l'][Math.floor(Math.random() * 3)], // Random size
-            urgent: Math.floor(Math.random() * 3) + 2, // 2-4 urgency
-            important: Math.floor(Math.random() * 3) + 2, // 2-4 importance
-            completed: false,
-            icon: '✅',
-            first_step: `Start working on subtask ${i + 1}`,
-            completion_criteria: `Complete subtask ${i + 1} requirements`,
-            deadline: calculateDeadline(i, taskDescription.deadline),
-            depends_on: i > 0 ? [subtasks[i-1].id] : null, // Chain dependencies
-            parent_task_id: parentTaskId,
-            organization_id: organizationId,
-            created_at: new Date().toISOString()
-        };
-        subtasks.push(subtask);
-    }
-
-    return {
-        parentTask: parentTask,
-        subtasks: subtasks,
-        message: `Task "${taskDescription.name}" has been decomposed into ${subtasks.length} subtasks.`,
-        matrix_positions: assignMatrixPositions(subtasks),
-        integrations: suggestIntegrations(taskDescription.name, subtasks)
-    };
-}
-
-function calculateDeadline(subtaskIndex, parentDeadline) {
-    if (!parentDeadline) return null;
-
-    const parentDate = new Date(parentDeadline);
-    const daysToSubtract = (subtaskIndex + 1) * 3; // Spread over time
-    const subtaskDate = new Date(parentDate);
-    subtaskDate.setDate(parentDate.getDate() - daysToSubtract);
-
-    return subtaskDate.toISOString().split('T')[0]; // Return as YYYY-MM-DD
-}
-
-function assignMatrixPositions(tasks) {
-    return tasks.map(task => {
-        let position = 'do';
-        if (task.urgent >= 4 && task.important >= 4) position = 'do';
-        else if (task.urgent >= 4 && task.important <= 2) position = 'delegate';
-        else if (task.urgent <= 2 && task.important >= 4) position = 'schedule';
-        else if (task.urgent <= 2 && task.important <= 2) position = 'delete';
-
-        return {
-            taskId: task.id,
-            position: position,
-            reasoning: `Urgent: ${task.urgent}/5, Important: ${task.important}/5 → ${position}`
-        };
-    });
-}
-
-function suggestIntegrations(taskName, subtasks) {
-    const integrations = [];
-
-    // Calendar suggestions
-    if (taskName.toLowerCase().includes('event') || taskName.toLowerCase().includes('meeting')) {
-        integrations.push({
-            type: 'calendar',
-            action: 'schedule',
-            details: `Consider adding "${taskName}" deadlines to your calendar`
-        });
-    }
-
-    // Shopping suggestions
-    if (taskName.toLowerCase().includes('buy') || taskName.toLowerCase().includes('purchase') || taskName.toLowerCase().includes('shop')) {
-        integrations.push({
-            type: 'shopping',
-            action: 'add_items',
-            details: `Create shopping list for "${taskName}"`
-        });
-    }
-
-    // Check subtasks for additional integrations
-    subtasks.forEach(subtask => {
-        if (subtask.name.toLowerCase().includes('research') || subtask.name.toLowerCase().includes('call')) {
-            integrations.push({
-                type: 'calendar',
-                action: 'block_time',
-                details: `Block time for "${subtask.name}"`
-            });
-        }
-    });
-
-    return integrations;
-}
-
-function reviewDecomposition(decomposition, isRefinement = false) {
-    const { parentTask, subtasks } = decomposition;
-    const issues = [];
-    const questions = [];
-
-    // After refinement, be more lenient - only flag critical issues
-    const strictMode = !isRefinement;
-
-    // Check completeness - only require deadline if task is urgent/important
-    if (!parentTask.deadline && (parentTask.urgent >= 4 || parentTask.important >= 4)) {
-        if (strictMode) {
-            issues.push('Missing deadline for urgent/important task');
-            questions.push('What\'s the overall deadline for this task?');
-        }
-    }
-
-    // First step is nice to have but not critical - only ask if task is complex
-    if (!parentTask.first_step && parentTask.size === 'xl' && strictMode) {
-        // Only ask for first step on very large tasks
-        issues.push('Missing first step for complex task');
-        questions.push('What would be a good first step to get started?');
-    }
-
-    // Check budget considerations - only for purchase-related tasks
-    if (parentTask.name.toLowerCase().includes('buy') ||
-        parentTask.name.toLowerCase().includes('purchase') ||
-        parentTask.name.toLowerCase().includes('cost') ||
-        parentTask.name.toLowerCase().includes('budget')) {
-        if (!parentTask.completion_criteria || !parentTask.completion_criteria.includes('budget')) {
-            if (strictMode) {
-                issues.push('Budget not considered');
-                questions.push('What\'s your budget for this task?');
-            }
-        }
-    }
-
-    // Check workload balance - only flag if very unbalanced (3+ task difference)
-    // For multi-environment support, this would need to be updated to check against actual organization members
-    const marioTasks = subtasks.filter(t => t.assignee === 'mario').length;
-    const mariaTasks = subtasks.filter(t => t.assignee === 'maria').length;
-    const bothTasks = subtasks.filter(t => t.assignee === 'both').length;
-    const allTasks = subtasks.filter(t => t.assignee === 'all').length;
-
-    // Simplified balance check - in a real multi-environment system,
-    // this would compare against all organization members
-    const totalAssignedTasks = marioTasks + mariaTasks + bothTasks + allTasks;
-    if (totalAssignedTasks > 0 && Math.abs(marioTasks - mariaTasks) > 2 && subtasks.length > 3) {
-        // Only ask if very unbalanced and we have enough tasks
-        if (strictMode) {
-            issues.push('Unbalanced workload');
-            questions.push('Would you prefer to balance the workload differently between team members?');
-        }
-    }
-
-    // Check realistic deadlines - only flag if really unrealistic (urgent task due tomorrow)
-    const today = new Date();
-    const urgentTasks = subtasks.filter(t => {
-        if (!t.deadline) return false;
-        const deadline = new Date(t.deadline);
-        const daysUntil = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
-        return daysUntil < 2 && t.urgent >= 4; // Only flag if due in less than 2 days
-    });
-
-    if (urgentTasks.length > 0 && strictMode) {
-        issues.push('Potentially unrealistic urgent deadlines');
-        questions.push('Are these urgent deadlines realistic given the task complexity?');
-    }
-
-    // Check dependencies logic - only flag circular deps
-    const hasCircularDeps = checkCircularDependencies(subtasks);
-    if (hasCircularDeps) {
-        issues.push('Circular dependencies detected');
-        questions.push('Can you clarify the dependency relationships between these tasks?');
-    }
-
-    // After refinement, be more lenient with confidence
-    let confidence = calculateConfidence(issues, subtasks);
-    if (isRefinement && confidence === 'low' && issues.length <= 1) {
-        // If we've refined and only have minor issues, boost confidence
-        confidence = 'medium';
-    }
-
-    // After refinement, mark as complete if we have minimal issues
-    const isComplete = isRefinement ? (issues.length <= 1 && !hasCircularDeps) : (issues.length === 0);
-
-    return {
-        isComplete: isComplete,
-        confidence: confidence,
-        issues: issues,
-        questions: questions.slice(0, 2), // Limit to 2 questions max after refinement
-        suggestions: generateSuggestions(issues, subtasks)
-    };
-}
-
-function checkCircularDependencies(tasks) {
-    // Simple circular dependency check
-    for (const task of tasks) {
-        if (task.depends_on) {
-            for (const depId of task.depends_on) {
-                const depTask = tasks.find(t => t.id === depId);
-                if (depTask && depTask.depends_on && depTask.depends_on.includes(task.id)) {
-                    return true; // Found circular dependency
+    },
+    {
+        name: 'splitTask',
+        description: 'Split an existing task into two smaller subtasks',
+        parameters: {
+            type: 'object',
+            properties: {
+                taskId: { type: 'string', description: 'The ID of the task to split' },
+                splitDescription: {
+                    type: 'object',
+                    properties: {
+                        part1: { type: 'string', description: 'Name of the first part' },
+                        part2: { type: 'string', description: 'Name of the second part' },
+                        size1: { type: 'string', enum: ['xs', 's', 'm', 'l', 'xl'] },
+                        size2: { type: 'string', enum: ['xs', 's', 'm', 'l', 'xl'] },
+                        firstStep1: { type: 'string' },
+                        firstStep2: { type: 'string' },
+                        completionCriteria1: { type: 'string' },
+                        completionCriteria2: { type: 'string' }
+                    },
+                    required: ['part1', 'part2']
                 }
+            },
+            required: ['taskId', 'splitDescription']
+        }
+    },
+    {
+        name: 'updateTask',
+        description: 'Update an existing task with new information',
+        parameters: {
+            type: 'object',
+            properties: {
+                taskId: { type: 'string', description: 'The ID of the task to update' },
+                updates: { type: 'object', description: 'The updates to apply' }
+            },
+            required: ['taskId', 'updates']
+        }
+    },
+    {
+        name: 'getTasks',
+        description: 'Query and retrieve tasks based on filters',
+        parameters: {
+            type: 'object',
+            properties: {
+                filters: { type: 'object', description: 'Filters to apply to the query' }
             }
         }
+    },
+    {
+        name: 'decomposeTask',
+        description: 'Intelligently decompose a large task into smaller subtasks with assignees, deadlines, and dependencies. Use this when users ask to decompose, break down, or split a large task into subtasks. This is different from getTasks - use decomposeTask to CREATE new subtasks from a task description, not to query existing tasks.',
+        parameters: {
+            type: 'object',
+            properties: {
+                name: { type: 'string', description: 'The name/title of the large task to decompose' },
+                assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Initial assignee preference' },
+                deadline: { type: 'string', description: 'Overall deadline (YYYY-MM-DD format)' },
+                urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
+                important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
+                firstStep: { type: 'string', description: 'Suggested first step' },
+                completionCriteria: { type: 'string', description: 'Completion criteria' },
+                icon: { type: 'string', description: 'Emoji icon for the task' }
+            },
+            required: ['name']
+        }
+    },
+    {
+        name: 'refineDecomposition',
+        description: 'Refine a task decomposition based on user answers to clarifying questions. Call this IMMEDIATELY when user responds after you asked questions. Extract question-answer pairs from the conversation: match the user\'s response to your previous questions. Even if user gives short answers (yes/no/one word), create pairs for each question you asked. After refining, if confidence is high/medium OR refinementCount >= 2, call finalizeDecomposition() instead of asking more questions.',
+        parameters: {
+            type: 'object',
+            properties: {
+                originalDecomposition: { type: 'object', description: 'The original decomposition object from previous decomposeTask or refineDecomposition call' },
+                userAnswers: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            question: { type: 'string', description: 'The question that was asked' },
+                            response: { type: 'string', description: 'The user\'s answer' }
+                        }
+                    },
+                    description: 'Array of question-answer pairs matching the questions you asked'
+                },
+                refinementCount: { type: 'integer', description: 'How many times you\'ve refined (0 = first refinement, 1 = second, etc.). Use this to track iterations.' }
+            },
+            required: ['originalDecomposition', 'userAnswers']
+        }
+    },
+    {
+        name: 'finalizeDecomposition',
+        description: 'Finalize a task decomposition and prepare it for database insertion',
+        parameters: {
+            type: 'object',
+            properties: {
+                decomposition: { type: 'object', description: 'The refined decomposition to finalize' }
+            },
+            required: ['decomposition']
+        }
+    },
+    {
+        name: 'autofillDailyPlan',
+        description: 'Intelligently auto-fill the daily planner for Mario and Maria based on pending tasks, current time, priorities, locations, and scheduling constraints',
+        parameters: {
+            type: 'object',
+            properties: {
+                tasks: {
+                    type: 'array',
+                    description: 'Array of pending task objects with id, name, assignee, size, urgent, important, location, deadline, depends_on',
+                    items: { type: 'object' }
+                },
+                currentHour: { type: 'integer', description: 'Current hour (0-23)' },
+                currentMinutes: { type: 'integer', description: 'Current minutes (0-59)' }
+            },
+            required: ['tasks', 'currentHour', 'currentMinutes']
+        }
     }
-    return false;
+];
+
+function getApiKey() {
+    return config.openai.getApiKey();
 }
 
-function calculateConfidence(issues, subtasks) {
-    if (issues.length === 0) return 'high';
-    if (issues.length <= 2) return 'medium';
-    return 'low';
-}
-
-function generateSuggestions(issues, subtasks) {
-    const suggestions = [];
-
-    if (issues.includes('Unbalanced workload')) {
-        suggestions.push('Consider redistributing some tasks to balance the workload');
-    }
-
-    if (issues.includes('Potentially unrealistic urgent deadlines')) {
-        suggestions.push('Consider extending some deadlines or reducing urgency levels');
-    }
-
-    if (issues.includes('Missing deadline for parent task')) {
-        suggestions.push('Setting a clear deadline helps with prioritization');
-    }
-
-    return suggestions;
-}
-
-function refineDecomposition(originalDecomposition, userAnswers) {
-    const { parentTask, subtasks } = originalDecomposition;
-    let refinedParentTask = { ...parentTask };
-    let refinedSubtasks = [...subtasks];
-
-    // Process user answers
-    for (const answer of userAnswers) {
-        const question = answer.question.toLowerCase();
-        const response = answer.response.toLowerCase();
-
-        // Handle deadline questions
-        if (question.includes('deadline') || question.includes('when')) {
-            if (question.includes('overall')) {
-                refinedParentTask.deadline = parseDeadline(response);
-            }
-        }
-
-        // Handle budget questions
-        if (question.includes('budget') || question.includes('cost')) {
-            refinedParentTask.completion_criteria = refinedParentTask.completion_criteria
-                ? `${refinedParentTask.completion_criteria}. Budget: ${response}`
-                : `Budget: ${response}`;
-        }
-
-        // Handle workload balance questions
-        if (question.includes('balance') || question.includes('workload')) {
-            if (response.includes('mario') || response.includes('more mario')) {
-                // Shift some tasks to Mario
-                const mariaTasks = refinedSubtasks.filter(t => t.assignee === 'maria');
-                if (mariaTasks.length > 0) {
-                    mariaTasks[0].assignee = 'mario';
-                }
-            } else if (response.includes('maria') || response.includes('more maria')) {
-                // Shift some tasks to Maria
-                const marioTasks = refinedSubtasks.filter(t => t.assignee === 'mario');
-                if (marioTasks.length > 0) {
-                    marioTasks[0].assignee = 'maria';
-                }
-            }
-        }
-
-        // Handle first step questions
-        if (question.includes('first step') || question.includes('start')) {
-            refinedParentTask.first_step = response;
-        }
-
-        // Handle deadline realism questions
-        if (question.includes('realistic') || question.includes('urgent')) {
-            if (response.includes('no') || response.includes('extend')) {
-                // Extend urgent deadlines
-                refinedSubtasks = refinedSubtasks.map(task => {
-                    if (task.urgent >= 4 && task.deadline) {
-                        const deadline = new Date(task.deadline);
-                        deadline.setDate(deadline.getDate() + 2); // Add 2 days
-                        task.deadline = deadline.toISOString().split('T')[0];
-                    }
-                    return task;
-                });
-            }
-        }
-
-        // Handle dependency questions
-        if (question.includes('dependency') || question.includes('order')) {
-            // Simplify dependencies - remove complex chains
-            refinedSubtasks = refinedSubtasks.map((task, index) => {
-                if (index === 0) {
-                    task.depends_on = null; // First task has no dependencies
-                } else {
-                    task.depends_on = [refinedSubtasks[index - 1].id]; // Simple chain
-                }
-                return task;
-            });
-        }
-    }
-
-    // Recalculate deadlines if parent deadline was updated
-    if (refinedParentTask.deadline && refinedParentTask.deadline !== parentTask.deadline) {
-        refinedSubtasks = refinedSubtasks.map((task, index) => ({
-            ...task,
-            deadline: calculateDeadline(index, refinedParentTask.deadline)
-        }));
-    }
-
-    return {
-        parentTask: refinedParentTask,
-        subtasks: refinedSubtasks,
-        message: 'Decomposition refined based on your answers.',
-        matrix_positions: assignMatrixPositions(refinedSubtasks),
-        integrations: suggestIntegrations(refinedParentTask.name, refinedSubtasks)
-    };
-}
-
-function parseDeadline(response) {
-    // Simple date parsing - in production, use a proper date parser
-    const today = new Date();
-
-    if (response.includes('tomorrow')) {
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-        return tomorrow.toISOString().split('T')[0];
-    }
-
-    if (response.includes('next week')) {
-        const nextWeek = new Date(today);
-        nextWeek.setDate(today.getDate() + 7);
-        return nextWeek.toISOString().split('T')[0];
-    }
-
-    if (response.includes('end of month')) {
-        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        return endOfMonth.toISOString().split('T')[0];
-    }
-
-    // Try to extract date patterns like "Dec 25" or "12/25"
-    const dateMatch = response.match(/(\d{1,2})[\/-](\d{1,2})/);
-    if (dateMatch) {
-        const month = parseInt(dateMatch[1]) - 1;
-        const day = parseInt(dateMatch[2]);
-        const year = today.getFullYear();
-        const date = new Date(year, month, day);
-        return date.toISOString().split('T')[0];
-    }
-
-    // Default to 2 weeks from now
-    const defaultDate = new Date(today);
-    defaultDate.setDate(today.getDate() + 14);
-    return defaultDate.toISOString().split('T')[0];
-}
-
-function finalizeDecomposition(decomposition) {
-    const { parentTask, subtasks } = decomposition;
-
-    return {
-        success: true,
-        parentTask: parentTask,
-        subtasks: subtasks,
-        summary: {
-            totalTasks: subtasks.length + 1,
-            marioTasks: subtasks.filter(t => t.assignee === 'mario').length,
-            mariaTasks: subtasks.filter(t => t.assignee === 'maria').length,
-            bothTasks: subtasks.filter(t => t.assignee === 'both').length,
-            deadlines: subtasks.filter(t => t.deadline).length,
-            dependencies: subtasks.filter(t => t.depends_on && t.depends_on.length > 0).length
-        },
-        matrix_positions: assignMatrixPositions(subtasks),
-        integrations: suggestIntegrations(parentTask.name, subtasks),
-        next_steps: [
-            'Review the Eisenhower matrix positions for prioritization',
-            'Add important deadlines to your calendar',
-            'Consider the suggested integrations',
-            'Start with the highest priority tasks'
-        ],
-        message: `Perfect! Your task "${parentTask.name}" has been successfully decomposed into ${subtasks.length} manageable subtasks.`
-    };
-}
-
-// Autofill Daily Plan using AI
-async function autofillDailyPlan(params, apiKey, model = 'gpt-3.5-turbo') {
-    const { tasks, currentHour, currentMinutes } = params;
-    
-    // Determine which time blocks are still available based on current time
-    let availableBlocks = [];
-    if (currentHour < 12) {
-        availableBlocks = ['morning', 'afternoon', 'evening'];
-    } else if (currentHour < 17) {
-        availableBlocks = ['afternoon', 'evening'];
-    } else if (currentHour < 21) {
-        availableBlocks = ['evening'];
-    } else {
-        availableBlocks = []; // Too late, no blocks available
-    }
-    
-    if (availableBlocks.length === 0) {
-        return {
-            success: false,
-            message: "It's quite late! Consider planning for tomorrow instead.",
-            plan: null
-        };
-    }
-    
-    // Filter to only incomplete, non-banked tasks
-    const availableTasks = tasks.filter(t => !t.completed && !t.banked);
-    
-    if (availableTasks.length === 0) {
-        return {
-            success: false,
-            message: "No pending tasks to schedule. Great job staying on top of things!",
-            plan: null
-        };
-    }
-    
-    // Calculate remaining time in each block
-    const blockTimes = {
-        morning: { start: 8, end: 12 },
-        afternoon: { start: 12, end: 17 },
-        evening: { start: 17, end: 21 }
-    };
-    
-    const remainingMinutes = {};
-    availableBlocks.forEach(block => {
-        const blockInfo = blockTimes[block];
-        if (currentHour < blockInfo.start) {
-            remainingMinutes[block] = (blockInfo.end - blockInfo.start) * 60;
-        } else if (currentHour < blockInfo.end) {
-            remainingMinutes[block] = (blockInfo.end - currentHour) * 60 - currentMinutes;
-        } else {
-            remainingMinutes[block] = 0;
-        }
-    });
-    
-    // Build comprehensive task descriptions for AI
-    const sizeMinutes = { xs: 8, s: 20, m: 45, l: 90, xl: 150 };
-    const sizeLabels = { xs: 'Extra Small (~8min)', s: 'Small (~20min)', m: 'Medium (~45min)', l: 'Large (~90min)', xl: 'Extra Large (~150min)' };
-    
-    // Helper to determine if task is outside errand or home task
-    const outsideKeywords = ['store', 'shop', 'depot', 'car', 'dmv', 'plates', 'pick up', 'pickup', 'return', 'buy', 'get', 'grocery', 'groceries', 'mall', 'bank', 'post office', 'pharmacy', 'doctor', 'dentist', 'appointment', 'errand', 'drive', 'drop off', 'dropoff'];
-    const homeKeywords = ['home', 'house', 'clean', 'laundry', 'cook', 'paper', 'form', 'document', 'file', 'call', 'email', 'computer', 'online', 'video', 'work from', 'remote', 'desk'];
-    
-    function getTaskLocationType(task) {
-        const nameLower = (task.name || '').toLowerCase();
-        const locationLower = (task.location || '').toLowerCase();
-        const combined = nameLower + ' ' + locationLower;
-        
-        // Check for outside keywords
-        const isOutside = outsideKeywords.some(kw => combined.includes(kw));
-        // Check for home keywords  
-        const isHome = homeKeywords.some(kw => combined.includes(kw));
-        
-        if (isOutside && !isHome) return 'OUTSIDE ERRAND';
-        if (isHome && !isOutside) return 'HOME TASK';
-        if (isOutside && isHome) return 'OUTSIDE ERRAND'; // Outside takes priority if both
-        return 'UNSPECIFIED';
-    }
-    
-    const taskDescriptions = availableTasks.map(t => {
-        const estimatedTime = sizeMinutes[t.size] || 45;
-        const deadlineInfo = t.deadline ? `, deadline: ${t.deadline}` : '';
-        const locationInfo = t.location ? `, location: ${t.location}` : '';
-        const dependsInfo = t.depends_on ? `, depends on another task` : '';
-        const locationType = getTaskLocationType(t);
-        
-        return `- ID: ${t.id}
-  Name: "${t.name}"
-  Assignee: ${t.assignee} (${t.assignee === 'both' ? 'Mario & Maria together' : t.assignee === 'mario' ? 'Mario only' : 'Maria only'})
-  Size: ${sizeLabels[t.size] || t.size} (${estimatedTime} min)
-  Urgency: ${t.urgent || 3}/5, Importance: ${t.important || 3}/5
-  Priority Score: ${((t.urgent || 3) * 2 + (t.important || 3))}${deadlineInfo}${locationInfo}${dependsInfo}
-  Task Type: ${locationType}`;
-    }).join('\n\n');
-    
-    // Build the AI prompt
-    const prompt = `You are a smart daily planner assistant for Mario and Maria, a couple who share tasks. Your job is to intelligently fill their daily plan for the remaining time today.
-
-CURRENT TIME: ${currentHour}:${currentMinutes.toString().padStart(2, '0')}
-
-AVAILABLE TIME BLOCKS:
-${availableBlocks.map(block => `- ${block.charAt(0).toUpperCase() + block.slice(1)}: ~${remainingMinutes[block]} minutes remaining`).join('\n')}
-
-PENDING TASKS:
-${taskDescriptions}
-
-SCHEDULING RULES (in priority order):
-1. CURRENT TIME AWARENESS: Only schedule tasks in blocks that haven't passed. Current hour is ${currentHour}.
-2. PRIORITY FIRST: Higher urgency + importance tasks should be scheduled earlier in the day.
-3. DEADLINE AWARENESS: Tasks with imminent deadlines (today/tomorrow) get top priority.
-4. LOCATION CLUSTERING (CRITICAL): 
-   - Group ALL outside errands together in the SAME time block (stores, shopping, car tasks, DMV, picking things up, returning items, depot runs)
-   - Group ALL home tasks together in a SEPARATE time block (paperwork, cleaning, computer work, calls)
-   - NEVER mix home tasks with outside errands in the same time block
-   - If a task mentions a store, depot, car, plates, DMV, shopping, or pickup → it's an OUTSIDE errand
-   - If a task is paperwork, computer work, cleaning inside, or doesn't require leaving → it's a HOME task
-   - Schedule outside errands consecutively so the person can do them in one trip
-5. "BOTH" TASKS TOGETHER: Tasks assigned to "both" should ideally be scheduled at the same time block for Mario AND Maria so they can work together.
-6. SIZE FITTING: Don't overfill blocks - respect the time estimates and available minutes.
-7. BALANCED WORKLOAD: Try to balance task count and total time between Mario and Maria.
-8. DEPENDENCIES: If a task depends on another, schedule the dependency first.
-
-RESPONSE FORMAT - Return ONLY valid JSON in this exact structure:
-{
-  "mario": {
-    "morning": ["task_id_1", "task_id_2"],
-    "afternoon": ["task_id_3"],
-    "evening": []
-  },
-  "maria": {
-    "morning": ["task_id_1"],
-    "afternoon": ["task_id_4"],
-    "evening": ["task_id_5"]
-  },
-  "reasoning": "Brief explanation of your scheduling decisions"
-}
-
-IMPORTANT:
-- Only include blocks that are available (${availableBlocks.join(', ')})
-- Use actual task IDs from the list above
-- For "both" assignee tasks, add the SAME task ID to BOTH Mario's and Maria's schedule in the SAME time block
-- Don't schedule more tasks than will fit in the available time
-- It's okay to leave some tasks unscheduled if there isn't enough time
-- CRITICAL: Group all "OUTSIDE ERRAND" tasks together in one time block, and all "HOME TASK" tasks together in a different block
-- Example: If someone has "Get drills from depot" (outside) and "Return plates" (outside), put them in the SAME block so they can do both errands in one trip
-- Example: If someone has "Refill papers" (home) and "Clean car" (outside), put them in DIFFERENT blocks
-- Return ONLY the JSON, no markdown code blocks or extra text`;
-
-    // Call OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: model,
-            messages: [
-                { role: 'system', content: 'You are a scheduling assistant. Always respond with valid JSON only, no markdown formatting.' },
-                { role: 'user', content: prompt }
-            ],
-            max_tokens: 1000,
-            temperature: 0.3 // Lower temperature for more consistent structured output
-        })
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const aiResponse = data.choices[0]?.message?.content;
-
-    if (!aiResponse) {
-        throw new Error('No response from AI');
-    }
-
-    // Parse the AI response
-    let plan;
-    try {
-        // Clean up the response in case it has markdown code blocks
-        let cleanResponse = aiResponse.trim();
-        if (cleanResponse.startsWith('```')) {
-            cleanResponse = cleanResponse.replace(/```json?\n?/g, '').replace(/```\n?/g, '');
-        }
-        plan = JSON.parse(cleanResponse);
-    } catch (parseError) {
-        console.error('Failed to parse AI response:', aiResponse);
-        throw new Error('Failed to parse AI scheduling response');
-    }
-
-    // Validate the plan structure
-    if (!plan.mario || !plan.maria) {
-        throw new Error('Invalid plan structure from AI');
-    }
-
-    // Ensure all blocks exist
-    const emptyBlocks = { morning: [], afternoon: [], evening: [] };
-    plan.mario = { ...emptyBlocks, ...plan.mario };
-    plan.maria = { ...emptyBlocks, ...plan.maria };
-
-    // Filter out any invalid task IDs
-    const validTaskIds = new Set(availableTasks.map(t => t.id));
-    ['mario', 'maria'].forEach(person => {
-        ['morning', 'afternoon', 'evening'].forEach(block => {
-            if (Array.isArray(plan[person][block])) {
-                plan[person][block] = plan[person][block].filter(id => validTaskIds.has(id));
-            } else {
-                plan[person][block] = [];
-            }
-        });
-    });
-
-    return {
-        success: true,
-        plan: {
-            mario: plan.mario,
-            maria: plan.maria
-        },
-        reasoning: plan.reasoning || 'Plan generated based on priority, location clustering, and time constraints.',
-        message: `Daily plan created! ${plan.reasoning || ''}`
-    };
-}
-
-module.exports = async function handler(req, res) {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-    
-    // Only allow POST requests
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
-    // Get API key from environment variable (production) or config file (development)
-    let apiKey = process.env.OPENAI_API_KEY;
-
-    // If not set in environment, try to read from config.js for local development
-    if (!apiKey) {
-        try {
-            const fs = require('fs');
-            const path = require('path');
-            const configPath = path.join(process.cwd(), 'config.js');
-            const configContent = fs.readFileSync(configPath, 'utf8');
-
-            // Extract API key using regex (same as test-openai.js)
-            const match = configContent.match(/OPENAI_API_KEY\s*=\s*['"]([^'"]+)['"]/);
-            if (match && match[1]) {
-                apiKey = match[1];
-            }
-        } catch (configError) {
-            console.error('Could not read config.js:', configError.message);
-        }
-    }
-
-    if (!apiKey) {
-        console.error('OPENAI_API_KEY is missing from environment variables and config.js');
-        return res.status(500).json({
-            error: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable in Vercel or config.js for local development.'
-        });
-    }
-
-    try {
-        // Parse request body - Vercel may send it as a string or already parsed
-        let body = req.body;
-        if (typeof body === 'string') {
-            try {
-                body = JSON.parse(body);
-            } catch (parseError) {
-                console.error('Failed to parse request body:', parseError);
-                return res.status(400).json({ error: 'Invalid JSON in request body' });
-            }
-        }
-
-        if (!body) {
-            console.error('Request body is empty or undefined');
-            return res.status(400).json({ error: 'Request body is required' });
-        }
-
-        const { taskContext, message, enableFunctions = false, conversationHistory = [], pendingDecomposition = null, organizationId = null, model = 'gpt-3.5-turbo' } = body;
-        
-        // Validate model selection - only allow supported OpenAI models
-        const validModels = ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini'];
-        const selectedModel = validModels.includes(model) ? model : 'gpt-3.5-turbo';
-
-        console.log('Received request:', { 
-            hasMessage: !!message, 
-            hasTaskContext: !!taskContext, 
-            enableFunctions,
-            model: selectedModel
-        });
-
-        // Check for direct autofillDailyPlan request
-        if (taskContext) {
-            try {
-                const contextData = typeof taskContext === 'string' ? JSON.parse(taskContext) : taskContext;
-                if (contextData.action === 'autofillDailyPlan') {
-                    console.log('Direct autofillDailyPlan request detected');
-                    const result = await autofillDailyPlan({
-                        tasks: contextData.tasks,
-                        currentHour: contextData.currentHour,
-                        currentMinutes: contextData.currentMinutes
-                    }, apiKey, selectedModel);
-                    
-                    return res.status(200).json({
-                        function_call: { name: 'autofillDailyPlan' },
-                        function_result: result
-                    });
-                }
-            } catch (parseErr) {
-                // Not a JSON context or doesn't have action, continue with normal flow
-                console.log('taskContext is not autofillDailyPlan action, continuing normal flow');
-            }
-        }
-
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
-        }
-
-        // Prepare the request body
-        const requestBody = {
-            model: selectedModel,
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are an intelligent task decomposition agent for TaskOrgApp. You help break down large tasks into manageable subtasks with proper assignees, deadlines, and dependencies.
+function buildSystemContent(taskContext, conversationHistory) {
+    return `You are an intelligent task decomposition agent for TaskOrgApp. You help break down large tasks into manageable subtasks with proper assignees, deadlines, and dependencies.
 
 CORE BEHAVIOR:
 - When users ask to decompose/break down large tasks, immediately call decomposeTask()
@@ -919,159 +200,105 @@ IMPORTANT RULES:
 - Track refinementCount: start at 0, increment each refineDecomposition() call
 
 ${taskContext ? `Here is current task context:\n\n${taskContext}` : ''}
-${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n')}` : ''}`
-                },
-                {
-                    role: 'user',
-                    content: message
+${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n')}` : ''}`;
+}
+
+async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        console.error('OPENAI_API_KEY is missing (env or config.js)');
+        return res.status(500).json({
+            error: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable in Vercel or config.js for local development.'
+        });
+    }
+
+    try {
+        let body = req.body;
+        if (typeof body === 'string') {
+            try {
+                body = JSON.parse(body);
+            } catch (parseError) {
+                console.error('Failed to parse request body:', parseError);
+                return res.status(400).json({ error: 'Invalid JSON in request body' });
+            }
+        }
+
+        if (!body) {
+            return res.status(400).json({ error: 'Request body is required' });
+        }
+
+        const {
+            taskContext,
+            message,
+            enableFunctions = false,
+            conversationHistory = [],
+            organizationId = null,
+            model = 'gpt-3.5-turbo'
+        } = body;
+
+        const selectedModel = VALID_MODELS.includes(model) ? model : 'gpt-3.5-turbo';
+
+        console.log('Received request:', {
+            hasMessage: !!message,
+            hasTaskContext: !!taskContext,
+            enableFunctions,
+            model: selectedModel
+        });
+
+        if (taskContext) {
+            try {
+                const contextData = typeof taskContext === 'string' ? JSON.parse(taskContext) : taskContext;
+                if (contextData.action === 'autofillDailyPlan') {
+                    const result = await autofillDailyPlan(
+                        {
+                            tasks: contextData.tasks,
+                            currentHour: contextData.currentHour,
+                            currentMinutes: contextData.currentMinutes
+                        },
+                        apiKey,
+                        selectedModel
+                    );
+                    return res.status(200).json({
+                        function_call: { name: 'autofillDailyPlan' },
+                        function_result: result
+                    });
                 }
+            } catch (parseErr) {
+                // continue normal flow
+            }
+        }
+
+        if (!message) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
+
+        const requestBody = {
+            model: selectedModel,
+            messages: [
+                { role: 'system', content: buildSystemContent(taskContext, conversationHistory) },
+                { role: 'user', content: message }
             ],
             max_tokens: 500,
             temperature: 0.7
         };
 
-        // Add function calling if enabled
         if (enableFunctions) {
-            requestBody.functions = [
-                {
-                    name: 'createTask',
-                    description: 'Create a new task in the TaskOrgApp system',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            name: { type: 'string', description: 'The name/title of the task' },
-                            assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Who the task is assigned to' },
-                            size: { type: 'string', enum: ['xs', 's', 'm', 'l', 'xl'], description: 'The estimated size/complexity' },
-                            urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
-                            important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
-                            icon: { type: 'string', description: 'Emoji icon for the task' },
-                            first_step: { type: 'string', description: 'The first step to start working on this task' },
-                            completion_criteria: { type: 'string', description: 'What needs to be true for completion' }
-                        },
-                        required: ['name', 'assignee']
-                    }
-                },
-                {
-                    name: 'splitTask',
-                    description: 'Split an existing task into two smaller subtasks',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            taskId: { type: 'string', description: 'The ID of the task to split' },
-                            splitDescription: {
-                                type: 'object',
-                                properties: {
-                                    part1: { type: 'string', description: 'Name of the first part' },
-                                    part2: { type: 'string', description: 'Name of the second part' },
-                                    size1: { type: 'string', enum: ['xs', 's', 'm', 'l', 'xl'] },
-                                    size2: { type: 'string', enum: ['xs', 's', 'm', 'l', 'xl'] },
-                                    firstStep1: { type: 'string' },
-                                    firstStep2: { type: 'string' },
-                                    completionCriteria1: { type: 'string' },
-                                    completionCriteria2: { type: 'string' }
-                                },
-                                required: ['part1', 'part2']
-                            }
-                        },
-                        required: ['taskId', 'splitDescription']
-                    }
-                },
-                {
-                    name: 'updateTask',
-                    description: 'Update an existing task with new information',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            taskId: { type: 'string', description: 'The ID of the task to update' },
-                            updates: { type: 'object', description: 'The updates to apply' }
-                        },
-                        required: ['taskId', 'updates']
-                    }
-                },
-                {
-                    name: 'getTasks',
-                    description: 'Query and retrieve tasks based on filters',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            filters: { type: 'object', description: 'Filters to apply to the query' }
-                        }
-                    }
-                },
-                {
-                    name: 'decomposeTask',
-                    description: 'Intelligently decompose a large task into smaller subtasks with assignees, deadlines, and dependencies. Use this when users ask to decompose, break down, or split a large task into subtasks. This is different from getTasks - use decomposeTask to CREATE new subtasks from a task description, not to query existing tasks.',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            name: { type: 'string', description: 'The name/title of the large task to decompose' },
-                            assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Initial assignee preference' },
-                            deadline: { type: 'string', description: 'Overall deadline (YYYY-MM-DD format)' },
-                            urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
-                            important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
-                            firstStep: { type: 'string', description: 'Suggested first step' },
-                            completionCriteria: { type: 'string', description: 'Completion criteria' },
-                            icon: { type: 'string', description: 'Emoji icon for the task' }
-                        },
-                        required: ['name']
-                    }
-                },
-                {
-                    name: 'refineDecomposition',
-                    description: 'Refine a task decomposition based on user answers to clarifying questions. Call this IMMEDIATELY when user responds after you asked questions. Extract question-answer pairs from the conversation: match the user\'s response to your previous questions. Even if user gives short answers (yes/no/one word), create pairs for each question you asked. After refining, if confidence is high/medium OR refinementCount >= 2, call finalizeDecomposition() instead of asking more questions.',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            originalDecomposition: { type: 'object', description: 'The original decomposition object from previous decomposeTask or refineDecomposition call' },
-                            userAnswers: {
-                                type: 'array',
-                                items: {
-                                    type: 'object',
-                                    properties: {
-                                        question: { type: 'string', description: 'The question that was asked' },
-                                        response: { type: 'string', description: 'The user\'s answer' }
-                                    }
-                                },
-                                description: 'Array of question-answer pairs matching the questions you asked'
-                            },
-                            refinementCount: { type: 'integer', description: 'How many times you\'ve refined (0 = first refinement, 1 = second, etc.). Use this to track iterations.' }
-                        },
-                        required: ['originalDecomposition', 'userAnswers']
-                    }
-                },
-                {
-                    name: 'finalizeDecomposition',
-                    description: 'Finalize a task decomposition and prepare it for database insertion',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            decomposition: { type: 'object', description: 'The refined decomposition to finalize' }
-                        },
-                        required: ['decomposition']
-                    }
-                },
-                {
-                    name: 'autofillDailyPlan',
-                    description: 'Intelligently auto-fill the daily planner for Mario and Maria based on pending tasks, current time, priorities, locations, and scheduling constraints',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            tasks: { 
-                                type: 'array', 
-                                description: 'Array of pending task objects with id, name, assignee, size, urgent, important, location, deadline, depends_on',
-                                items: { type: 'object' }
-                            },
-                            currentHour: { type: 'integer', description: 'Current hour (0-23)' },
-                            currentMinutes: { type: 'integer', description: 'Current minutes (0-59)' }
-                        },
-                        required: ['tasks', 'currentHour', 'currentMinutes']
-                    }
-                }
-            ];
+            requestBody.functions = FUNCTION_DEFINITIONS;
             requestBody.function_call = 'auto';
         }
 
-        console.log('Calling OpenAI API...');
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -1099,18 +326,14 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
         }
 
         const data = await response.json();
-        
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        if (!data.choices?.[0]?.message) {
             console.error('Invalid response structure from OpenAI:', JSON.stringify(data).substring(0, 500));
-            return res.status(500).json({
-                error: 'Invalid response structure from OpenAI API'
-            });
+            return res.status(500).json({ error: 'Invalid response structure from OpenAI API' });
         }
 
         const aiMessage = data.choices[0].message;
 
-        // Handle function calls
-        if (aiMessage && aiMessage.function_call && enableFunctions) {
+        if (aiMessage?.function_call && enableFunctions) {
             let args;
             try {
                 args = JSON.parse(aiMessage.function_call.arguments);
@@ -1122,9 +345,8 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 });
             }
 
-            let functionResult;
-
             try {
+                let functionResult;
                 switch (aiMessage.function_call.name) {
                     case 'createTask':
                         functionResult = createTask(args, organizationId);
@@ -1138,66 +360,62 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     case 'getTasks':
                         functionResult = getTasks(args.filters || {}, organizationId);
                         break;
-                    case 'decomposeTask':
+                    case 'decomposeTask': {
                         const decomposition = decomposeTask(args, organizationId);
-                        const review = reviewDecomposition(decomposition, false); // Initial review
+                        const review = reviewDecomposition(decomposition, false);
                         functionResult = {
-                            decomposition: decomposition,
-                            review: review,
+                            decomposition,
+                            review,
                             needsRefinement: !review.isComplete && review.questions.length > 0,
                             refinementCount: 0,
                             message: review.isComplete
-                                ? 'Decomposition looks good! Here\'s the breakdown:'
+                                ? "Decomposition looks good! Here's the breakdown:"
                                 : `I've created an initial breakdown, but I have some questions to make it better:\n${review.questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nLet me know so I can refine this plan!`
                         };
                         break;
-                    case 'refineDecomposition':
+                    }
+                    case 'refineDecomposition': {
                         const refined = refineDecomposition(args.originalDecomposition, args.userAnswers);
-                        const refinedReview = reviewDecomposition(refined, true); // Refinement review - be lenient
-                        
-                        // Get refinement count from args (how many times we've refined)
-                        const refinementCount = args.refinementCount || 1;
-                        
-                        // After 1 refinement, be more lenient - only ask questions if confidence is low
-                        // After 2 refinements, always finalize
-                        const shouldFinalize = refinementCount >= 2 || refinedReview.confidence === 'high' || 
-                                             (refinementCount >= 1 && refinedReview.confidence === 'medium') ||
-                                             refinedReview.isComplete;
-                        
+                        const refinedReview = reviewDecomposition(refined, true);
+                        const refinementCount = args.refinementCount ?? 1;
+                        const shouldFinalize =
+                            refinementCount >= 2 ||
+                            refinedReview.confidence === 'high' ||
+                            (refinementCount >= 1 && refinedReview.confidence === 'medium') ||
+                            refinedReview.isComplete;
+
                         if (shouldFinalize) {
-                            // Auto-finalize if we've refined enough or confidence is good
                             functionResult = finalizeDecomposition(refined);
                         } else {
-                            // Only ask more questions if confidence is low and we haven't refined too much
                             const remainingQuestions = refinedReview.questions.slice(0, 2);
+                            const needsMore = refinedReview.confidence === 'low' && refinementCount < 2 && remainingQuestions.length > 0;
                             functionResult = {
                                 decomposition: refined,
                                 review: refinedReview,
-                                needsRefinement: refinedReview.confidence === 'low' && refinementCount < 2 && remainingQuestions.length > 0,
+                                needsRefinement: needsMore,
                                 refinementCount: refinementCount + 1,
-                                message: refinedReview.confidence === 'low' && refinementCount < 2 && remainingQuestions.length > 0
+                                message: needsMore
                                     ? `I've refined the plan. A couple more questions:\n${remainingQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nLet me know so I can finalize this!`
                                     : 'Perfect! The decomposition is now ready.'
                             };
                         }
                         break;
+                    }
                     case 'finalizeDecomposition':
                         functionResult = finalizeDecomposition(args.decomposition);
                         break;
                     case 'autofillDailyPlan':
-                        functionResult = await autofillDailyPlan(args, apiKey);
+                        functionResult = await autofillDailyPlan(args, apiKey, selectedModel);
                         break;
                     default:
                         throw new Error(`Unknown function: ${aiMessage.function_call.name}`);
                 }
 
-                // Return the function call and result for the frontend to handle
                 return res.status(200).json({
                     function_call: aiMessage.function_call,
                     function_result: functionResult,
                     original_response: data
                 });
-
             } catch (error) {
                 return res.status(400).json({
                     error: `Function execution failed: ${error.message}`,
@@ -1206,25 +424,15 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
             }
         }
 
-        // Return normal response
         return res.status(200).json(data);
     } catch (error) {
         console.error('Chat API error:', error);
         const errorMessage = error.message || 'Internal server error';
-        console.error('Error details:', {
-            message: errorMessage,
-            stack: error.stack,
-            name: error.name,
-            type: typeof error
-        });
-        return res.status(500).json({ 
-            error: errorMessage,
-            message: errorMessage 
-        });
+        return res.status(500).json({ error: errorMessage, message: errorMessage });
     }
-};
+}
 
-// Export functions for testing
+module.exports = handler;
 module.exports.createTask = createTask;
 module.exports.splitTask = splitTask;
 module.exports.updateTask = updateTask;
@@ -1241,6 +449,4 @@ module.exports.calculateConfidence = calculateConfidence;
 module.exports.generateSuggestions = generateSuggestions;
 module.exports.parseDeadline = parseDeadline;
 module.exports.autofillDailyPlan = autofillDailyPlan;
-
-// Export as default for Vercel compatibility
 module.exports.default = module.exports;

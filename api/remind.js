@@ -1,6 +1,8 @@
 // Vercel Serverless Function for sending task reminder SMS
 // Uses Textbelt API for SMS delivery
 
+const config = require('./lib/config');
+
 module.exports = async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,19 +41,13 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Recipient and task name are required' });
         }
 
-        // Phone numbers for SMS delivery via Textbelt
-        const validRecipients = {
-            'mario': '8458289353',
-            'maria': '5186185155'
-        };
-
+        const validRecipients = config.sms.getRecipients();
         const recipientPhone = validRecipients[recipient.toLowerCase()];
         if (!recipientPhone) {
             return res.status(400).json({ error: 'Invalid recipient. Must be "mario" or "maria"' });
         }
 
-        // Get Textbelt API key from environment
-        const textbeltApiKey = process.env.TEXTBELT_API_KEY;
+        const textbeltApiKey = config.sms.textbeltKey;
 
         if (!textbeltApiKey) {
             return res.status(200).json({
