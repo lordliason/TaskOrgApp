@@ -1,7 +1,7 @@
 // Vercel Serverless Function for OpenAI Chat with Function Calling
 // Thin handler: business logic lives in api/lib/
 
-const config = require('./lib/config');
+const config = require('./lib/appConfig');
 const {
     createTask,
     splitTask,

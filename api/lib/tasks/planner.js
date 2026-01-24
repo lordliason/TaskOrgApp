@@ -2,7 +2,7 @@
  * AI-powered daily plan autofill.
  */
 
-const config = require('../config');
+const config = require('../appConfig');
 const SIZE_MINUTES = config.tasks.sizeMinutes;
 const SIZE_LABELS = config.tasks.sizeLabels;
 const OUTSIDE_KEYWORDS = ['store', 'shop', 'depot', 'car', 'dmv', 'plates', 'pick up', 'pickup', 'return', 'buy', 'get', 'grocery', 'groceries', 'mall', 'bank', 'post office', 'pharmacy', 'doctor', 'dentist', 'appointment', 'errand', 'drive', 'drop off', 'dropoff'];

@@ -1,7 +1,7 @@
 // Vercel Serverless Function for sending task reminder SMS
 // Uses Textbelt API for SMS delivery
 
-const config = require('./lib/config');
+const config = require('./lib/appConfig');
 
 module.exports = async function handler(req, res) {
     // Set CORS headers
@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Invalid recipient. Must be "mario" or "maria"' });
         }
 
-        const textbeltApiKey = config.sms.textbeltKey;
+        const textbeltApiKey = config.sms.getTextbeltKey();
 
         if (!textbeltApiKey) {
             return res.status(200).json({

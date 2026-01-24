@@ -2,7 +2,7 @@
  * Task validation: assignees, sizes, and related rules.
  */
 
-const config = require('../config');
+const config = require('../appConfig');
 const VALID_ASSIGNEES_CREATE = config.tasks.validAssigneesCreate;
 const VALID_ASSIGNEES_UPDATE = config.tasks.validAssigneesUpdate;
 const VALID_SIZES = config.tasks.validSizes;
