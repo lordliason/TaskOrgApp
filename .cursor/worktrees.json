@@ -1,0 +1,17 @@
+{
+  "setup-worktree": [
+    "npm install",
+    "npm test -- --passWithNoTests"
+  ],
+  "env-example": {
+    "OPENAI_API_KEY": "sk-your-openai-api-key",
+    "SUPABASE_URL": "https://your-project.supabase.co",
+    "SUPABASE_ANON_KEY": "your-supabase-anon-key"
+  },
+  "recommended-extensions": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "orta.vscode-jest"
+  ],
+  "notes": "Run 'npm test' to verify setup. See README.md for Supabase and OpenAI configuration."
+}
