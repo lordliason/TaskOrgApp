@@ -8,11 +8,11 @@ function createTask(taskData, organizationId = null) {
         throw new Error('Task name and assignee are required');
     }
 
-    // For now, keep the existing assignee validation (mario, maria, both)
-    // In the future, this should validate against organization users
-    const validAssignees = ['mario', 'maria', 'both'];
-    if (!validAssignees.includes(taskData.assignee)) {
-        throw new Error(`Assignee must be one of: ${validAssignees.join(', ')}`);
+    // For multi-environment support, validate assignee against organization members
+    // Accept user IDs, 'all', or legacy values for backward compatibility
+    const validAssignees = ['mario', 'maria', 'both', 'all'];
+    if (!validAssignees.includes(taskData.assignee) && !taskData.assignee.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        throw new Error(`Assignee must be a valid user ID, 'all', or one of: ${validAssignees.join(', ')}`);
     }
 
     // Validate size values
@@ -149,7 +149,7 @@ function decomposeTask(taskDescription, organizationId = null) {
     const parentTask = {
         id: parentTaskId,
         name: taskDescription.name,
-        assignee: taskDescription.assignee || 'both',
+        assignee: taskDescription.assignee || 'all', // Default to 'all' for decomposed tasks
         size: 'xl', // Large tasks are decomposed
         urgent: taskDescription.urgent || 3,
         important: taskDescription.important || 3,
@@ -164,6 +164,10 @@ function decomposeTask(taskDescription, organizationId = null) {
         created_at: new Date().toISOString()
     };
 
+    // For dynamic assignee assignment, we'll use a simple round-robin approach
+    // In a real implementation, this would query the database for organization members
+    const defaultAssignees = ['mario', 'maria']; // Fallback for backward compatibility
+
     // Generate 3-6 subtasks based on the task description
     const subtasks = [];
     const subtaskCount = Math.floor(Math.random() * 4) + 3; // 3-6 subtasks
@@ -173,7 +177,7 @@ function decomposeTask(taskDescription, organizationId = null) {
         const subtask = {
             id: subtaskId,
             name: `Subtask ${i + 1} for "${taskDescription.name}"`,
-            assignee: i % 2 === 0 ? 'mario' : 'maria', // Alternate assignees
+            assignee: defaultAssignees[i % defaultAssignees.length], // Round-robin assignment
             size: ['s', 'm', 'l'][Math.floor(Math.random() * 3)], // Random size
             urgent: Math.floor(Math.random() * 3) + 2, // 2-4 urgency
             important: Math.floor(Math.random() * 3) + 2, // 2-4 importance
@@ -298,15 +302,20 @@ function reviewDecomposition(decomposition, isRefinement = false) {
     }
 
     // Check workload balance - only flag if very unbalanced (3+ task difference)
+    // For multi-environment support, this would need to be updated to check against actual organization members
     const marioTasks = subtasks.filter(t => t.assignee === 'mario').length;
     const mariaTasks = subtasks.filter(t => t.assignee === 'maria').length;
     const bothTasks = subtasks.filter(t => t.assignee === 'both').length;
+    const allTasks = subtasks.filter(t => t.assignee === 'all').length;
 
-    if (Math.abs(marioTasks - mariaTasks) > 2 && subtasks.length > 3) {
+    // Simplified balance check - in a real multi-environment system,
+    // this would compare against all organization members
+    const totalAssignedTasks = marioTasks + mariaTasks + bothTasks + allTasks;
+    if (totalAssignedTasks > 0 && Math.abs(marioTasks - mariaTasks) > 2 && subtasks.length > 3) {
         // Only ask if very unbalanced and we have enough tasks
         if (strictMode) {
             issues.push('Unbalanced workload');
-            questions.push('Would you prefer to balance the workload differently between Mario and Maria?');
+            questions.push('Would you prefer to balance the workload differently between team members?');
         }
     }
 

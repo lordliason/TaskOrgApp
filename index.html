@@ -179,6 +179,330 @@
             display: block;
         }
 
+        .login-links {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .create-account-link {
+            background: none;
+            border: none;
+            color: var(--accent-mario);
+            font-size: 0.875rem;
+            cursor: pointer;
+            text-decoration: underline;
+            font-family: inherit;
+        }
+
+        .create-account-link:hover {
+            color: var(--accent-mario-hover);
+        }
+
+        .environments-list {
+            margin-bottom: 1.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .environment-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .environment-item:hover {
+            border-color: var(--accent-mario);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.1);
+        }
+
+        .environment-info {
+            flex: 1;
+        }
+
+        .environment-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .environment-role {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .environment-select-btn {
+            background: var(--accent-mario);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .environment-select-btn:hover {
+            background: var(--accent-mario-hover);
+            transform: translateY(-1px);
+        }
+
+        .no-environments {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Environment Management */
+        .environment-btn {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .environment-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-mario);
+        }
+
+        .environment-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .environment-modal.show {
+            display: flex;
+        }
+
+        .environment-modal-content {
+            background: var(--bg-main);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .environment-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .environment-modal-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .environment-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .environment-modal-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .environment-modal-body {
+            padding: 1.5rem;
+        }
+
+        .environment-modal-body h4 {
+            margin: 1.5rem 0 0.5rem 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .environment-modal-body h4:first-child {
+            margin-top: 0;
+        }
+
+        .current-environment {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .environment-members-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .environment-member {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-mario);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .member-details {
+            flex: 1;
+        }
+
+        .member-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .member-email {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .member-role {
+            font-size: 0.75rem;
+            color: var(--accent-mario);
+            font-weight: 500;
+        }
+
+        .invite-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .invite-form input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .invite-form input:focus {
+            outline: none;
+            border-color: var(--accent-mario);
+        }
+
+        #sendInviteBtn {
+            background: var(--accent-mario);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        #sendInviteBtn:hover {
+            background: var(--accent-mario-hover);
+        }
+
+        #sendInviteBtn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .invite-status {
+            font-size: 0.875rem;
+            min-height: 1.2rem;
+        }
+
+        .invite-status.success {
+            color: #4ade80;
+        }
+
+        .invite-status.error {
+            color: #ef4444;
+        }
+
+        .environment-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .environment-actions button {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .environment-actions button:hover {
+            background: var(--bg-hover);
+        }
+
+        .danger-btn {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .danger-btn:hover {
+            background: #fef2f2;
+        }
+
         /* Connection Status */
         .connection-status {
             position: fixed;
@@ -4210,13 +4534,66 @@
     <div class="password-gate" id="passwordGate">
         <div class="login-box">
             <div class="password-logo">Task Matrix</div>
-            <div class="password-subtitle">Login to your organization</div>
+            <div class="password-subtitle">Sign in to your account</div>
             <div class="login-input-group">
-                <input type="text" class="login-input" id="usernameInput" placeholder="Username">
+                <input type="email" class="login-input" id="emailInput" placeholder="Email address">
                 <input type="password" class="login-input" id="passwordInput" placeholder="Password">
             </div>
-            <button type="button" class="password-btn" id="passwordBtn">Login</button>
-            <div class="password-error" id="passwordError">Invalid username or password</div>
+            <button type="button" class="password-btn" id="loginBtn">Sign In</button>
+            <div class="password-error" id="passwordError">Invalid email or password</div>
+            <div class="login-links">
+                <button type="button" class="create-account-link" id="createAccountLink">Create Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Account Modal -->
+    <div class="password-gate hidden" id="createAccountGate">
+        <div class="login-box">
+            <div class="password-logo">Task Matrix</div>
+            <div class="password-subtitle">Create your account</div>
+            <div class="login-input-group">
+                <input type="text" class="login-input" id="newNameInput" placeholder="Your name">
+                <input type="email" class="login-input" id="newEmailInput" placeholder="Email address">
+                <input type="password" class="login-input" id="newPasswordInput" placeholder="Password">
+                <input type="password" class="login-input" id="confirmPasswordInput" placeholder="Confirm password">
+            </div>
+            <button type="button" class="password-btn" id="createAccountBtn">Create Account</button>
+            <div class="password-error" id="createAccountError">Account creation failed</div>
+            <div class="login-links">
+                <button type="button" class="create-account-link" id="backToLoginLink">Back to Sign In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Environment Picker -->
+    <div class="password-gate hidden" id="environmentPickerGate">
+        <div class="login-box">
+            <div class="password-logo">Task Matrix</div>
+            <div class="password-subtitle">Select your environment</div>
+            <div id="environmentsList" class="environments-list">
+                <!-- Environments will be populated here -->
+            </div>
+            <button type="button" class="password-btn" id="createEnvironmentBtn">Create New Environment</button>
+            <div class="login-links">
+                <button type="button" class="create-account-link" id="logoutLink">Sign Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Environment Modal -->
+    <div class="password-gate hidden" id="createEnvironmentGate">
+        <div class="login-box">
+            <div class="password-logo">Task Matrix</div>
+            <div class="password-subtitle">Create new environment</div>
+            <div class="login-input-group">
+                <input type="text" class="login-input" id="newEnvironmentNameInput" placeholder="Environment name">
+            </div>
+            <button type="button" class="password-btn" id="createEnvironmentConfirmBtn">Create Environment</button>
+            <div class="password-error" id="createEnvironmentError">Environment creation failed</div>
+            <div class="login-links">
+                <button type="button" class="create-account-link" id="backToEnvironmentPickerLink">Back</button>
+            </div>
         </div>
     </div>
 
@@ -4248,23 +4625,18 @@
                     <div class="matrix-date" id="todayDate"></div>
                 </div>
                 <div class="score-display" id="scoreDisplay">
-                    <div class="score-player mario">
-                        <div class="score-avatar">M</div>
-                        <div class="score-info">
-                            <div class="score-points" id="marioScore">0</div>
-                            <div class="score-label">pts</div>
-                        </div>
-                    </div>
-                    <div class="score-divider">vs</div>
-                    <div class="score-player maria">
-                        <div class="score-avatar">A</div>
-                        <div class="score-info">
-                            <div class="score-points" id="mariaScore">0</div>
-                            <div class="score-label">pts</div>
-                        </div>
-                    </div>
+                    <!-- Score displays will be populated dynamically -->
                 </div>
                 <div class="header-actions">
+                    <button class="environment-btn" id="environmentBtn" title="Manage Environment">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Environment
+                    </button>
                     <button class="reset-day-btn" id="resetPointsBtn" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
@@ -4345,18 +4717,7 @@
 
             <!-- Assignee Filter -->
             <div class="assignee-filter" id="assigneeFilter">
-                <button class="assignee-filter-btn active" data-filter="all">
-                    <span class="filter-dot both"></span>
-                    All
-                </button>
-                <button class="assignee-filter-btn mario" data-filter="mario">
-                    <span class="filter-dot mario"></span>
-                    Mario
-                </button>
-                <button class="assignee-filter-btn maria" data-filter="maria">
-                    <span class="filter-dot maria"></span>
-                    Maria
-                </button>
+                <!-- Assignee filter buttons will be populated dynamically -->
             </div>
 
             <div id="taskList"></div>
@@ -4752,10 +5113,8 @@
 
             <div class="form-section">
                 <label class="form-label">Assigned To</label>
-                <div class="assignee-group">
-                    <button class="assignee-btn active" data-value="mario">Mario</button>
-                    <button class="assignee-btn" data-value="maria">Maria</button>
-                    <button class="assignee-btn" data-value="both">Mario Maria Both</button>
+                <div class="assignee-group" id="assigneeGroup">
+                    <!-- Assignee buttons will be populated dynamically -->
                 </div>
             </div>
 
@@ -4969,6 +5328,50 @@
                     <button class="view-task-action-btn split" id="viewTaskSplitBtn">Split Task</button>
                     <button class="view-task-action-btn delete" id="viewTaskDeleteBtn">Delete</button>
                     <button class="view-task-action-btn" id="viewTaskCloseBtn">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Environment Management Modal -->
+    <div class="environment-modal" id="environmentModal">
+        <div class="environment-modal-content">
+            <div class="environment-modal-header">
+                <h3>Environment Management</h3>
+                <button class="environment-modal-close" id="environmentModalClose">&times;</button>
+            </div>
+            <div class="environment-modal-body">
+                <div class="environment-info-section">
+                    <h4>Current Environment</h4>
+                    <div class="current-environment" id="currentEnvironment">
+                        <div class="environment-name" id="currentEnvironmentName"></div>
+                        <div class="environment-role" id="currentEnvironmentRole"></div>
+                    </div>
+                </div>
+
+                <div class="environment-members-section">
+                    <h4>Members</h4>
+                    <div class="environment-members-list" id="environmentMembersList">
+                        <!-- Members will be populated here -->
+                    </div>
+                </div>
+
+                <div class="environment-invite-section">
+                    <h4>Invite New Member</h4>
+                    <div class="invite-form">
+                        <input type="email" id="inviteEmailInput" placeholder="Email address" />
+                        <input type="text" id="inviteDisplayNameInput" placeholder="Display name" />
+                        <button id="sendInviteBtn">Send Invite</button>
+                    </div>
+                    <div class="invite-status" id="inviteStatus"></div>
+                </div>
+
+                <div class="environment-actions-section">
+                    <h4>Actions</h4>
+                    <div class="environment-actions">
+                        <button id="switchEnvironmentBtn">Switch Environment</button>
+                        <button id="leaveEnvironmentBtn" class="danger-btn">Leave Environment</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -5290,6 +5693,20 @@
             globalAiSend = document.getElementById('globalAiSend');
             modelSelector = document.getElementById('modelSelector');
             planModelSelector = document.getElementById('planModelSelector');
+
+            // Environment management elements
+            const environmentBtn = document.getElementById('environmentBtn');
+            const environmentModal = document.getElementById('environmentModal');
+            const environmentModalClose = document.getElementById('environmentModalClose');
+            const currentEnvironmentName = document.getElementById('currentEnvironmentName');
+            const currentEnvironmentRole = document.getElementById('currentEnvironmentRole');
+            const environmentMembersList = document.getElementById('environmentMembersList');
+            const inviteEmailInput = document.getElementById('inviteEmailInput');
+            const inviteDisplayNameInput = document.getElementById('inviteDisplayNameInput');
+            const sendInviteBtn = document.getElementById('sendInviteBtn');
+            const inviteStatus = document.getElementById('inviteStatus');
+            const switchEnvironmentBtn = document.getElementById('switchEnvironmentBtn');
+            const leaveEnvironmentBtn = document.getElementById('leaveEnvironmentBtn');
             
             // Initialize model selectors with stored preference
             const currentModel = getSelectedModel();
@@ -5410,8 +5827,9 @@
             async function handleLoginSubmit() {
                 console.log('Login submit triggered');
 
-                if (!usernameInput || !usernameInput.value || !passwordInput || !passwordInput.value) {
-                    console.error('Username or password input not found or empty');
+                const emailInput = document.getElementById('emailInput');
+                if (!emailInput || !emailInput.value || !passwordInput || !passwordInput.value) {
+                    console.error('Email or password input not found or empty');
                     return;
                 }
 
@@ -5419,46 +5837,49 @@
                     // Hash the password
                     const hashedPassword = await hashPassword(passwordInput.value);
 
-                    // Check user credentials
+                    // Check user credentials by email
                     const { data: user, error } = await supabaseClient
                         .from('users')
-                        .select('*, organizations(name)')
-                        .eq('username', usernameInput.value)
+                        .select('*')
+                        .eq('email', emailInput.value.trim().toLowerCase())
                         .eq('password_hash', hashedPassword)
                         .single();
 
                     if (!error && user) {
                         console.log('Login successful');
+
+                        // Get user's environments
+                        const { data: environments, error: envError } = await supabaseClient
+                            .rpc('get_user_environments', { user_email: user.email });
+
+                        if (envError) {
+                            console.error('Error fetching environments:', envError);
+                            if (passwordError) {
+                                passwordError.textContent = 'Error loading environments';
+                                passwordError.classList.add('show');
+                            }
+                            return;
+                        }
+
+                        if (!environments || environments.length === 0) {
+                            // User has no environments - they need to create one
+                            showEnvironmentPicker(user, []);
+                            return;
+                        }
+
+                        // Store user info temporarily
                         currentUser = {
                             id: user.id,
-                            username: user.username,
-                            displayName: user.display_name,
-                            organizationId: user.organization_id,
-                            organizationName: user.organizations.name
+                            email: user.email,
+                            displayName: user.display_name
                         };
 
-                        // Store session
-                        const sessionData = {
-                            userId: currentUser.id,
-                            username: currentUser.username,
-                            displayName: currentUser.displayName,
-                            organizationId: currentUser.organizationId,
-                            organizationName: currentUser.organizationName
-                        };
-                        localStorage.setItem('taskMatrixAuth', JSON.stringify(sessionData));
-
-                        // Update UI with user and organization info
-                        updateUIForUser();
-
-                        passwordGate.classList.add('hidden');
-                        if (passwordError) {
-                            passwordError.classList.remove('show');
-                        }
-                        // Initialize the app after authentication
-                        init();
+                        // Show environment picker
+                        showEnvironmentPicker(user, environments);
                     } else {
                         console.log('Login failed');
                         if (passwordError) {
+                            passwordError.textContent = 'Invalid email or password';
                             passwordError.classList.add('show');
                         }
                         passwordInput.value = '';
@@ -5467,14 +5888,91 @@
                 } catch (error) {
                     console.error('Login error:', error);
                     if (passwordError) {
+                        passwordError.textContent = 'Login failed';
                         passwordError.classList.add('show');
                     }
                 }
             }
 
+            async function handleCreateAccount() {
+                console.log('Create account triggered');
+
+                const newNameInput = document.getElementById('newNameInput');
+                const newEmailInput = document.getElementById('newEmailInput');
+                const newPasswordInput = document.getElementById('newPasswordInput');
+                const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+                const createAccountError = document.getElementById('createAccountError');
+
+                if (!newNameInput || !newNameInput.value.trim() ||
+                    !newEmailInput || !newEmailInput.value.trim() ||
+                    !newPasswordInput || !newPasswordInput.value ||
+                    !confirmPasswordInput || !confirmPasswordInput.value) {
+                    createAccountError.textContent = 'All fields are required';
+                    createAccountError.classList.add('show');
+                    return;
+                }
+
+                if (newPasswordInput.value !== confirmPasswordInput.value) {
+                    createAccountError.textContent = 'Passwords do not match';
+                    createAccountError.classList.add('show');
+                    return;
+                }
+
+                if (newPasswordInput.value.length < 6) {
+                    createAccountError.textContent = 'Password must be at least 6 characters';
+                    createAccountError.classList.add('show');
+                    return;
+                }
+
+                try {
+                    // Hash the password
+                    const hashedPassword = await hashPassword(newPasswordInput.value);
+
+                    // Create the user
+                    const { data: newUser, error } = await supabaseClient
+                        .from('users')
+                        .insert({
+                            username: newEmailInput.value.trim().toLowerCase().replace('@', '_').replace('.', '_'),
+                            email: newEmailInput.value.trim().toLowerCase(),
+                            password_hash: hashedPassword,
+                            display_name: newNameInput.value.trim()
+                        })
+                        .select()
+                        .single();
+
+                    if (!error && newUser) {
+                        console.log('Account created successfully');
+
+                        // Store user info temporarily
+                        currentUser = {
+                            id: newUser.id,
+                            email: newUser.email,
+                            displayName: newUser.display_name
+                        };
+
+                        // Show environment picker for new user
+                        showEnvironmentPicker(newUser, []);
+                    } else {
+                        console.error('Account creation failed:', error);
+                        createAccountError.textContent = error?.message || 'Account creation failed';
+                        createAccountError.classList.add('show');
+                    }
+                } catch (error) {
+                    console.error('Create account error:', error);
+                    createAccountError.textContent = 'Account creation failed';
+                    createAccountError.classList.add('show');
+                }
+            }
+
             // Add event listeners
-            if (passwordBtn) {
-                passwordBtn.addEventListener('click', handleLoginSubmit);
+            const loginBtn = document.getElementById('loginBtn');
+            const emailInput = document.getElementById('emailInput');
+            const createAccountLink = document.getElementById('createAccountLink');
+            const backToLoginLink = document.getElementById('backToLoginLink');
+            const createAccountBtn = document.getElementById('createAccountBtn');
+
+            if (loginBtn) {
+                loginBtn.addEventListener('click', handleLoginSubmit);
                 console.log('Login button event listener added');
             } else {
                 console.error('Login button not found');
@@ -5495,18 +5993,237 @@
                 console.error('Password input not found');
             }
 
-            if (usernameInput) {
-                // Handle Enter key on username input (move to password)
-                usernameInput.addEventListener('keydown', (e) => {
+            if (emailInput) {
+                // Handle Enter key on email input (move to password)
+                emailInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.keyCode === 13) {
                         e.preventDefault();
                         passwordInput.focus();
                         return false;
                     }
                 });
-                console.log('Username input event listener added');
+                console.log('Email input event listener added');
             } else {
-                console.error('Username input not found');
+                console.error('Email input not found');
+            }
+
+            if (createAccountLink) {
+                createAccountLink.addEventListener('click', () => {
+                    passwordGate.classList.add('hidden');
+                    createAccountGate.classList.remove('hidden');
+                    document.getElementById('newNameInput').focus();
+                });
+                console.log('Create account link event listener added');
+            }
+
+            if (backToLoginLink) {
+                backToLoginLink.addEventListener('click', () => {
+                    createAccountGate.classList.add('hidden');
+                    passwordGate.classList.remove('hidden');
+                    document.getElementById('emailInput').focus();
+                });
+                console.log('Back to login link event listener added');
+            }
+
+            if (createAccountBtn) {
+                createAccountBtn.addEventListener('click', handleCreateAccount);
+                console.log('Create account button event listener added');
+            }
+
+            // Handle Enter key on create account form
+            const newPasswordInput = document.getElementById('newPasswordInput');
+            const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+
+            if (confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        handleCreateAccount();
+                    }
+                });
+            }
+
+            // Environment creation event listeners
+            const createEnvironmentConfirmBtn = document.getElementById('createEnvironmentConfirmBtn');
+            const backToEnvironmentPickerLink = document.getElementById('backToEnvironmentPickerLink');
+            const newEnvironmentNameInput = document.getElementById('newEnvironmentNameInput');
+
+            if (createEnvironmentConfirmBtn) {
+                createEnvironmentConfirmBtn.addEventListener('click', handleCreateEnvironment);
+            }
+
+            if (backToEnvironmentPickerLink) {
+                backToEnvironmentPickerLink.addEventListener('click', () => {
+                    createEnvironmentGate.classList.add('hidden');
+                    environmentPickerGate.classList.remove('hidden');
+                });
+            }
+
+            if (newEnvironmentNameInput) {
+                newEnvironmentNameInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        handleCreateEnvironment();
+                    }
+                });
+            }
+
+            // Environment picker functions
+            async function showEnvironmentPicker(user, environments) {
+                console.log('Showing environment picker for user:', user.email);
+
+                // Hide login/create account screens
+                passwordGate.classList.add('hidden');
+                createAccountGate.classList.add('hidden');
+
+                const environmentsList = document.getElementById('environmentsList');
+                environmentsList.innerHTML = '';
+
+                if (environments && environments.length > 0) {
+                    environments.forEach(env => {
+                        const envItem = document.createElement('div');
+                        envItem.className = 'environment-item';
+                        envItem.innerHTML = `
+                            <div class="environment-info">
+                                <div class="environment-name">${env.organization_name}</div>
+                                <div class="environment-role">${env.is_owner ? 'Owner' : 'Member'}</div>
+                            </div>
+                            <button class="environment-select-btn" data-env-id="${env.organization_id}">
+                                Select
+                            </button>
+                        `;
+                        environmentsList.appendChild(envItem);
+                    });
+
+                    // Add event listeners to select buttons
+                    document.querySelectorAll('.environment-select-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const envId = btn.dataset.envId;
+                            const env = environments.find(e => e.organization_id === envId);
+                            selectEnvironment(user, env);
+                        });
+                    });
+                } else {
+                    environmentsList.innerHTML = '<div class="no-environments">No environments found. Create your first one!</div>';
+                }
+
+                // Show environment picker
+                environmentPickerGate.classList.remove('hidden');
+
+                // Add event listeners
+                document.getElementById('createEnvironmentBtn').addEventListener('click', () => {
+                    showCreateEnvironment();
+                });
+
+                document.getElementById('logoutLink').addEventListener('click', () => {
+                    logout();
+                });
+            }
+
+            async function selectEnvironment(user, environment) {
+                console.log('Selecting environment:', environment);
+
+                // Set current user with environment info
+                currentUser = {
+                    id: user.id,
+                    email: user.email,
+                    displayName: user.display_name,
+                    organizationId: environment.organization_id,
+                    organizationName: environment.organization_name,
+                    isOwner: environment.is_owner
+                };
+
+                // Store session
+                const sessionData = {
+                    userId: currentUser.id,
+                    email: currentUser.email,
+                    displayName: currentUser.displayName,
+                    organizationId: currentUser.organizationId,
+                    organizationName: currentUser.organizationName,
+                    isOwner: currentUser.isOwner
+                };
+                localStorage.setItem('taskMatrixAuth', JSON.stringify(sessionData));
+
+                // Update UI
+                updateUIForUser();
+
+                // Hide environment picker and show app
+                environmentPickerGate.classList.add('hidden');
+
+                // Initialize the app
+                init();
+            }
+
+            function showCreateEnvironment() {
+                environmentPickerGate.classList.add('hidden');
+                createEnvironmentGate.classList.remove('hidden');
+                document.getElementById('newEnvironmentNameInput').focus();
+            }
+
+            async function handleCreateEnvironment() {
+                const nameInput = document.getElementById('newEnvironmentNameInput');
+                const createEnvironmentError = document.getElementById('createEnvironmentError');
+
+                if (!nameInput || !nameInput.value.trim()) {
+                    createEnvironmentError.textContent = 'Environment name is required';
+                    createEnvironmentError.classList.add('show');
+                    return;
+                }
+
+                try {
+                    // Create the organization
+                    const { data: newOrg, error } = await supabaseClient
+                        .from('organizations')
+                        .insert({
+                            name: nameInput.value.trim(),
+                            owner_id: currentUser.id
+                        })
+                        .select()
+                        .single();
+
+                    if (!error && newOrg) {
+                        console.log('Environment created successfully');
+
+                        // Add the creator as a member
+                        const { error: memberError } = await supabaseClient
+                            .from('environment_members')
+                            .insert({
+                                user_id: currentUser.id,
+                                organization_id: newOrg.id,
+                                display_name: currentUser.displayName
+                            });
+
+                        if (memberError) {
+                            console.error('Error adding creator as member:', memberError);
+                        }
+
+                        // Select the new environment
+                        const environment = {
+                            organization_id: newOrg.id,
+                            organization_name: newOrg.name,
+                            is_owner: true
+                        };
+
+                        await selectEnvironment(currentUser, environment);
+                    } else {
+                        console.error('Environment creation failed:', error);
+                        createEnvironmentError.textContent = error?.message || 'Environment creation failed';
+                        createEnvironmentError.classList.add('show');
+                    }
+                } catch (error) {
+                    console.error('Create environment error:', error);
+                    createEnvironmentError.textContent = 'Environment creation failed';
+                    createEnvironmentError.classList.add('show');
+                }
+            }
+
+            function logout() {
+                localStorage.removeItem('taskMatrixAuth');
+                currentUser = null;
+                environmentPickerGate.classList.add('hidden');
+                createEnvironmentGate.classList.add('hidden');
+                passwordGate.classList.remove('hidden');
+                document.getElementById('emailInput').focus();
             }
 
             // Check if already authenticated
@@ -5550,6 +6267,7 @@
                 setupEventListeners();
                 initPlanEventListeners();
                 await loadTasks();
+                await populateAssigneeFilterButtons(); // Populate dynamic assignee filters
                 await loadTodayScores();
                 setupRealtimeSubscription();
                 renderTaskBank();
@@ -5579,23 +6297,47 @@
         async function loadTodayScores() {
             try {
                 const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+                // First, populate score displays based on environment members
+                await populateScoreDisplays();
+
                 const { data, error } = await supabaseClient
                     .from('scores')
-                    .select('player, points, tasks_completed')
+                    .select('user_id, player, points, tasks_completed')
                     .eq('date', today)
                     .eq('organization_id', currentUser.organizationId);
 
                 if (error) throw error;
 
-                // Reset scores
-                currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
+                // Reset scores - initialize for all environment members
+                currentScores = {};
+                environmentMembersCache.forEach(member => {
+                    const key = member.display_name.toLowerCase();
+                    currentScores[key] = { points: 0, tasks: 0, userId: member.user_id };
+                });
 
                 // Load existing scores
                 data.forEach(score => {
-                    currentScores[score.player] = {
-                        points: score.points,
-                        tasks: score.tasks_completed
-                    };
+                    // Try to match by user_id first, then fall back to player name
+                    let memberKey = null;
+                    if (score.user_id) {
+                        const member = environmentMembersCache.find(m => m.user_id === score.user_id);
+                        if (member) {
+                            memberKey = member.display_name.toLowerCase();
+                        }
+                    }
+                    if (!memberKey && score.player) {
+                        // Fallback for legacy data
+                        memberKey = score.player;
+                    }
+
+                    if (memberKey && currentScores[memberKey]) {
+                        currentScores[memberKey] = {
+                            points: score.points,
+                            tasks: score.tasks_completed,
+                            userId: score.user_id
+                        };
+                    }
                 });
 
                 updateScoreDisplay();
@@ -5604,29 +6346,114 @@
             }
         }
 
+        async function populateScoreDisplays() {
+            const scoreDisplay = document.getElementById('scoreDisplay');
+            if (!scoreDisplay) return;
+
+            try {
+                // Get environment members
+                const { data: members, error } = await supabaseClient
+                    .rpc('get_environment_members', { org_id: currentUser.organizationId });
+
+                if (error) throw error;
+
+                environmentMembersCache = members || [];
+
+                // Clear existing displays
+                scoreDisplay.innerHTML = '';
+
+                if (members && members.length > 0) {
+                    members.forEach((member, index) => {
+                        const playerDiv = document.createElement('div');
+                        playerDiv.className = 'score-player';
+                        playerDiv.innerHTML = `
+                            <div class="score-avatar">${member.display_name.charAt(0).toUpperCase()}</div>
+                            <div class="score-info">
+                                <div class="score-points" id="${member.display_name.toLowerCase()}Score">0</div>
+                                <div class="score-label">pts</div>
+                            </div>
+                        `;
+
+                        scoreDisplay.appendChild(playerDiv);
+
+                        // Add separator if not the last member
+                        if (index < members.length - 1) {
+                            const separator = document.createElement('div');
+                            separator.className = 'score-divider';
+                            separator.textContent = 'vs';
+                            scoreDisplay.appendChild(separator);
+                        }
+                    });
+                } else {
+                    // Fallback for no members
+                    scoreDisplay.innerHTML = `
+                        <div class="score-player mario">
+                            <div class="score-avatar">M</div>
+                            <div class="score-info">
+                                <div class="score-points" id="marioScore">0</div>
+                                <div class="score-label">pts</div>
+                            </div>
+                        </div>
+                        <div class="score-divider">vs</div>
+                        <div class="score-player maria">
+                            <div class="score-avatar">A</div>
+                            <div class="score-info">
+                                <div class="score-points" id="mariaScore">0</div>
+                                <div class="score-label">pts</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error populating score displays:', error);
+                // Fallback
+                scoreDisplay.innerHTML = `
+                    <div class="score-player mario">
+                        <div class="score-avatar">M</div>
+                        <div class="score-info">
+                            <div class="score-points" id="marioScore">0</div>
+                            <div class="score-label">pts</div>
+                        </div>
+                    </div>
+                    <div class="score-divider">vs</div>
+                    <div class="score-player maria">
+                        <div class="score-avatar">A</div>
+                        <div class="score-info">
+                            <div class="score-points" id="mariaScore">0</div>
+                            <div class="score-label">pts</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         async function resetScores() {
             try {
                 const today = new Date().toISOString().split('T')[0];
-                
-                // Reset local scores
-                currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
-                
-                // Update database for both players
-                const players = ['mario', 'maria'];
-                for (const player of players) {
+
+                // Reset local scores for all current members
+                Object.keys(currentScores).forEach(key => {
+                    currentScores[key].points = 0;
+                    currentScores[key].tasks = 0;
+                });
+
+                // Update database for all current scores
+                for (const [key, score] of Object.entries(currentScores)) {
                     await supabaseClient
                         .from('scores')
                         .upsert({
-                            player: player,
+                            user_id: score.userId,
+                            player: key, // Keep for backward compatibility
+                            organization_id: currentUser.organizationId,
                             date: today,
                             points: 0,
                             tasks_completed: 0,
                             updated_at: new Date().toISOString()
                         }, {
-                            onConflict: 'player,date'
+                            onConflict: score.userId ? 'user_id,date' : 'player,date'
                         });
                 }
-                
+
                 updateScoreDisplay();
                 console.log('Scores reset for today');
             } catch (error) {
@@ -5636,37 +6463,55 @@
 
         async function updatePlayerScore(player, pointsToAdd, tasksToAdd = 1) {
             try {
-                // Only allow mario or maria as players
-                if (player !== 'mario' && player !== 'maria') {
-                    console.warn('Invalid player for score:', player);
-                    return;
-                }
-
                 const today = new Date().toISOString().split('T')[0];
 
+                // Handle both legacy player names and dynamic user keys
+                let scoreKey = player;
+                let userId = null;
+
+                // Check if this is a legacy player name
+                if (player === 'mario' || player === 'maria') {
+                    const userMap = {
+                        mario: '550e8400-e29b-41d4-a716-446655440001',
+                        maria: '550e8400-e29b-41d4-a716-446655440002'
+                    };
+                    userId = userMap[player];
+                    scoreKey = player;
+                } else {
+                    // This might be a user ID or display name key
+                    if (currentScores[player]) {
+                        userId = currentScores[player].userId;
+                        scoreKey = player;
+                    } else {
+                        console.warn('Invalid player for score:', player);
+                        return;
+                    }
+                }
+
+                // Initialize score entry if it doesn't exist
+                if (!currentScores[scoreKey]) {
+                    currentScores[scoreKey] = { points: 0, tasks: 0, userId: userId };
+                }
+
                 // Update current scores
-                currentScores[player].points += pointsToAdd;
-                currentScores[player].tasks += tasksToAdd;
+                currentScores[scoreKey].points += pointsToAdd;
+                currentScores[scoreKey].tasks += tasksToAdd;
 
-                console.log('Updating score for', player, ':', currentScores[player]);
-
-                // Get user ID for the player
-                const userMap = { mario: '550e8400-e29b-41d4-a716-446655440001', maria: '550e8400-e29b-41d4-a716-446655440002' };
-                const userId = userMap[player];
+                console.log('Updating score for', scoreKey, ':', currentScores[scoreKey]);
 
                 // Update database
                 const { error } = await supabaseClient
                     .from('scores')
                     .upsert({
                         user_id: userId,
-                        player: player, // Keep for backward compatibility
+                        player: scoreKey, // Keep for backward compatibility
                         organization_id: currentUser.organizationId,
                         date: today,
-                        points: currentScores[player].points,
-                        tasks_completed: currentScores[player].tasks,
+                        points: currentScores[scoreKey].points,
+                        tasks_completed: currentScores[scoreKey].tasks,
                         updated_at: new Date().toISOString()
                     }, {
-                        onConflict: 'user_id,date'
+                        onConflict: userId ? 'user_id,date' : 'player,date'
                     });
 
                 if (error) {
@@ -5684,11 +6529,13 @@
         }
 
         function updateScoreDisplay() {
-            const marioScoreEl = document.getElementById('marioScore');
-            const mariaScoreEl = document.getElementById('mariaScore');
-            
-            if (marioScoreEl) marioScoreEl.textContent = currentScores.mario.points;
-            if (mariaScoreEl) mariaScoreEl.textContent = currentScores.maria.points;
+            // Update all score displays dynamically
+            Object.keys(currentScores).forEach(key => {
+                const scoreEl = document.getElementById(`${key}Score`);
+                if (scoreEl && currentScores[key]) {
+                    scoreEl.textContent = currentScores[key].points;
+                }
+            });
         }
 
         function getTaskPoints(size) {
@@ -6194,14 +7041,7 @@
                 }
             });
 
-            // Modal form controls
-            addTaskModal.querySelectorAll('.assignee-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    addTaskModal.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    selectedAssignee = btn.dataset.value;
-                });
-            });
+            // Modal form controls - assignee buttons are now dynamic, so this is handled in populateAssigneeButtons()
 
             addTaskModal.querySelectorAll('.icon-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -6474,6 +7314,373 @@
                     loadLeaderboard(period);
                 });
             });
+
+            // Environment management
+            if (environmentBtn) {
+                environmentBtn.addEventListener('click', () => {
+                    showEnvironmentModal();
+                });
+            }
+
+            if (environmentModalClose) {
+                environmentModalClose.addEventListener('click', () => {
+                    environmentModal.classList.remove('show');
+                });
+            }
+
+            if (sendInviteBtn) {
+                sendInviteBtn.addEventListener('click', handleSendInvite);
+            }
+
+            if (switchEnvironmentBtn) {
+                switchEnvironmentBtn.addEventListener('click', () => {
+                    environmentModal.classList.remove('show');
+                    logout(); // This will take them back to environment picker
+                });
+            }
+
+            if (leaveEnvironmentBtn) {
+                leaveEnvironmentBtn.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to leave this environment? You will lose access to all tasks.')) {
+                        try {
+                            // Remove user from environment
+                            const { error } = await supabaseClient
+                                .from('environment_members')
+                                .delete()
+                                .eq('user_id', currentUser.id)
+                                .eq('organization_id', currentUser.organizationId);
+
+                            if (error) throw error;
+
+                            environmentModal.classList.remove('show');
+                            logout();
+                        } catch (error) {
+                            console.error('Error leaving environment:', error);
+                            alert('Error leaving environment. Please try again.');
+                        }
+                    }
+                });
+            }
+        }
+
+        // ===========================================
+        // Dynamic Assignee System
+        // ===========================================
+        let environmentMembersCache = null;
+
+        async function getAssigneeDisplayName(assigneeValue) {
+            if (assigneeValue === 'all') {
+                return 'All Members';
+            }
+
+            // Try to get from cache first
+            if (!environmentMembersCache) {
+                try {
+                    const { data: members, error } = await supabaseClient
+                        .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                    if (!error && members) {
+                        environmentMembersCache = members;
+                    }
+                } catch (error) {
+                    console.error('Error loading members for display names:', error);
+                }
+            }
+
+            if (environmentMembersCache) {
+                const member = environmentMembersCache.find(m => m.user_id === assigneeValue);
+                if (member) {
+                    return member.display_name;
+                }
+            }
+
+            // Fallback: try to get from current user if it's their ID
+            if (assigneeValue === currentUser.id) {
+                return currentUser.displayName;
+            }
+
+            return 'Unknown';
+        }
+
+        async function getLegacyAssigneeName(assigneeValue) {
+            // For backward compatibility, map user IDs to legacy names where possible
+            if (assigneeValue === 'all') return 'both';
+            if (assigneeValue === currentUser.id) return currentUser.username || 'mario';
+            return 'mario'; // fallback
+        }
+        async function populateAssigneeButtons() {
+            const assigneeGroup = document.getElementById('assigneeGroup');
+            if (!assigneeGroup) return;
+
+            try {
+                // Get environment members
+                const { data: members, error } = await supabaseClient
+                    .rpc('get_environment_members', { org_id: currentUser.organizationId });
+
+                if (error) throw error;
+
+                // Clear existing buttons
+                assigneeGroup.innerHTML = '';
+
+                if (members && members.length > 0) {
+                    // Add individual member buttons
+                    members.forEach((member, index) => {
+                        const btn = document.createElement('button');
+                        btn.className = 'assignee-btn';
+                        btn.dataset.value = member.user_id;
+                        btn.textContent = member.display_name;
+                        if (index === 0) btn.classList.add('active'); // Default to first member
+
+                        // Add click handler
+                        btn.addEventListener('click', () => {
+                            assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            selectedAssignee = btn.dataset.value;
+                        });
+
+                        assigneeGroup.appendChild(btn);
+                    });
+
+                    // Add "All" button
+                    const allBtn = document.createElement('button');
+                    allBtn.className = 'assignee-btn';
+                    allBtn.dataset.value = 'all';
+                    allBtn.textContent = 'All Members';
+
+                    // Add click handler for "All" button
+                    allBtn.addEventListener('click', () => {
+                        assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                        allBtn.classList.add('active');
+                        selectedAssignee = 'all';
+                    });
+
+                    assigneeGroup.appendChild(allBtn);
+
+                    // Set default selection
+                    selectedAssignee = members[0].user_id;
+                } else {
+                    // Fallback if no members found
+                    assigneeGroup.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--text-muted);">No members available</div>';
+                    selectedAssignee = 'all';
+                }
+            } catch (error) {
+                console.error('Error loading environment members for assignees:', error);
+                // Fallback to basic options
+                assigneeGroup.innerHTML = `
+                    <button class="assignee-btn active" data-value="all">All Members</button>
+                `;
+                selectedAssignee = 'all';
+            }
+        }
+
+        async function populateAssigneeFilterButtons() {
+            const assigneeFilter = document.getElementById('assigneeFilter');
+            if (!assigneeFilter) return;
+
+            try {
+                // Get environment members
+                const { data: members, error } = await supabaseClient
+                    .rpc('get_environment_members', { org_id: currentUser.organizationId });
+
+                if (error) throw error;
+
+                // Clear existing buttons
+                assigneeFilter.innerHTML = '';
+
+                // Add "All" button
+                const allBtn = document.createElement('button');
+                allBtn.className = 'assignee-filter-btn active';
+                allBtn.dataset.filter = 'all';
+                allBtn.innerHTML = '<span class="filter-dot both"></span>All';
+                allBtn.addEventListener('click', () => {
+                    document.querySelectorAll('.assignee-filter-btn').forEach(b => b.classList.remove('active'));
+                    allBtn.classList.add('active');
+                    taskFilterAssignee = 'all';
+                    renderTaskList();
+                    updateTaskCount();
+                });
+                assigneeFilter.appendChild(allBtn);
+
+                if (members && members.length > 0) {
+                    // Add individual member filter buttons
+                    members.forEach(member => {
+                        const btn = document.createElement('button');
+                        btn.className = 'assignee-filter-btn';
+                        btn.dataset.filter = member.user_id;
+                        btn.innerHTML = `<span class="filter-dot" style="background: var(--accent-mario);"></span>${member.display_name}`;
+
+                        btn.addEventListener('click', () => {
+                            document.querySelectorAll('.assignee-filter-btn').forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            taskFilterAssignee = member.user_id;
+                            renderTaskList();
+                            updateTaskCount();
+                        });
+
+                        assigneeFilter.appendChild(btn);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading environment members for filters:', error);
+                // Fallback
+                assigneeFilter.innerHTML = `
+                    <button class="assignee-filter-btn active" data-filter="all">
+                        <span class="filter-dot both"></span>All
+                    </button>
+                `;
+            }
+        }
+
+        // ===========================================
+        // Environment Management Functions
+        // ===========================================
+        async function showEnvironmentModal() {
+            if (!currentUser) return;
+
+            // Update current environment info
+            if (currentEnvironmentName) {
+                currentEnvironmentName.textContent = currentUser.organizationName;
+            }
+            if (currentEnvironmentRole) {
+                currentEnvironmentRole.textContent = currentUser.isOwner ? 'Owner' : 'Member';
+            }
+
+            // Load environment members
+            await loadEnvironmentMembers();
+
+            // Show modal
+            environmentModal.classList.add('show');
+        }
+
+        async function loadEnvironmentMembers() {
+            try {
+                const { data: members, error } = await supabaseClient
+                    .rpc('get_environment_members', { org_id: currentUser.organizationId });
+
+                if (error) throw error;
+
+                environmentMembersList.innerHTML = '';
+
+                if (members && members.length > 0) {
+                    members.forEach(member => {
+                        const memberElement = document.createElement('div');
+                        memberElement.className = 'environment-member';
+                        memberElement.innerHTML = `
+                            <div class="member-info">
+                                <div class="member-avatar">${member.display_name.charAt(0).toUpperCase()}</div>
+                                <div class="member-details">
+                                    <div class="member-name">${member.display_name}</div>
+                                    <div class="member-email">${member.email}</div>
+                                </div>
+                            </div>
+                            <div class="member-role">${member.is_owner ? 'Owner' : 'Member'}</div>
+                        `;
+                        environmentMembersList.appendChild(memberElement);
+                    });
+                } else {
+                    environmentMembersList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">No members found</div>';
+                }
+            } catch (error) {
+                console.error('Error loading environment members:', error);
+                environmentMembersList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #ef4444;">Error loading members</div>';
+            }
+        }
+
+        async function handleSendInvite() {
+            const email = inviteEmailInput.value.trim();
+            const displayName = inviteDisplayNameInput.value.trim();
+
+            if (!email || !displayName) {
+                inviteStatus.textContent = 'Please fill in both fields';
+                inviteStatus.className = 'invite-status error';
+                return;
+            }
+
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                inviteStatus.textContent = 'Please enter a valid email address';
+                inviteStatus.className = 'invite-status error';
+                return;
+            }
+
+            try {
+                sendInviteBtn.disabled = true;
+                sendInviteBtn.textContent = 'Sending...';
+                inviteStatus.textContent = '';
+                inviteStatus.className = 'invite-status';
+
+                // Check if user already exists
+                const { data: existingUser, error: userError } = await supabaseClient
+                    .from('users')
+                    .select('id, email')
+                    .eq('email', email)
+                    .single();
+
+                let userId;
+                if (existingUser) {
+                    userId = existingUser.id;
+                } else {
+                    // Create new user account (they'll set password later when they accept)
+                    const { data: newUser, error: createError } = await supabaseClient
+                        .from('users')
+                        .insert({
+                            username: email.toLowerCase().replace('@', '_').replace('.', '_'),
+                            email: email,
+                            password_hash: 'pending', // They'll need to set this when accepting
+                            display_name: displayName
+                        })
+                        .select()
+                        .single();
+
+                    if (createError) throw createError;
+                    userId = newUser.id;
+                }
+
+                // Check if user is already a member
+                const { data: existingMember, error: memberError } = await supabaseClient
+                    .from('environment_members')
+                    .select('id')
+                    .eq('user_id', userId)
+                    .eq('organization_id', currentUser.organizationId)
+                    .single();
+
+                if (existingMember) {
+                    inviteStatus.textContent = 'User is already a member of this environment';
+                    inviteStatus.className = 'invite-status error';
+                    sendInviteBtn.disabled = false;
+                    sendInviteBtn.textContent = 'Send Invite';
+                    return;
+                }
+
+                // Create invitation
+                const { error: inviteError } = await supabaseClient
+                    .from('environment_invitations')
+                    .insert({
+                        organization_id: currentUser.organizationId,
+                        email: email,
+                        invited_by: currentUser.id,
+                        display_name: displayName
+                    });
+
+                if (inviteError) throw inviteError;
+
+                // Success
+                inviteStatus.textContent = 'Invitation sent successfully!';
+                inviteStatus.className = 'invite-status success';
+                inviteEmailInput.value = '';
+                inviteDisplayNameInput.value = '';
+
+                // Reload members list
+                await loadEnvironmentMembers();
+
+            } catch (error) {
+                console.error('Error sending invite:', error);
+                inviteStatus.textContent = error.message || 'Error sending invitation';
+                inviteStatus.className = 'invite-status error';
+            } finally {
+                sendInviteBtn.disabled = false;
+                sendInviteBtn.textContent = 'Send Invite';
+            }
         }
 
         // ===========================================
@@ -8369,7 +9576,8 @@
             // Filter tasks by assignee
             const filteredTasks = tasks.filter(task => {
                 if (taskFilterAssignee === 'all') return true;
-                if (taskFilterAssignee === 'mario') return task.assignee === 'mario' || task.assignee === 'both';
+                // For backward compatibility, handle both old and new assignee formats
+                if (taskFilterAssignee === 'mario') return task.assignee === 'mario' || task.assignee === 'both' || task.assignee === currentUser.id;
                 if (taskFilterAssignee === 'maria') return task.assignee === 'maria' || task.assignee === 'both';
                 return true;
             });
@@ -8559,7 +9767,11 @@
                 const option = document.createElement('option');
                 option.value = task.id;
                 const icon = task.icon ? `${task.icon} ` : '';
-                const assigneeLabel = task.assignee === 'mario' ? '(M)' : task.assignee === 'maria' ? '(A)' : '(Both)';
+                let assigneeLabel = '(All)';
+                if (task.assignee === 'mario') assigneeLabel = '(M)';
+                else if (task.assignee === 'maria') assigneeLabel = '(A)';
+                else if (task.assignee === 'both') assigneeLabel = '(Both)';
+                else if (task.assignee === currentUser.id) assigneeLabel = `(${currentUser.displayName.charAt(0)})`;
                 option.textContent = `${icon}${task.name} ${assigneeLabel}`;
                 modalDependsOn.appendChild(option);
             });
@@ -8578,7 +9790,7 @@
             if (modalTitle) modalTitle.textContent = 'Add Task';
             modalAddTaskBtn.textContent = 'Add Task';
             modalTaskName.value = '';
-            
+
             // Clear location and dependency fields
             if (modalLocation) modalLocation.value = '';
             if (modalDependsOn) {
@@ -8587,7 +9799,10 @@
                 const hint = document.getElementById('dependencyHint');
                 if (hint) hint.style.display = 'none';
             }
-            
+
+            // Populate assignee buttons dynamically
+            populateAssigneeButtons();
+
             addTaskModal.classList.add('show');
             modalTaskName.focus();
 
@@ -8602,7 +9817,7 @@
             
             // Populate modal with task data
             modalTaskName.value = task.name || '';
-            selectedAssignee = task.assignee || 'mario';
+            selectedAssignee = task.assignee || currentUser.id;
             selectedSize = task.size || 'm';
             selectedUrgent = task.urgent || 3;
             selectedImportant = task.important || 3;
@@ -10609,8 +11824,31 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     recipients.push('mario');
                 } else if (task.assignee === 'maria') {
                     recipients.push('maria');
-                } else if (task.assignee === 'both') {
-                    recipients.push('mario', 'maria');
+                } else if (task.assignee === 'both' || task.assignee === 'all') {
+                    // For 'all' tasks, notify all members
+                    try {
+                        const { data: members, error } = await supabaseClient
+                            .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                        if (!error && members) {
+                            members.forEach(member => {
+                                if (member.user_id !== currentUser.id) { // Don't notify the creator
+                                    recipients.push(member.display_name.toLowerCase());
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error getting members for notification:', error);
+                    }
+                } else if (task.assignee === currentUser.id) {
+                    // Task assigned to current user - no notification needed
+                } else {
+                    // Task assigned to another user - try to find their name
+                    try {
+                        const assigneeName = await getAssigneeDisplayName(task.assignee);
+                        recipients.push(assigneeName.toLowerCase());
+                    } catch (error) {
+                        console.error('Error getting assignee name for notification:', error);
+                    }
                 }
                 
                 console.log('New task notification:', { taskName: task.name, assignee: task.assignee, recipients });
@@ -10661,10 +11899,30 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 } else if (task.assignee === 'maria') {
                     // Task assigned to Maria -> notify Mario when it's completed
                     notifyRecipient = 'mario';
-                } else if (task.assignee === 'both') {
-                    // Task assigned to both -> notify the person who didn't complete it
-                    if (completedBy === 'mario') {
-                        notifyRecipient = 'maria';
+                } else if (task.assignee === 'both' || task.assignee === 'all') {
+                    // Task assigned to all -> notify all other members
+                    try {
+                        const { data: members, error } = await supabaseClient
+                            .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                        if (!error && members) {
+                            const otherMembers = members.filter(m => m.user_id !== currentUser.id);
+                            if (otherMembers.length > 0) {
+                                notifyRecipient = otherMembers[0].display_name.toLowerCase(); // Just notify first other member for now
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error getting members for completion notification:', error);
+                    }
+                } else if (task.assignee === currentUser.id) {
+                    // Task assigned to current user - no notification needed
+                } else {
+                    // Task assigned to another specific user - notify them
+                    try {
+                        notifyRecipient = await getAssigneeDisplayName(task.assignee);
+                        notifyRecipient = notifyRecipient.toLowerCase();
+                    } catch (error) {
+                        console.error('Error getting assignee name for completion notification:', error);
+                    }
                     } else if (completedBy === 'maria') {
                         notifyRecipient = 'mario';
                     }
