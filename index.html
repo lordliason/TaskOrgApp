@@ -11952,9 +11952,6 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     } catch (error) {
                         console.error('Error getting assignee name for completion notification:', error);
                     }
-                    } else if (completedBy === 'maria') {
-                        notifyRecipient = 'mario';
-                    }
                 }
                 
                 console.log('Completion notification check:', { assignee: task.assignee, completedBy, notifyRecipient });
