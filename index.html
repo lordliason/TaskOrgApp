@@ -7611,19 +7611,26 @@
 
                 console.log('Environment members loaded:', members);
 
+                // Preserve current selectedAssignee before clearing buttons
+                const preservedAssignee = selectedAssignee;
+
                 // Clear existing buttons
                 assigneeGroup.innerHTML = '';
 
                 if (members && members.length > 0) {
+                    let foundMatchingButton = false;
+
                     // Add individual member buttons
                     members.forEach((member, index) => {
                         const btn = document.createElement('button');
                         btn.className = 'assignee-btn';
                         btn.dataset.value = member.user_id;
                         btn.textContent = member.display_name || member.email || 'Unknown';
-                        if (index === 0) {
-                            btn.classList.add('active'); // Default to first member
-                            selectedAssignee = member.user_id;
+                        
+                        // Check if this button matches the preserved assignee
+                        if (preservedAssignee === member.user_id) {
+                            btn.classList.add('active');
+                            foundMatchingButton = true;
                         }
 
                         // Add click handler
@@ -7641,6 +7648,12 @@
                     allBtn.className = 'assignee-btn';
                     allBtn.dataset.value = 'all';
                     allBtn.textContent = 'All Members';
+                    
+                    // Check if "All" matches the preserved assignee
+                    if (preservedAssignee === 'all') {
+                        allBtn.classList.add('active');
+                        foundMatchingButton = true;
+                    }
 
                     // Add click handler for "All" button
                     allBtn.addEventListener('click', () => {
@@ -7650,6 +7663,26 @@
                     });
 
                     assigneeGroup.appendChild(allBtn);
+
+                    // If no matching button was found, default to first member (but only if selectedAssignee wasn't explicitly set)
+                    if (!foundMatchingButton && (!preservedAssignee || preservedAssignee === 'mario' || preservedAssignee === 'maria' || preservedAssignee === 'both')) {
+                        // Legacy assignee value or no assignee - default to first member
+                        const firstBtn = assigneeGroup.querySelector('.assignee-btn[data-value]');
+                        if (firstBtn) {
+                            assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                            firstBtn.classList.add('active');
+                            selectedAssignee = firstBtn.dataset.value;
+                        }
+                    } else if (!foundMatchingButton) {
+                        // Preserve the selectedAssignee even if no button matches (might be a user ID not in members list)
+                        // Default to first member as fallback
+                        const firstBtn = assigneeGroup.querySelector('.assignee-btn[data-value]');
+                        if (firstBtn) {
+                            assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                            firstBtn.classList.add('active');
+                            selectedAssignee = firstBtn.dataset.value;
+                        }
+                    }
                 } else {
                     // Fallback if no members found
                     console.warn('No members found in organization');
@@ -10014,7 +10047,18 @@
             
             // Populate modal with task data
             modalTaskName.value = task.name || '';
-            selectedAssignee = task.assignee || (currentUser ? currentUser.id : 'all');
+            
+            // Convert legacy assignee values to new format
+            let assigneeValue = task.assignee || (currentUser ? currentUser.id : 'all');
+            if (assigneeValue === 'both') {
+                assigneeValue = 'all'; // Convert legacy 'both' to 'all'
+            } else if (assigneeValue === 'mario' || assigneeValue === 'maria') {
+                // Try to find the user ID for legacy usernames
+                // If we can't find it, keep the value as-is (might be a user ID already)
+                // The populateAssigneeButtons will handle matching it to buttons
+            }
+            selectedAssignee = assigneeValue;
+            
             selectedSize = task.size || 'm';
             selectedUrgent = task.urgent || 3;
             selectedImportant = task.important || 3;
