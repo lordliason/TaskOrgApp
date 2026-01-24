@@ -69,7 +69,10 @@ describe('Leaderboard Functions', () => {
                 end: today.toISOString().split('T')[0]
             };
 
-            expect(result.start).toBeLessThanOrEqual(result.end);
+            // Week start should be before or equal to today
+            const startDate = new Date(result.start);
+            const endDate = new Date(result.end);
+            expect(startDate.getTime()).toBeLessThanOrEqual(endDate.getTime());
         });
 
         test('should return month range for "month" period', () => {
@@ -81,7 +84,10 @@ describe('Leaderboard Functions', () => {
                 end: today.toISOString().split('T')[0]
             };
 
-            expect(result.start).toBeLessThanOrEqual(result.end);
+            // Month start should be before or equal to today
+            const startDate = new Date(result.start);
+            const endDate = new Date(result.end);
+            expect(startDate.getTime()).toBeLessThanOrEqual(endDate.getTime());
         });
 
         test('should return year range for "year" period', () => {
@@ -93,7 +99,12 @@ describe('Leaderboard Functions', () => {
                 end: today.toISOString().split('T')[0]
             };
 
-            expect(result.start).toBeLessThanOrEqual(result.end);
+            // Year start should be before or equal to today
+            const startDate = new Date(result.start);
+            const endDate = new Date(result.end);
+            expect(startDate.getTime()).toBeLessThanOrEqual(endDate.getTime());
+            // Check that start date is January 1st of current year
+            expect(result.start).toMatch(/^\d{4}-01-01$/);
         });
     });
 
