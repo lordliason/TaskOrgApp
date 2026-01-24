@@ -7496,14 +7496,40 @@
         }
         async function populateAssigneeButtons() {
             const assigneeGroup = document.getElementById('assigneeGroup');
-            if (!assigneeGroup) return;
+            if (!assigneeGroup) {
+                console.error('Assignee group element not found');
+                return;
+            }
+
+            // Check if user is logged in
+            if (!currentUser) {
+                console.error('No current user, cannot populate assignee buttons');
+                assigneeGroup.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--text-muted);">Please log in</div>';
+                selectedAssignee = 'all';
+                return;
+            }
+
+            // Check if organizationId is set
+            if (!currentUser.organizationId) {
+                console.error('No organizationId in currentUser:', currentUser);
+                assigneeGroup.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--text-muted);">Organization not set</div>';
+                selectedAssignee = 'all';
+                return;
+            }
 
             try {
+                console.log('Loading environment members for organization:', currentUser.organizationId);
+                
                 // Get environment members
                 const { data: members, error } = await supabaseClient
                     .rpc('get_environment_members', { org_id: currentUser.organizationId });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Error fetching environment members:', error);
+                    throw error;
+                }
+
+                console.log('Environment members loaded:', members);
 
                 // Clear existing buttons
                 assigneeGroup.innerHTML = '';
@@ -7514,8 +7540,11 @@
                         const btn = document.createElement('button');
                         btn.className = 'assignee-btn';
                         btn.dataset.value = member.user_id;
-                        btn.textContent = member.display_name;
-                        if (index === 0) btn.classList.add('active'); // Default to first member
+                        btn.textContent = member.display_name || member.email || 'Unknown';
+                        if (index === 0) {
+                            btn.classList.add('active'); // Default to first member
+                            selectedAssignee = member.user_id;
+                        }
 
                         // Add click handler
                         btn.addEventListener('click', () => {
@@ -7541,11 +7570,9 @@
                     });
 
                     assigneeGroup.appendChild(allBtn);
-
-                    // Set default selection
-                    selectedAssignee = members[0].user_id;
                 } else {
                     // Fallback if no members found
+                    console.warn('No members found in organization');
                     assigneeGroup.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--text-muted);">No members available</div>';
                     selectedAssignee = 'all';
                 }
@@ -9888,29 +9915,35 @@
             }
 
             // Populate assignee buttons dynamically
-            populateAssigneeButtons();
+            populateAssigneeButtons().then(() => {
+                // Sync modal state after buttons are populated
+                syncModalState();
+            });
 
             addTaskModal.classList.add('show');
             modalTaskName.focus();
 
-            // Sync modal state with current selections
+            // Sync modal state with current selections (will sync again after buttons load)
             syncModalState();
         }
 
-        function openEditTaskModal(task) {
+        async function openEditTaskModal(task) {
             editingTaskId = task.id;
             if (modalTitle) modalTitle.textContent = 'Edit Task';
             modalAddTaskBtn.textContent = 'Save Changes';
             
             // Populate modal with task data
             modalTaskName.value = task.name || '';
-            selectedAssignee = task.assignee || currentUser.id;
+            selectedAssignee = task.assignee || (currentUser ? currentUser.id : 'all');
             selectedSize = task.size || 'm';
             selectedUrgent = task.urgent || 3;
             selectedImportant = task.important || 3;
             selectedIcon = task.icon || null;
             modalFirstStep.value = task.first_step || '';
             modalCompletionCriteria.value = task.completion_criteria || '';
+            
+            // Populate assignee buttons dynamically (must be done before syncing state)
+            await populateAssigneeButtons();
             
             // Populate deadline
             if (modalDeadline && task.deadline) {
@@ -9952,8 +9985,20 @@
                 }
             }
             
-            // Sync modal state
+            // Sync modal state (after assignee buttons are populated)
             syncModalState();
+            
+            // Ensure assignee button is highlighted
+            setTimeout(() => {
+                const assigneeGroup = document.getElementById('assigneeGroup');
+                if (assigneeGroup && selectedAssignee) {
+                    const activeBtn = assigneeGroup.querySelector(`[data-value="${selectedAssignee}"]`);
+                    if (activeBtn) {
+                        assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                        activeBtn.classList.add('active');
+                    }
+                }
+            }, 50);
             
             addTaskModal.classList.add('show');
             modalTaskName.focus();
