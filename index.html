@@ -10048,14 +10048,30 @@
             // Populate modal with task data
             modalTaskName.value = task.name || '';
             
-            // Convert legacy assignee values to new format
-            let assigneeValue = task.assignee || (currentUser ? currentUser.id : 'all');
-            if (assigneeValue === 'both') {
-                assigneeValue = 'all'; // Convert legacy 'both' to 'all'
-            } else if (assigneeValue === 'mario' || assigneeValue === 'maria') {
-                // Try to find the user ID for legacy usernames
-                // If we can't find it, keep the value as-is (might be a user ID already)
-                // The populateAssigneeButtons will handle matching it to buttons
+            // Convert legacy assignee values to new format (buttons use user IDs)
+            let assigneeValue = 'all';
+            if (task.assignee_id) {
+                // Use assignee_id if available (new format)
+                assigneeValue = task.assignee_id;
+            } else if (task.assignee === 'both' || task.assignee === 'all') {
+                assigneeValue = 'all';
+            } else if (task.assignee === 'mario' || task.assignee === 'maria') {
+                // Map legacy usernames to user IDs from environment members cache
+                if (environmentMembersCache) {
+                    const member = environmentMembersCache.find(m => 
+                        m.display_name && m.display_name.toLowerCase() === task.assignee.toLowerCase()
+                    );
+                    if (member) {
+                        assigneeValue = member.user_id;
+                    }
+                }
+                // Fallback to current user if they match
+                if (assigneeValue === 'all' && currentUser) {
+                    const currentUserName = (currentUser.displayName || currentUser.username || '').toLowerCase();
+                    if (currentUserName === task.assignee.toLowerCase()) {
+                        assigneeValue = currentUser.id;
+                    }
+                }
             }
             selectedAssignee = assigneeValue;
             
@@ -10281,18 +10297,27 @@
             const locationValue = modalLocation ? modalLocation.value.trim() : null;
             const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
 
-            // Handle assignee and assignee_id according to database constraint:
-            // assignee must be 'all' OR assignee_id must be NOT NULL
-            let assigneeValue = 'all';
+            // Handle assignee and assignee_id - map user IDs to legacy names for display
+            let assigneeValue = 'both';
             let assigneeIdValue = null;
             
             if (selectedAssignee === 'all') {
-                assigneeValue = 'all';
+                assigneeValue = 'both';
                 assigneeIdValue = null;
             } else if (selectedAssignee) {
-                // selectedAssignee is a user ID
-                assigneeValue = 'all';
+                // selectedAssignee is a user ID - get the display name from cache
                 assigneeIdValue = selectedAssignee;
+                // Map UUID to legacy name for display (CSS uses these for colors)
+                if (environmentMembersCache) {
+                    const member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
+                    if (member && member.display_name) {
+                        assigneeValue = member.display_name.toLowerCase();
+                    }
+                }
+                // Fallback: if we can't find the name, use the current user's name
+                if (assigneeValue === 'both' && currentUser && selectedAssignee === currentUser.id) {
+                    assigneeValue = (currentUser.displayName || currentUser.username || 'mario').toLowerCase();
+                }
             }
 
             const task = {
@@ -10388,18 +10413,27 @@
             const locationValue = modalLocation ? modalLocation.value.trim() : null;
             const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
 
-            // Handle assignee and assignee_id according to database constraint:
-            // assignee must be 'all' OR assignee_id must be NOT NULL
-            let assigneeValue = 'all';
+            // Handle assignee and assignee_id - map user IDs to legacy names for display
+            let assigneeValue = 'both';
             let assigneeIdValue = null;
             
             if (selectedAssignee === 'all') {
-                assigneeValue = 'all';
+                assigneeValue = 'both';
                 assigneeIdValue = null;
             } else if (selectedAssignee) {
-                // selectedAssignee is a user ID
-                assigneeValue = 'all';
+                // selectedAssignee is a user ID - get the display name from cache
                 assigneeIdValue = selectedAssignee;
+                // Map UUID to legacy name for display (CSS uses these for colors)
+                if (environmentMembersCache) {
+                    const member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
+                    if (member && member.display_name) {
+                        assigneeValue = member.display_name.toLowerCase();
+                    }
+                }
+                // Fallback: if we can't find the name, use the current user's name
+                if (assigneeValue === 'both' && currentUser && selectedAssignee === currentUser.id) {
+                    assigneeValue = (currentUser.displayName || currentUser.username || 'mario').toLowerCase();
+                }
             }
 
             const updateData = {
