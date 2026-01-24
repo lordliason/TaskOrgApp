@@ -10335,10 +10335,8 @@
                                 const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                                 if (foundMember && foundMember.display_name) {
                                     assigneeValue = foundMember.display_name.toLowerCase();
-                                    // Update cache for future use
-                                    if (!environmentMembersCache) {
-                                        environmentMembersCache = envMember;
-                                    }
+                                    // Update cache for future use (always update if we fetched fresh data)
+                                    environmentMembersCache = envMember;
                                 }
                             }
                         }
@@ -10493,10 +10491,8 @@
                                 const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                                 if (foundMember && foundMember.display_name) {
                                     assigneeValue = foundMember.display_name.toLowerCase();
-                                    // Update cache for future use
-                                    if (!environmentMembersCache) {
-                                        environmentMembersCache = envMember;
-                                    }
+                                    // Update cache for future use (always update if we fetched fresh data)
+                                    environmentMembersCache = envMember;
                                 }
                             }
                         }
