@@ -2,6 +2,7 @@
  * AI-powered daily plan autofill.
  */
 
+// Import from api/lib/appConfig.js (go up one level from api/lib/tasks/ to api/lib/)
 const config = require('../appConfig');
 const SIZE_MINUTES = config.tasks.sizeMinutes;
 const SIZE_LABELS = config.tasks.sizeLabels;

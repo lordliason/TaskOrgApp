@@ -2,6 +2,7 @@
  * Task validation: assignees, sizes, and related rules.
  */
 
+// Import from api/lib/appConfig.js (go up one level from api/lib/validation/ to api/lib/)
 const config = require('../appConfig');
 const VALID_ASSIGNEES_CREATE = config.tasks.validAssigneesCreate;
 const VALID_ASSIGNEES_UPDATE = config.tasks.validAssigneesUpdate;

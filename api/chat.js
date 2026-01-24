@@ -1,6 +1,7 @@
 // Vercel Serverless Function for OpenAI Chat with Function Calling
 // Thin handler: business logic lives in api/lib/
 
+// Import from api/lib/appConfig.js (from api/ root, go into lib/ subdirectory)
 const config = require('./lib/appConfig');
 const {
     createTask,

@@ -1,6 +1,7 @@
 // Vercel Serverless Function for sending task reminder SMS
 // Uses Textbelt API for SMS delivery
 
+// Import from api/lib/appConfig.js (from api/ root, go into lib/ subdirectory)
 const config = require('./lib/appConfig');
 
 module.exports = async function handler(req, res) {
