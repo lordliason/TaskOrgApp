@@ -2,6 +2,7 @@
  * Task CRUD: create, split, update, get.
  */
 
+const { ValidationError } = require('../errors');
 const {
     validateAssigneeCreate,
     validateAssigneeUpdate,
@@ -19,7 +20,7 @@ const {
  */
 function createTask(taskData, organizationId = null) {
     if (!taskData.name || !taskData.assignee) {
-        throw new Error('Task name and assignee are required');
+        throw new ValidationError('Task name and assignee are required');
     }
     validateAssigneeCreate(taskData.assignee);
     validateSize(taskData.size);
@@ -46,10 +47,10 @@ function createTask(taskData, organizationId = null) {
  */
 function splitTask(taskId, splitDescription, organizationId = null) {
     if (!taskId) {
-        throw new Error('Task ID is required');
+        throw new ValidationError('Task ID is required', 'taskId');
     }
     if (!splitDescription || !splitDescription.part1 || !splitDescription.part2) {
-        throw new Error('Split description must include both part1 and part2 task names');
+        throw new ValidationError('Split description must include both part1 and part2 task names', 'splitDescription');
     }
 
     const task1 = {
@@ -92,7 +93,7 @@ function splitTask(taskId, splitDescription, organizationId = null) {
  */
 function updateTask(taskId, updates, organizationId = null) {
     if (!taskId) {
-        throw new Error('Task ID is required');
+        throw new ValidationError('Task ID is required', 'taskId');
     }
 
     const validUpdates = {};
