@@ -10281,9 +10281,24 @@
             const locationValue = modalLocation ? modalLocation.value.trim() : null;
             const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
 
+            // Handle assignee and assignee_id according to database constraint:
+            // assignee must be 'all' OR assignee_id must be NOT NULL
+            let assigneeValue = 'all';
+            let assigneeIdValue = null;
+            
+            if (selectedAssignee === 'all') {
+                assigneeValue = 'all';
+                assigneeIdValue = null;
+            } else if (selectedAssignee) {
+                // selectedAssignee is a user ID
+                assigneeValue = 'all';
+                assigneeIdValue = selectedAssignee;
+            }
+
             const task = {
                 name: name,
-                assignee: selectedAssignee,
+                assignee: assigneeValue,
+                assignee_id: assigneeIdValue,
                 size: selectedSize,
                 urgent: selectedUrgent,
                 important: selectedImportant,
@@ -10373,9 +10388,24 @@
             const locationValue = modalLocation ? modalLocation.value.trim() : null;
             const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
 
+            // Handle assignee and assignee_id according to database constraint:
+            // assignee must be 'all' OR assignee_id must be NOT NULL
+            let assigneeValue = 'all';
+            let assigneeIdValue = null;
+            
+            if (selectedAssignee === 'all') {
+                assigneeValue = 'all';
+                assigneeIdValue = null;
+            } else if (selectedAssignee) {
+                // selectedAssignee is a user ID
+                assigneeValue = 'all';
+                assigneeIdValue = selectedAssignee;
+            }
+
             const updateData = {
                 name: name,
-                assignee: selectedAssignee,
+                assignee: assigneeValue,
+                assignee_id: assigneeIdValue,
                 size: selectedSize,
                 urgent: selectedUrgent,
                 important: selectedImportant,
