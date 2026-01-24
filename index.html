@@ -5948,20 +5948,54 @@
                     // Hash the password
                     const hashedPassword = await hashPassword(newPasswordInput.value);
 
-                    // Create the user
+                    // First, create a default organization for the user
+                    const orgName = `${newNameInput.value.trim()}'s Organization`;
+                    const { data: newOrg, error: orgError } = await supabaseClient
+                        .from('organizations')
+                        .insert({
+                            name: orgName
+                        })
+                        .select()
+                        .single();
+
+                    if (orgError) {
+                        console.error('Organization creation failed:', orgError);
+                        createAccountError.textContent = 'Failed to create organization: ' + (orgError.message || 'Unknown error');
+                        createAccountError.classList.add('show');
+                        return;
+                    }
+
+                    console.log('Organization created:', newOrg);
+
+                    // Now create the user with the organization_id
                     const { data: newUser, error } = await supabaseClient
                         .from('users')
                         .insert({
                             username: newEmailInput.value.trim().toLowerCase().replace('@', '_').replace('.', '_'),
                             email: newEmailInput.value.trim().toLowerCase(),
                             password_hash: hashedPassword,
-                            display_name: newNameInput.value.trim()
+                            display_name: newNameInput.value.trim(),
+                            organization_id: newOrg.id
                         })
                         .select()
                         .single();
 
                     if (!error && newUser) {
                         console.log('Account created successfully');
+
+                        // Add the user as a member of their organization
+                        const { error: memberError } = await supabaseClient
+                            .from('environment_members')
+                            .insert({
+                                user_id: newUser.id,
+                                organization_id: newOrg.id,
+                                display_name: newUser.display_name
+                            });
+
+                        if (memberError) {
+                            console.warn('Error adding user as organization member:', memberError);
+                            // Continue anyway - the user is created
+                        }
 
                         // Store user info temporarily
                         currentUser = {
@@ -5970,16 +6004,29 @@
                             displayName: newUser.display_name
                         };
 
-                        // Show environment picker for new user
-                        showEnvironmentPicker(newUser, []);
+                        // Show environment picker for new user with their default organization
+                        const defaultEnvironment = {
+                            organization_id: newOrg.id,
+                            organization_name: newOrg.name,
+                            is_owner: true
+                        };
+                        showEnvironmentPicker(newUser, [defaultEnvironment]);
                     } else {
                         console.error('Account creation failed:', error);
                         createAccountError.textContent = error?.message || 'Account creation failed';
                         createAccountError.classList.add('show');
+                        
+                        // Try to clean up the organization if user creation failed
+                        if (newOrg) {
+                            await supabaseClient
+                                .from('organizations')
+                                .delete()
+                                .eq('id', newOrg.id);
+                        }
                     }
                 } catch (error) {
                     console.error('Create account error:', error);
-                    createAccountError.textContent = 'Account creation failed';
+                    createAccountError.textContent = 'Account creation failed: ' + (error.message || 'Unknown error');
                     createAccountError.classList.add('show');
                 }
             }
