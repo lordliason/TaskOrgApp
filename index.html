@@ -5781,10 +5781,26 @@
         // Password Gate
         // ===========================================
         function setupPasswordGate() {
-            // Verify all elements exist
-            if (!passwordGate || !usernameInput || !passwordInput || !passwordBtn) {
-                console.error('Login gate elements not found');
-                return;
+            // Verify all elements exist - check directly from DOM and update variables
+            const emailInputEl = document.getElementById('emailInput');
+            const passwordInputEl = document.getElementById('passwordInput');
+            const loginBtnEl = document.getElementById('loginBtn');
+            const passwordGateEl = document.getElementById('passwordGate');
+            
+            // Update global variables from DOM elements
+            if (emailInputEl) usernameInput = emailInputEl;
+            if (passwordInputEl) passwordInput = passwordInputEl;
+            if (loginBtnEl) passwordBtn = loginBtnEl;
+            if (passwordGateEl) passwordGate = passwordGateEl;
+            
+            if (!passwordGateEl || !emailInputEl || !passwordInputEl || !loginBtnEl) {
+                console.error('Login gate elements not found', {
+                    passwordGate: !!passwordGateEl,
+                    emailInput: !!emailInputEl,
+                    passwordInput: !!passwordInputEl,
+                    loginBtn: !!loginBtnEl
+                });
+                // Don't return early - still try to attach listeners to elements that exist
             }
 
             async function checkAuth() {
@@ -5975,6 +5991,13 @@
             const backToLoginLink = document.getElementById('backToLoginLink');
             const createAccountBtn = document.getElementById('createAccountBtn');
 
+            console.log('Setting up event listeners...', {
+                loginBtn: !!loginBtn,
+                emailInput: !!emailInput,
+                createAccountLink: !!createAccountLink,
+                createAccountBtn: !!createAccountBtn
+            });
+
             if (loginBtn) {
                 loginBtn.addEventListener('click', handleLoginSubmit);
                 console.log('Login button event listener added');
@@ -6032,6 +6055,8 @@
             if (createAccountBtn) {
                 createAccountBtn.addEventListener('click', handleCreateAccount);
                 console.log('Create account button event listener added');
+            } else {
+                console.error('Create account button not found');
             }
 
             // Handle Enter key on create account form
