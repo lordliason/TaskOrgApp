@@ -7611,6 +7611,9 @@
 
                 console.log('Environment members loaded:', members);
 
+                // Update cache for future use
+                environmentMembersCache = members || [];
+
                 // Preserve current selectedAssignee before clearing buttons
                 const preservedAssignee = selectedAssignee;
 
@@ -10056,15 +10059,52 @@
             } else if (task.assignee === 'both' || task.assignee === 'all') {
                 assigneeValue = 'all';
             } else if (task.assignee === 'mario' || task.assignee === 'maria') {
-                // Map legacy usernames to user IDs from environment members cache
+                // Map legacy usernames to user IDs from environment members cache or database
+                let member = null;
+                
+                // Try cache first
                 if (environmentMembersCache) {
-                    const member = environmentMembersCache.find(m => 
+                    member = environmentMembersCache.find(m => 
                         m.display_name && m.display_name.toLowerCase() === task.assignee.toLowerCase()
                     );
-                    if (member) {
-                        assigneeValue = member.user_id;
-                    }
                 }
+                
+                // If not in cache, query database
+                if (!member) {
+                    try {
+                        // First try to get user by username
+                        const { data: userData, error: userError } = await supabaseClient
+                            .from('users')
+                            .select('id, username')
+                            .eq('username', task.assignee.toLowerCase())
+                            .single();
+                        
+                        if (!userError && userData && userData.id) {
+                            assigneeValue = userData.id;
+                        } else {
+                            // Fallback: query environment_members for display_name
+                            const { data: envMember, error: envError } = await supabaseClient
+                                .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                            
+                            if (!envError && envMember) {
+                                // Update cache
+                                environmentMembersCache = envMember;
+                                
+                                const foundMember = envMember.find(m => 
+                                    m.display_name && m.display_name.toLowerCase() === task.assignee.toLowerCase()
+                                );
+                                if (foundMember) {
+                                    assigneeValue = foundMember.user_id;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching user info for edit modal:', error);
+                    }
+                } else {
+                    assigneeValue = member.user_id;
+                }
+                
                 // Fallback to current user if they match
                 if (assigneeValue === 'all' && currentUser) {
                     const currentUserName = (currentUser.displayName || currentUser.username || '').toLowerCase();
