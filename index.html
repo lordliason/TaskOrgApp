@@ -10168,7 +10168,7 @@
             // Sync modal state (after assignee buttons are populated)
             syncModalState();
             
-            // Ensure assignee button is highlighted
+            // Ensure assignee button is highlighted (with multiple attempts in case of timing issues)
             setTimeout(() => {
                 const assigneeGroup = document.getElementById('assigneeGroup');
                 if (assigneeGroup && selectedAssignee) {
@@ -10176,6 +10176,19 @@
                     if (activeBtn) {
                         assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
                         activeBtn.classList.add('active');
+                        console.log('Assignee button selected:', selectedAssignee, activeBtn.textContent);
+                    } else {
+                        console.warn('Could not find assignee button for:', selectedAssignee, 'Available values:', 
+                            Array.from(assigneeGroup.querySelectorAll('.assignee-btn')).map(b => b.dataset.value));
+                        // Try again after a short delay
+                        setTimeout(() => {
+                            const retryBtn = assigneeGroup.querySelector(`[data-value="${selectedAssignee}"]`);
+                            if (retryBtn) {
+                                assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                                retryBtn.classList.add('active');
+                                console.log('Assignee button selected on retry:', selectedAssignee);
+                            }
+                        }, 100);
                     }
                 }
             }, 50);
