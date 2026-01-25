@@ -7667,23 +7667,30 @@
 
                     assigneeGroup.appendChild(allBtn);
 
-                    // If no matching button was found, default to first member (but only if selectedAssignee wasn't explicitly set)
-                    if (!foundMatchingButton && (!preservedAssignee || preservedAssignee === 'mario' || preservedAssignee === 'maria' || preservedAssignee === 'both')) {
-                        // Legacy assignee value or no assignee - default to first member
-                        const firstBtn = assigneeGroup.querySelector('.assignee-btn[data-value]');
-                        if (firstBtn) {
-                            assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
-                            firstBtn.classList.add('active');
-                            selectedAssignee = firstBtn.dataset.value;
-                        }
-                    } else if (!foundMatchingButton) {
-                        // Preserve the selectedAssignee even if no button matches (might be a user ID not in members list)
-                        // Default to first member as fallback
-                        const firstBtn = assigneeGroup.querySelector('.assignee-btn[data-value]');
-                        if (firstBtn) {
-                            assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
-                            firstBtn.classList.add('active');
-                            selectedAssignee = firstBtn.dataset.value;
+                    // If no matching button was found, handle based on preservedAssignee type
+                    if (!foundMatchingButton) {
+                        // Check if preservedAssignee is a UUID (36 chars with dashes)
+                        const isUUID = preservedAssignee && preservedAssignee.length === 36 && preservedAssignee.includes('-');
+                        
+                        if (isUUID) {
+                            // It's a UUID - preserve it even if no button matches
+                            // This can happen if the user was set before buttons were populated
+                            // The button selection will be handled by the setTimeout in openEditTaskModal
+                            console.log('Preserving UUID assignee:', preservedAssignee, 'even though no matching button found');
+                            selectedAssignee = preservedAssignee;
+                        } else if (!preservedAssignee || preservedAssignee === 'mario' || preservedAssignee === 'maria' || preservedAssignee === 'both' || preservedAssignee === 'all') {
+                            // Legacy assignee value or no assignee - default to first member
+                            const firstBtn = assigneeGroup.querySelector('.assignee-btn[data-value]');
+                            if (firstBtn) {
+                                assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                                firstBtn.classList.add('active');
+                                selectedAssignee = firstBtn.dataset.value;
+                                console.log('Defaulted to first member:', selectedAssignee);
+                            }
+                        } else {
+                            // Unknown value - preserve it
+                            selectedAssignee = preservedAssignee;
+                            console.log('Preserving unknown assignee value:', preservedAssignee);
                         }
                     }
                 } else {
@@ -10385,11 +10392,12 @@
                                 .rpc('get_environment_members', { org_id: currentUser.organizationId });
                             
                             if (!envError && envMember) {
+                                // Update cache whenever we successfully fetch fresh data
+                                environmentMembersCache = envMember;
+                                
                                 const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                                 if (foundMember && foundMember.display_name) {
                                     assigneeValue = foundMember.display_name.toLowerCase();
-                                    // Update cache for future use (always update if we fetched fresh data)
-                                    environmentMembersCache = envMember;
                                 }
                             }
                         }
@@ -10541,11 +10549,12 @@
                                 .rpc('get_environment_members', { org_id: currentUser.organizationId });
                             
                             if (!envError && envMember) {
+                                // Update cache whenever we successfully fetch fresh data
+                                environmentMembersCache = envMember;
+                                
                                 const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                                 if (foundMember && foundMember.display_name) {
                                     assigneeValue = foundMember.display_name.toLowerCase();
-                                    // Update cache for future use (always update if we fetched fresh data)
-                                    environmentMembersCache = envMember;
                                 }
                             }
                         }
