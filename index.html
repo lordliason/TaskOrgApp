@@ -761,6 +761,14 @@
             background: var(--bg-hover);
         }
 
+        /* Generic active state for dynamically created assignee buttons (UUIDs) */
+        .assignee-btn.active {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent);
+        }
+
+        /* Specific active states override the generic one */
         .assignee-btn.active[data-value="mario"] {
             border-color: var(--accent-mario);
             background: rgba(74, 158, 255, 0.1);
@@ -773,7 +781,8 @@
             color: var(--accent-maria);
         }
 
-        .assignee-btn.active[data-value="both"] {
+        .assignee-btn.active[data-value="both"],
+        .assignee-btn.active[data-value="all"] {
             border-color: var(--accent-both);
             background: rgba(167, 139, 250, 0.1);
             color: var(--accent-both);
@@ -7774,6 +7783,7 @@
                     // Add individual member buttons
                     members.forEach((member, index) => {
                         const btn = document.createElement('button');
+                        btn.type = 'button'; // Prevent form submission
                         btn.className = 'assignee-btn';
                         btn.dataset.value = member.user_id;
                         btn.textContent = member.display_name || member.email || 'Unknown';
@@ -7789,6 +7799,7 @@
                             assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
                             btn.classList.add('active');
                             selectedAssignee = btn.dataset.value;
+                            console.log('Assignee changed to:', selectedAssignee, '-', btn.textContent);
                         });
 
                         assigneeGroup.appendChild(btn);
@@ -7796,6 +7807,7 @@
 
                     // Add "All" button
                     const allBtn = document.createElement('button');
+                    allBtn.type = 'button'; // Prevent form submission
                     allBtn.className = 'assignee-btn';
                     allBtn.dataset.value = 'all';
                     allBtn.textContent = 'All Members';
@@ -7811,6 +7823,7 @@
                         assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
                         allBtn.classList.add('active');
                         selectedAssignee = 'all';
+                        console.log('Assignee changed to: all - All Members');
                     });
 
                     assigneeGroup.appendChild(allBtn);
