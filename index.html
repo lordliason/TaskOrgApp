@@ -4555,6 +4555,7 @@
             <div class="login-input-group">
                 <input type="text" class="login-input" id="newNameInput" placeholder="Your name">
                 <input type="email" class="login-input" id="newEmailInput" placeholder="Email address">
+                <input type="tel" class="login-input" id="newPhoneInput" placeholder="Phone number (for SMS updates)">
                 <input type="password" class="login-input" id="newPasswordInput" placeholder="Password">
                 <input type="password" class="login-input" id="confirmPasswordInput" placeholder="Confirm password">
             </div>
@@ -4593,6 +4594,26 @@
             <div class="password-error" id="createEnvironmentError">Environment creation failed</div>
             <div class="login-links">
                 <button type="button" class="create-account-link" id="backToEnvironmentPickerLink">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Settings Modal -->
+    <div class="password-gate hidden" id="userSettingsGate">
+        <div class="login-box">
+            <div class="password-logo">Settings</div>
+            <div class="password-subtitle">Update your profile</div>
+            <div class="login-input-group">
+                <label style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.25rem; display: block;">Display Name</label>
+                <input type="text" class="login-input" id="settingsDisplayName" placeholder="Your name">
+                <label style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.25rem; margin-top: 0.5rem; display: block;">Phone Number (for SMS updates)</label>
+                <input type="tel" class="login-input" id="settingsPhone" placeholder="Phone number">
+            </div>
+            <button type="button" class="password-btn" id="saveSettingsBtn">Save Settings</button>
+            <div class="password-error" id="settingsError">Failed to save settings</div>
+            <div class="password-success hidden" id="settingsSuccess" style="color: #10b981; margin-top: 0.5rem; text-align: center;">Settings saved successfully!</div>
+            <div class="login-links">
+                <button type="button" class="create-account-link" id="closeSettingsBtn">Close</button>
             </div>
         </div>
     </div>
@@ -5550,6 +5571,115 @@
             location.reload();
         }
 
+        // Open settings modal
+        async function openSettings() {
+            const settingsGate = document.getElementById('userSettingsGate');
+            const displayNameInput = document.getElementById('settingsDisplayName');
+            const phoneInput = document.getElementById('settingsPhone');
+            const settingsError = document.getElementById('settingsError');
+            const settingsSuccess = document.getElementById('settingsSuccess');
+
+            if (!settingsGate || !currentUser) return;
+
+            // Hide any previous messages
+            settingsError.classList.remove('show');
+            settingsSuccess.classList.add('hidden');
+
+            // Load current user data
+            try {
+                const { data: userData, error } = await supabaseClient
+                    .from('users')
+                    .select('display_name, phone')
+                    .eq('id', currentUser.id)
+                    .single();
+
+                if (!error && userData) {
+                    displayNameInput.value = userData.display_name || '';
+                    phoneInput.value = userData.phone || '';
+                } else {
+                    displayNameInput.value = currentUser.displayName || '';
+                    phoneInput.value = '';
+                }
+            } catch (err) {
+                console.error('Error loading user data:', err);
+                displayNameInput.value = currentUser.displayName || '';
+                phoneInput.value = '';
+            }
+
+            // Show settings modal
+            settingsGate.classList.remove('hidden');
+            displayNameInput.focus();
+        }
+
+        // Close settings modal
+        function closeSettings() {
+            const settingsGate = document.getElementById('userSettingsGate');
+            if (settingsGate) {
+                settingsGate.classList.add('hidden');
+            }
+        }
+
+        // Save settings
+        async function saveSettings() {
+            const displayNameInput = document.getElementById('settingsDisplayName');
+            const phoneInput = document.getElementById('settingsPhone');
+            const settingsError = document.getElementById('settingsError');
+            const settingsSuccess = document.getElementById('settingsSuccess');
+
+            if (!currentUser) return;
+
+            const displayName = displayNameInput.value.trim();
+            const phone = phoneInput.value ? phoneInput.value.replace(/\D/g, '') : null;
+
+            if (!displayName) {
+                settingsError.textContent = 'Display name is required';
+                settingsError.classList.add('show');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update({
+                        display_name: displayName,
+                        phone: phone
+                    })
+                    .eq('id', currentUser.id);
+
+                if (error) {
+                    console.error('Error saving settings:', error);
+                    settingsError.textContent = 'Failed to save settings: ' + (error.message || 'Unknown error');
+                    settingsError.classList.add('show');
+                    settingsSuccess.classList.add('hidden');
+                    return;
+                }
+
+                // Update current user object
+                currentUser.displayName = displayName;
+
+                // Update UI
+                const userDisplay = document.querySelector('.user-display');
+                if (userDisplay) {
+                    userDisplay.textContent = `Welcome, ${displayName}`;
+                }
+
+                // Show success message
+                settingsError.classList.remove('show');
+                settingsSuccess.classList.remove('hidden');
+
+                // Hide success message after 2 seconds
+                setTimeout(() => {
+                    settingsSuccess.classList.add('hidden');
+                }, 2000);
+
+            } catch (err) {
+                console.error('Error saving settings:', err);
+                settingsError.textContent = 'Failed to save settings';
+                settingsError.classList.add('show');
+                settingsSuccess.classList.add('hidden');
+            }
+        }
+
         // Update UI to show user and organization information
         function updateUIForUser() {
             if (currentUser) {
@@ -5569,6 +5699,7 @@
                         userInfo.className = 'user-info';
                         userInfo.innerHTML = `
                             <span class="user-display">Welcome, ${currentUser.displayName}</span>
+                            <button class="logout-btn" onclick="openSettings()" title="Settings">⚙️</button>
                             <button class="logout-btn" onclick="logout()">Logout</button>
                         `;
                         appHeader.appendChild(userInfo);
@@ -5919,6 +6050,7 @@
 
                 const newNameInput = document.getElementById('newNameInput');
                 const newEmailInput = document.getElementById('newEmailInput');
+                const newPhoneInput = document.getElementById('newPhoneInput');
                 const newPasswordInput = document.getElementById('newPasswordInput');
                 const confirmPasswordInput = document.getElementById('confirmPasswordInput');
                 const createAccountError = document.getElementById('createAccountError');
@@ -5931,6 +6063,9 @@
                     createAccountError.classList.add('show');
                     return;
                 }
+
+                // Clean up phone number - remove non-digits
+                const phoneNumber = newPhoneInput?.value ? newPhoneInput.value.replace(/\D/g, '') : null;
 
                 if (newPasswordInput.value !== confirmPasswordInput.value) {
                     createAccountError.textContent = 'Passwords do not match';
@@ -5975,7 +6110,8 @@
                             email: newEmailInput.value.trim().toLowerCase(),
                             password_hash: hashedPassword,
                             display_name: newNameInput.value.trim(),
-                            organization_id: newOrg.id
+                            organization_id: newOrg.id,
+                            phone: phoneNumber
                         })
                         .select()
                         .single();
@@ -6142,6 +6278,18 @@
                         handleCreateEnvironment();
                     }
                 });
+            }
+
+            // User settings event listeners
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+
+            if (saveSettingsBtn) {
+                saveSettingsBtn.addEventListener('click', saveSettings);
+            }
+
+            if (closeSettingsBtn) {
+                closeSettingsBtn.addEventListener('click', closeSettings);
             }
 
             // Environment picker functions

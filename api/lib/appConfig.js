@@ -35,7 +35,12 @@ function getOpenAIKey() {
     return key;
 }
 
-/** @returns {{ mario?: string, maria?: string }} SMS recipient phone numbers */
+/** 
+ * @returns {{ mario?: string, maria?: string }} SMS recipient phone numbers
+ * DEPRECATED: These are fallback values only. Phone numbers are now stored in the users table.
+ * The remind.js API will first look up phone numbers from the database, and only fall back
+ * to these values for backward compatibility with legacy users (mario/maria).
+ */
 function getSmsRecipients() {
     return {
         mario: process.env.MARIO_PHONE || '8458289353',

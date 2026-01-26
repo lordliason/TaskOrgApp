@@ -44,5 +44,8 @@
     "setupFilesAfterEnv": [
       "<rootDir>/jest.setup.js"
     ]
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.93.1"
   }
 }

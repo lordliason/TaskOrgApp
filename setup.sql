@@ -109,6 +109,7 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     display_name TEXT NOT NULL,
+    phone TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -170,9 +171,9 @@ ON CONFLICT (name) DO NOTHING;
 
 -- Insert default users (password: Montreal013122!)
 -- Note: Password hashes generated using SHA-256
-INSERT INTO users (id, username, password_hash, organization_id, display_name) VALUES
-('550e8400-e29b-41d4-a716-446655440001', 'mario', '61f12e5d2421c99479928836e7a20410100106e98d5ae985487f83e93cd1c6f3', '550e8400-e29b-41d4-a716-446655440000', 'Mario'),
-('550e8400-e29b-41d4-a716-446655440002', 'maria', '61f12e5d2421c99479928836e7a20410100106e98d5ae985487f83e93cd1c6f3', '550e8400-e29b-41d4-a716-446655440000', 'Maria')
+INSERT INTO users (id, username, password_hash, organization_id, display_name, phone) VALUES
+('550e8400-e29b-41d4-a716-446655440001', 'mario', '61f12e5d2421c99479928836e7a20410100106e98d5ae985487f83e93cd1c6f3', '550e8400-e29b-41d4-a716-446655440000', 'Mario', '8458289353'),
+('550e8400-e29b-41d4-a716-446655440002', 'maria', '61f12e5d2421c99479928836e7a20410100106e98d5ae985487f83e93cd1c6f3', '550e8400-e29b-41d4-a716-446655440000', 'Maria', '5186185155')
 ON CONFLICT (username) DO NOTHING;
 
 -- ===========================================

@@ -4,6 +4,70 @@
 // Import from api/lib/appConfig.js (from api/ root, go into lib/ subdirectory)
 const config = require('./lib/appConfig');
 
+// Try to import Supabase client (optional - for looking up phone numbers from database)
+let createClient = null;
+try {
+    createClient = require('@supabase/supabase-js').createClient;
+} catch (e) {
+    // Supabase client not available - will fall back to config-based phone numbers
+    console.log('Supabase client not available, using config-based phone numbers');
+}
+
+// Initialize Supabase client for looking up user phone numbers
+function getSupabaseClient() {
+    if (!createClient) {
+        return null;
+    }
+    
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+        return null;
+    }
+    
+    return createClient(supabaseUrl, supabaseKey);
+}
+
+// Look up phone number from database by user display name or username
+async function getPhoneFromDatabase(recipientName, organizationId) {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+        console.log('Supabase not configured, falling back to config');
+        return null;
+    }
+
+    try {
+        // Build query to find user by display_name or username (case-insensitive)
+        let query = supabase
+            .from('users')
+            .select('phone, display_name, username')
+            .or(`display_name.ilike.${recipientName},username.ilike.${recipientName}`);
+        
+        // If organization_id is provided, filter by it
+        if (organizationId) {
+            query = query.eq('organization_id', organizationId);
+        }
+
+        const { data: users, error } = await query.limit(1);
+
+        if (error) {
+            console.error('Error looking up user phone:', error);
+            return null;
+        }
+
+        if (users && users.length > 0 && users[0].phone) {
+            console.log(`Found phone for user ${recipientName} in database`);
+            return users[0].phone;
+        }
+
+        return null;
+    } catch (err) {
+        console.error('Database lookup error:', err);
+        return null;
+    }
+}
+
 module.exports = async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,16 +100,23 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: 'Request body is required' });
         }
 
-        const { recipient, taskName, taskDetails, appUrl, isCompletion, completedBy, isNewTask } = body;
+        const { recipient, taskName, taskDetails, appUrl, isCompletion, completedBy, isNewTask, organizationId } = body;
 
         if (!recipient || !taskName) {
             return res.status(400).json({ error: 'Recipient and task name are required' });
         }
 
-        const validRecipients = config.sms.getRecipients();
-        const recipientPhone = validRecipients[recipient.toLowerCase()];
+        // First, try to look up phone number from database
+        let recipientPhone = await getPhoneFromDatabase(recipient, organizationId);
+        
+        // If not found in database, fall back to config (for backward compatibility)
         if (!recipientPhone) {
-            return res.status(400).json({ error: 'Invalid recipient. Must be "mario" or "maria"' });
+            const validRecipients = config.sms.getRecipients();
+            recipientPhone = validRecipients[recipient.toLowerCase()];
+        }
+        
+        if (!recipientPhone) {
+            return res.status(400).json({ error: `No phone number found for recipient "${recipient}". Please update your profile with a phone number.` });
         }
 
         const textbeltApiKey = config.sms.getTextbeltKey();

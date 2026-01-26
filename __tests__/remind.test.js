@@ -164,7 +164,10 @@ describe('Remind API Handler', () => {
             await remindHandler(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(400);
-            expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid recipient. Must be "mario" or "maria"' });
+            // Error message now indicates no phone number found (after checking DB and config fallback)
+            expect(mockRes.json).toHaveBeenCalledWith({ 
+                error: 'No phone number found for recipient "invalid". Please update your profile with a phone number.' 
+            });
         });
 
         test('should accept valid recipients (case insensitive)', async () => {
