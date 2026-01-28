@@ -7731,6 +7731,32 @@
             if (assigneeValue === currentUser.id) return currentUser.username || 'mario';
             return 'mario'; // fallback
         }
+
+        /**
+         * Maps a display name or username to a valid database assignee value.
+         * The database constraint only allows: 'mario', 'maria', 'both'
+         */
+        function mapToValidAssignee(name) {
+            if (!name) return 'mario';
+            
+            const lowerName = name.toLowerCase().trim();
+            
+            // Direct matches
+            if (lowerName === 'mario' || lowerName === 'maria' || lowerName === 'both') {
+                return lowerName;
+            }
+            
+            // Check if name starts with mario or maria (e.g., "Mario S", "Maria Smith")
+            if (lowerName.startsWith('mario')) return 'mario';
+            if (lowerName.startsWith('maria')) return 'maria';
+            
+            // Check if name contains mario or maria
+            if (lowerName.includes('mario')) return 'mario';
+            if (lowerName.includes('maria')) return 'maria';
+            
+            // Fallback to mario for any other name
+            return 'mario';
+        }
         async function populateAssigneeButtons() {
             const assigneeGroup = document.getElementById('assigneeGroup');
             if (!assigneeGroup) {
@@ -10546,7 +10572,7 @@
                             .single();
                         
                         if (!userError && userData && userData.username) {
-                            assigneeValue = userData.username.toLowerCase();
+                            assigneeValue = mapToValidAssignee(userData.username);
                         } else {
                             // Fallback: query environment_members for display_name
                             const { data: envMember, error: envError } = await supabaseClient
@@ -10558,7 +10584,7 @@
                                 
                                 const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                                 if (foundMember && foundMember.display_name) {
-                                    assigneeValue = foundMember.display_name.toLowerCase();
+                                    assigneeValue = mapToValidAssignee(foundMember.display_name);
                                 }
                             }
                         }
@@ -10566,12 +10592,12 @@
                         console.error('Error fetching user info for assignee:', error);
                     }
                 } else if (member && member.display_name) {
-                    assigneeValue = member.display_name.toLowerCase();
+                    assigneeValue = mapToValidAssignee(member.display_name);
                 }
                 
                 // Final fallback: if still 'both', check if it's the current user
                 if (assigneeValue === 'both' && currentUser && selectedAssignee === currentUser.id) {
-                    assigneeValue = (currentUser.displayName || currentUser.username || 'mario').toLowerCase();
+                    assigneeValue = mapToValidAssignee(currentUser.displayName || currentUser.username);
                 }
                 
                 // Last resort: if we have a UUID but couldn't map it, default to 'mario' to avoid constraint violation
@@ -10703,7 +10729,7 @@
                             .single();
                         
                         if (!userError && userData && userData.username) {
-                            assigneeValue = userData.username.toLowerCase();
+                            assigneeValue = mapToValidAssignee(userData.username);
                         } else {
                             // Fallback: query environment_members for display_name
                             const { data: envMember, error: envError } = await supabaseClient
@@ -10715,7 +10741,7 @@
                                 
                                 const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                                 if (foundMember && foundMember.display_name) {
-                                    assigneeValue = foundMember.display_name.toLowerCase();
+                                    assigneeValue = mapToValidAssignee(foundMember.display_name);
                                 }
                             }
                         }
@@ -10723,12 +10749,12 @@
                         console.error('Error fetching user info for assignee:', error);
                     }
                 } else if (member && member.display_name) {
-                    assigneeValue = member.display_name.toLowerCase();
+                    assigneeValue = mapToValidAssignee(member.display_name);
                 }
                 
                 // Final fallback: if still 'both', check if it's the current user
                 if (assigneeValue === 'both' && currentUser && selectedAssignee === currentUser.id) {
-                    assigneeValue = (currentUser.displayName || currentUser.username || 'mario').toLowerCase();
+                    assigneeValue = mapToValidAssignee(currentUser.displayName || currentUser.username);
                 }
                 
                 // Last resort: if we have a UUID but couldn't map it, default to 'mario' to avoid constraint violation
