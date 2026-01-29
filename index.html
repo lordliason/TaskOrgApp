@@ -10948,14 +10948,32 @@
                 // If not in cache, try to fetch from database
                 if (!member && selectedAssignee !== 'all') {
                     try {
+                        console.log('Assignee cache miss, fetching from database for org:', currentUser.organizationId);
                         // Query environment_members for display_name
                         const { data: envMember, error: envError } = await supabaseClient
                             .rpc('get_environment_members', { org_id: currentUser.organizationId });
-                        
-                        if (!envError && envMember) {
+
+                        if (envError) {
+                            console.error('Error fetching environment members:', envError);
+                            // Try fallback: query users table directly
+                            const { data: userData, error: userError } = await supabaseClient
+                                .from('users')
+                                .select('id, display_name, username')
+                                .eq('id', selectedAssignee)
+                                .eq('organization_id', currentUser.organizationId)
+                                .single();
+
+                            if (!userError && userData) {
+                                console.log('Found user via direct query:', userData);
+                                member = {
+                                    user_id: userData.id,
+                                    display_name: userData.display_name || userData.username
+                                };
+                            }
+                        } else if (envMember) {
                             // Update cache whenever we successfully fetch fresh data
                             environmentMembersCache = envMember;
-                            
+
                             const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                             if (foundMember && foundMember.display_name) {
                                 member = foundMember;
@@ -10963,9 +10981,16 @@
                         }
                     } catch (error) {
                         console.error('Error fetching user info for assignee:', error);
+                        // Final fallback: try to get current user info if it's the current user
+                        if (currentUser && selectedAssignee === currentUser.id) {
+                            member = {
+                                user_id: currentUser.id,
+                                display_name: currentUser.displayName || currentUser.username
+                            };
+                        }
                     }
                 }
-                
+
                 // Set assignee to display name if available
                 if (member && member.display_name) {
                     assigneeValue = member.display_name;
@@ -10974,6 +10999,7 @@
                 } else {
                     // Fallback: use UUID as assignee if we can't get the name
                     // The constraint only requires assignee_id to be set
+                    console.warn('Could not resolve display name for assignee:', selectedAssignee, 'using UUID as fallback');
                     assigneeValue = selectedAssignee;
                 }
             }
@@ -11091,14 +11117,32 @@
                 // If not in cache, try to fetch from database
                 if (!member && selectedAssignee !== 'all') {
                     try {
+                        console.log('Assignee cache miss, fetching from database for org:', currentUser.organizationId);
                         // Query environment_members for display_name
                         const { data: envMember, error: envError } = await supabaseClient
                             .rpc('get_environment_members', { org_id: currentUser.organizationId });
-                        
-                        if (!envError && envMember) {
+
+                        if (envError) {
+                            console.error('Error fetching environment members:', envError);
+                            // Try fallback: query users table directly
+                            const { data: userData, error: userError } = await supabaseClient
+                                .from('users')
+                                .select('id, display_name, username')
+                                .eq('id', selectedAssignee)
+                                .eq('organization_id', currentUser.organizationId)
+                                .single();
+
+                            if (!userError && userData) {
+                                console.log('Found user via direct query:', userData);
+                                member = {
+                                    user_id: userData.id,
+                                    display_name: userData.display_name || userData.username
+                                };
+                            }
+                        } else if (envMember) {
                             // Update cache whenever we successfully fetch fresh data
                             environmentMembersCache = envMember;
-                            
+
                             const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                             if (foundMember && foundMember.display_name) {
                                 member = foundMember;
@@ -11106,9 +11150,16 @@
                         }
                     } catch (error) {
                         console.error('Error fetching user info for assignee:', error);
+                        // Final fallback: try to get current user info if it's the current user
+                        if (currentUser && selectedAssignee === currentUser.id) {
+                            member = {
+                                user_id: currentUser.id,
+                                display_name: currentUser.displayName || currentUser.username
+                            };
+                        }
                     }
                 }
-                
+
                 // Set assignee to display name if available
                 if (member && member.display_name) {
                     assigneeValue = member.display_name;
@@ -11117,6 +11168,7 @@
                 } else {
                     // Fallback: use UUID as assignee if we can't get the name
                     // The constraint only requires assignee_id to be set
+                    console.warn('Could not resolve display name for assignee:', selectedAssignee, 'using UUID as fallback');
                     assigneeValue = selectedAssignee;
                 }
             }

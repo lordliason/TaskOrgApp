@@ -1,0 +1,112 @@
+name: Scheduled Tests
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  nightly-test:
+    name: Nightly Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Run full test suite
+      run: npm run test:all
+
+    - name: Run performance regression tests
+      run: npm run test:performance
+
+    - name: Generate test report
+      run: |
+        echo "## Nightly Test Report" >> $GITHUB_STEP_SUMMARY
+        echo "- **Date**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${GITHUB_SHA}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: nightly-test-results
+        path: |
+          test-results/
+          coverage/
+          __tests__/e2e/test-results/
+
+  database-health-check:
+    name: Database Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run database health checks
+      run: npm run test:database:health
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+  dependency-check:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run dependency audit
+      run: npm audit --audit-level high
+
+    - name: Check for outdated dependencies
+      run: npm outdated || true
+
+  cleanup:
+    name: Cleanup Old Test Artifacts
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Clean up old artifacts
+      uses: c-hive/gha-remove-artifacts@v1
+      with:
+        age: '7 days'
+        skip-tags: true
