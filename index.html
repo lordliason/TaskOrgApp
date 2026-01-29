@@ -11110,8 +11110,13 @@
                 
                 // Get display name for the assignee column (for display/backward compat)
                 let member = null;
-                if (environmentMembersCache) {
+                console.log('=== UPDATE TASK: Resolving assignee display name ===');
+                console.log('selectedAssignee:', selectedAssignee);
+                console.log('environmentMembersCache:', environmentMembersCache);
+                
+                if (environmentMembersCache && environmentMembersCache.length > 0) {
                     member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
+                    console.log('Found member in cache:', member);
                 }
                 
                 // If not in cache, try to fetch from database
@@ -11121,6 +11126,8 @@
                         // Query environment_members for display_name
                         const { data: envMember, error: envError } = await supabaseClient
                             .rpc('get_environment_members', { org_id: currentUser.organizationId });
+
+                        console.log('RPC result:', envMember, 'error:', envError);
 
                         if (envError) {
                             console.error('Error fetching environment members:', envError);
@@ -11146,6 +11153,7 @@
                             const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                             if (foundMember && foundMember.display_name) {
                                 member = foundMember;
+                                console.log('Found member from fresh fetch:', member);
                             }
                         }
                     } catch (error) {
@@ -11163,14 +11171,18 @@
                 // Set assignee to display name if available
                 if (member && member.display_name) {
                     assigneeValue = member.display_name;
+                    console.log('Using display name from member:', assigneeValue);
                 } else if (currentUser && selectedAssignee === currentUser.id) {
                     assigneeValue = currentUser.displayName || currentUser.username || selectedAssignee;
+                    console.log('Using current user display name:', assigneeValue);
                 } else {
                     // Fallback: use UUID as assignee if we can't get the name
                     // The constraint only requires assignee_id to be set
                     console.warn('Could not resolve display name for assignee:', selectedAssignee, 'using UUID as fallback');
                     assigneeValue = selectedAssignee;
                 }
+                
+                console.log('Final assignee values - assigneeValue:', assigneeValue, 'assigneeIdValue:', assigneeIdValue);
             }
 
             const updateData = {
