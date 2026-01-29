@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version: 2026-01-29-v3 - Assignee display fix -->
+<!-- Version: 2026-01-29-v4 - Event delegation fix for assignee buttons -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6105,6 +6105,23 @@
                 return;
             }
 
+            // Setup event delegation for assignee buttons (handles dynamically created buttons)
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('.assignee-btn');
+                if (btn) {
+                    const assigneeGroup = btn.closest('.assignee-group, #assigneeGroup');
+                    if (assigneeGroup) {
+                        // Remove active from all buttons in this group
+                        assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                        // Add active to clicked button
+                        btn.classList.add('active');
+                        // Update selectedAssignee
+                        selectedAssignee = btn.dataset.value;
+                        console.log('Assignee button clicked (delegation):', selectedAssignee, '-', btn.textContent);
+                    }
+                }
+            });
+
             // Wait for Supabase to load
             waitForSupabase(() => {
                 setupPasswordGate();
@@ -10970,79 +10987,72 @@
             const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
 
             // Handle assignee - use 'all' for group tasks, display_name for individual
+            // VERSION: 2026-01-29-v4 (addTaskFromModal)
             let assigneeValue = 'all';
             let assigneeIdValue = null;
+            
+            console.log('=== ADD TASK v4: Starting assignee resolution ===');
+            console.log('selectedAssignee:', selectedAssignee);
             
             if (selectedAssignee === 'all') {
                 assigneeValue = 'all';
                 assigneeIdValue = null;
+                console.log('Assignee is "all"');
             } else if (selectedAssignee) {
                 // Store the user's UUID
                 assigneeIdValue = selectedAssignee;
                 
-                // Get display name for the assignee column (for display/backward compat)
-                let member = null;
-                if (environmentMembersCache) {
-                    member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
+                // FIRST: Get display name from the active button (most reliable)
+                const assigneeGroup = document.getElementById('assigneeGroup');
+                if (assigneeGroup) {
+                    const activeBtn = assigneeGroup.querySelector('.assignee-btn.active');
+                    if (activeBtn && activeBtn.textContent && activeBtn.dataset.value === selectedAssignee) {
+                        assigneeValue = activeBtn.textContent.trim();
+                        console.log('Got display name from active button:', assigneeValue);
+                    }
                 }
                 
-                // If not in cache, try to fetch from database
-                if (!member && selectedAssignee !== 'all') {
+                // SECOND: Try to get from cache if not found from button
+                if (assigneeValue === 'all' && environmentMembersCache && environmentMembersCache.length > 0) {
+                    const member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
+                    if (member && member.display_name) {
+                        assigneeValue = member.display_name;
+                        console.log('Got display name from cache:', assigneeValue);
+                    }
+                }
+                
+                // THIRD: If still not resolved, fetch from database
+                if (assigneeValue === 'all' && selectedAssignee !== 'all') {
                     try {
-                        console.log('Assignee cache miss, fetching from database for org:', currentUser.organizationId);
-                        // Query environment_members for display_name
+                        console.log('Assignee not resolved, fetching from database for org:', currentUser.organizationId);
                         const { data: envMember, error: envError } = await supabaseClient
                             .rpc('get_environment_members', { org_id: currentUser.organizationId });
 
-                        if (envError) {
-                            console.error('Error fetching environment members:', envError);
-                            // Try fallback: query users table directly
-                            const { data: userData, error: userError } = await supabaseClient
-                                .from('users')
-                                .select('id, display_name, username')
-                                .eq('id', selectedAssignee)
-                                .eq('organization_id', currentUser.organizationId)
-                                .single();
-
-                            if (!userError && userData) {
-                                console.log('Found user via direct query:', userData);
-                                member = {
-                                    user_id: userData.id,
-                                    display_name: userData.display_name || userData.username
-                                };
-                            }
-                        } else if (envMember) {
-                            // Update cache whenever we successfully fetch fresh data
+                        if (!envError && envMember) {
                             environmentMembersCache = envMember;
-
                             const foundMember = envMember.find(m => m.user_id === selectedAssignee);
                             if (foundMember && foundMember.display_name) {
-                                member = foundMember;
+                                assigneeValue = foundMember.display_name;
+                                console.log('Got display name from DB:', assigneeValue);
                             }
                         }
                     } catch (error) {
                         console.error('Error fetching user info for assignee:', error);
-                        // Final fallback: try to get current user info if it's the current user
-                        if (currentUser && selectedAssignee === currentUser.id) {
-                            member = {
-                                user_id: currentUser.id,
-                                display_name: currentUser.displayName || currentUser.username
-                            };
-                        }
                     }
                 }
-
-                // Set assignee to display name if available
-                if (member && member.display_name) {
-                    assigneeValue = member.display_name;
-                } else if (currentUser && selectedAssignee === currentUser.id) {
-                    assigneeValue = currentUser.displayName || currentUser.username || selectedAssignee;
-                } else {
-                    // Fallback: use UUID as assignee if we can't get the name
-                    // The constraint only requires assignee_id to be set
-                    console.warn('Could not resolve display name for assignee:', selectedAssignee, 'using UUID as fallback');
-                    assigneeValue = selectedAssignee;
+                
+                // Final fallbacks
+                if (assigneeValue === 'all' && selectedAssignee !== 'all') {
+                    if (currentUser && selectedAssignee === currentUser.id) {
+                        assigneeValue = currentUser.displayName || currentUser.username || selectedAssignee;
+                        console.log('Using current user name:', assigneeValue);
+                    } else {
+                        console.warn('Could not resolve display name, using UUID:', selectedAssignee);
+                        assigneeValue = selectedAssignee;
+                    }
                 }
+                
+                console.log('Final assignee values - assigneeValue:', assigneeValue, 'assigneeIdValue:', assigneeIdValue);
             }
 
             const task = {
