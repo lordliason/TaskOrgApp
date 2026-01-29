@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version: 2026-01-29-v7 - Complete removal of legacy Mario/Maria support (UUID-only assignees) -->
+<!-- Version: 2026-01-29-v8 - Fix assignee display resolution using UUID-based cache lookup -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6491,8 +6491,9 @@
                 updateTodayDate();
                 setupEventListeners();
                 initPlanEventListeners();
+                // Load members first so cache is populated before rendering tasks
+                await populateAssigneeFilterButtons(); // Populate dynamic assignee filters and cache
                 await loadTasks();
-                await populateAssigneeFilterButtons(); // Populate dynamic assignee filters
                 populateMatrixLegend(); // Populate legend dynamically
                 populateTaskOptionButtons(); // Populate task options menu buttons
                 populateViewTaskButtons(); // Populate view task modal buttons
@@ -7865,6 +7866,9 @@
 
                 const { data: members, error: membersError } = membersResult;
                 if (membersError) throw membersError;
+
+                // Update the environment members cache for name resolution
+                environmentMembersCache = members || [];
 
                 const organization = orgResult;
                 // Set global member colors for task rendering
@@ -10336,39 +10340,50 @@
         }
 
         function showTooltip(e, task) {
-            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both', all: 'All' };
             const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
-            const completedByLabels = { mario: 'Completed by Mario', maria: 'Completed by Maria', both: 'Completed by Both', all: 'Completed by All' };
 
-            // Resolve assignee display name
-            let assigneeDisplayName = 'Unknown';
-            if (task.assignee === 'all' || task.assignee === 'both') {
-                assigneeDisplayName = assigneeLabels[task.assignee];
-            } else if (task.assignee_id && environmentMembersCache) {
-                const member = environmentMembersCache.find(m => m.user_id === task.assignee_id);
-                assigneeDisplayName = member?.display_name || assigneeLabels[task.assignee] || task.assignee;
-            } else if (assigneeLabels[task.assignee]) {
-                assigneeDisplayName = assigneeLabels[task.assignee];
-            } else {
-                // Check if it's a UUID and try to resolve
-                const isUUID = task.assignee && task.assignee.length === 36 && task.assignee.includes('-');
-                if (isUUID && environmentMembersCache) {
-                    const member = environmentMembersCache.find(m => m.user_id === task.assignee);
-                    assigneeDisplayName = member?.display_name || 'Member';
-                } else {
-                    assigneeDisplayName = task.assignee || 'Unassigned';
-                }
-            }
+            // Resolve assignee display name using assignee_id (UUID) or assignee
+            const assigneeDisplayName = resolveAssigneeDisplayName(task.assignee_id || task.assignee);
 
             tooltip.querySelector('.tooltip-name').textContent = task.name;
             let metaText = `${assigneeDisplayName} • ${sizeLabels[task.size]}`;
+            
+            // Resolve completed_by display name
             if (task.completed && task.completed_by) {
-                metaText += ` • ${completedByLabels[task.completed_by]}`;
+                const completedByName = resolveAssigneeDisplayName(task.completed_by);
+                metaText += ` • Completed by ${completedByName}`;
             }
             tooltip.querySelector('.tooltip-meta').textContent = metaText;
 
             tooltip.classList.add('visible');
             moveTooltip(e);
+        }
+        
+        // Helper function to resolve assignee display name from UUID or special values
+        function resolveAssigneeDisplayName(assigneeValue) {
+            if (!assigneeValue) return 'Unassigned';
+            
+            // Handle 'all' or 'both' (shared tasks)
+            if (assigneeValue === 'all' || assigneeValue === 'both') {
+                return 'All Members';
+            }
+            
+            // Check if it's a UUID (36 chars with dashes)
+            const isUUID = assigneeValue.length === 36 && assigneeValue.includes('-');
+            
+            if (isUUID && environmentMembersCache) {
+                const member = environmentMembersCache.find(m => m.user_id === assigneeValue);
+                if (member) {
+                    return member.display_name || 'Member';
+                }
+            }
+            
+            // Fallback: if it looks like a name, use it; otherwise show 'Member'
+            if (isUUID) {
+                return 'Member';
+            }
+            
+            return assigneeValue;
         }
 
         function moveTooltip(e) {
@@ -10428,29 +10443,11 @@
                     <div class="group-label">${group.label}</div>`;
 
                 group.tasks.forEach(task => {
-                    const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Both', all: 'All' };
                     const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
                     const iconDisplay = task.icon ? `<span style="margin-right: 4px">${task.icon}</span>` : '';
 
                     // Resolve assignee display name
-                    let assigneeDisplayName = 'Unknown';
-                    if (task.assignee === 'all' || task.assignee === 'both') {
-                        assigneeDisplayName = 'All';
-                    } else if (task.assignee_id && environmentMembersCache) {
-                        const member = environmentMembersCache.find(m => m.user_id === task.assignee_id);
-                        assigneeDisplayName = member?.display_name || assigneeLabels[task.assignee] || task.assignee;
-                    } else if (assigneeLabels[task.assignee]) {
-                        assigneeDisplayName = assigneeLabels[task.assignee];
-                    } else {
-                        // Check if it's a UUID and try to resolve from cache
-                        const isUUID = task.assignee && task.assignee.length === 36 && task.assignee.includes('-');
-                        if (isUUID && environmentMembersCache) {
-                            const member = environmentMembersCache.find(m => m.user_id === task.assignee);
-                            assigneeDisplayName = member?.display_name || 'Member';
-                        } else {
-                            assigneeDisplayName = task.assignee || 'Unassigned';
-                        }
-                    }
+                    const assigneeDisplayName = resolveAssigneeDisplayName(task.assignee_id || task.assignee);
 
                     // Get dynamic color for assignee
                     let assigneeColor = '#4a9eff'; // Default blue
@@ -11905,7 +11902,6 @@
 
         // Build task context string for AI
         function buildTaskContext(task) {
-            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario and Maria', all: 'All' };
             const sizeLabels = { xs: '5-10 minutes', s: '10-30 minutes', m: '30 minutes to 1 hour', l: '1-2 hours', xl: '2+ hours' };
             const urgencyLabels = { 1: 'Whenever', 2: 'This Week', 3: 'Today', 4: 'Morning', 5: 'ASAP' };
             const importanceLabels = { 1: 'Optional', 2: 'Nice to Have', 3: 'Keeps us on track', 4: 'Matters a lot', 5: 'Critical' };
@@ -11919,7 +11915,7 @@
             const quadrant = getQuadrant(task);
             let context = `Task: ${task.name || 'Untitled Task'}\n`;
             context += `Status: ${task.completed ? 'Completed' : 'Pending'}\n`;
-            context += `Assigned to: ${assigneeLabels[task.assignee] || task.assignee}\n`;
+            context += `Assigned to: ${resolveAssigneeDisplayName(task.assignee_id || task.assignee)}\n`;
             context += `Quadrant: ${quadrantLabels[quadrant] || quadrant}\n`;
             context += `Size: ${sizeLabels[task.size] || task.size}\n`;
             
@@ -11940,7 +11936,7 @@
                 context += `Date: ${date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n`;
             }
             if (task.completed && task.completed_by) {
-                context += `Completed by: ${assigneeLabels[task.completed_by] || task.completed_by}\n`;
+                context += `Completed by: ${resolveAssigneeDisplayName(task.completed_by)}\n`;
             }
 
             return context;
@@ -12557,14 +12553,13 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
             currentTaskForChat = task;
             resetChatbot();
             
-            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both' };
             const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
             const urgencyLabels = { 1: 'Whenever', 2: 'This Week', 3: 'Today', 4: 'Morning', 5: 'ASAP' };
             const importanceLabels = { 1: 'Optional', 2: 'Nice to Have', 3: 'Keeps us on track', 4: 'Matters a lot', 5: 'Critical' };
-            const completedByLabels = { mario: 'Mario', maria: 'Maria', both: 'Both' };
 
-            // Set icon
-            viewTaskIcon.className = `view-task-icon ${task.assignee}`;
+            // Set icon - use 'all' class for shared tasks
+            const iconClass = (task.assignee === 'all' || task.assignee === 'both') ? 'both' : '';
+            viewTaskIcon.className = `view-task-icon ${iconClass}`;
             if (task.icon) {
                 viewTaskIcon.textContent = task.icon;
             } else {
@@ -12597,45 +12592,19 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
 
             // Completed By (if completed)
             if (task.completed && task.completed_by) {
+                const completedByName = resolveAssigneeDisplayName(task.completed_by);
                 propertiesHTML += `
                     <div class="view-task-property">
                         <div class="view-task-property-label">Completed By</div>
                         <div class="view-task-property-value completed">
-                            ${completedByLabels[task.completed_by] || task.completed_by}
+                            ${completedByName}
                         </div>
                     </div>
                 `;
             }
 
             // Assignee - resolve display name from assignee_id or assignee field
-            let assigneeDisplayName = 'Unknown';
-            if (task.assignee === 'all' || task.assignee === 'both') {
-                assigneeDisplayName = 'All Members';
-            } else if (task.assignee_id && environmentMembersCache) {
-                // Look up by user ID in cache
-                const member = environmentMembersCache.find(m => m.user_id === task.assignee_id);
-                if (member && member.display_name) {
-                    assigneeDisplayName = member.display_name;
-                } else if (task.assignee_id === currentUser?.id) {
-                    assigneeDisplayName = currentUser.displayName || currentUser.username || 'Me';
-                } else {
-                    // Fallback to assignee field if it's not a UUID
-                    const isUUID = task.assignee && task.assignee.length === 36 && task.assignee.includes('-');
-                    assigneeDisplayName = isUUID ? 'Unknown Member' : (assigneeLabels[task.assignee] || task.assignee);
-                }
-            } else if (assigneeLabels[task.assignee]) {
-                assigneeDisplayName = assigneeLabels[task.assignee];
-            } else {
-                // Check if assignee is a UUID
-                const isUUID = task.assignee && task.assignee.length === 36 && task.assignee.includes('-');
-                if (isUUID && environmentMembersCache) {
-                    // Try to find by UUID in cache
-                    const member = environmentMembersCache.find(m => m.user_id === task.assignee);
-                    assigneeDisplayName = member?.display_name || 'Unknown Member';
-                } else {
-                    assigneeDisplayName = task.assignee || 'Unassigned';
-                }
-            }
+            const assigneeDisplayName = resolveAssigneeDisplayName(task.assignee_id || task.assignee);
             
             propertiesHTML += `
                 <div class="view-task-property">
