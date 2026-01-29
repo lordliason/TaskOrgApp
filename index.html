@@ -995,6 +995,39 @@
             font-size: 0.875rem;
         }
 
+        .settings-menu {
+            position: relative;
+            display: inline-block;
+        }
+
+        .settings-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            min-width: 160px;
+        }
+
+        .settings-dropdown button {
+            display: block;
+            width: 100%;
+            padding: 0.5rem 1rem;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .settings-dropdown button:hover {
+            background: var(--bg-hover);
+        }
+
         .logout-btn {
             padding: 0.5rem 1rem;
             background: var(--bg-card);
@@ -2450,9 +2483,7 @@
             font-size: 0.7rem;
         }
 
-        .task-item-dot.mario { background: var(--accent-mario); }
-        .task-item-dot.maria { background: var(--accent-maria); }
-        .task-item-dot.both { background: var(--accent-both); }
+        /* Member colors are now set dynamically via inline styles */
 
         .task-item-dot.xs { width: 20px; height: 20px; }
         .task-item-dot.s { width: 22px; height: 22px; }
@@ -4627,6 +4658,26 @@
         </div>
     </div>
 
+    <!-- Organization Settings Modal -->
+    <div class="password-gate hidden" id="orgSettingsGate">
+        <div class="login-box" style="max-width: 500px;">
+            <div class="password-logo">Organization Settings</div>
+            <div class="password-subtitle">Manage member colors and settings</div>
+            <div class="login-input-group">
+                <label style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem; display: block;">Member Colors</label>
+                <div id="memberColorSettings" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <!-- Member color settings will be populated here -->
+                </div>
+            </div>
+            <button type="button" class="password-btn" id="saveOrgSettingsBtn">Save Organization Settings</button>
+            <div class="password-error" id="orgSettingsError">Failed to save settings</div>
+            <div class="password-success hidden" id="orgSettingsSuccess" style="color: #10b981; margin-top: 0.5rem; text-align: center;">Settings saved successfully!</div>
+            <div class="login-links">
+                <button type="button" class="create-account-link" id="closeOrgSettingsBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
@@ -5469,7 +5520,7 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
         // ===========================================
         // CONFIGURATION - Your Supabase credentials
         // ===========================================
@@ -5545,7 +5596,7 @@
 
         // State
         let tasks = [];
-        let selectedAssignee = 'mario';
+        let selectedAssignee = 'all';
         let selectedSize = 'm';
         let selectedUrgent = 3;
         let selectedImportant = 3;
@@ -5689,6 +5740,142 @@
             }
         }
 
+        // Open organization settings modal
+        async function openOrgSettings() {
+            const orgSettingsGate = document.getElementById('orgSettingsGate');
+            const memberColorSettings = document.getElementById('memberColorSettings');
+            const orgSettingsError = document.getElementById('orgSettingsError');
+            const orgSettingsSuccess = document.getElementById('orgSettingsSuccess');
+
+            if (!orgSettingsGate || !currentUser || !currentUser.isOwner) return;
+
+            // Hide any previous messages
+            orgSettingsError.classList.remove('show');
+            orgSettingsSuccess.classList.add('hidden');
+
+            // Load organization data and members
+            try {
+                const [orgResult, membersResult] = await Promise.all([
+                    supabaseClient
+                        .from('organizations')
+                        .select('member_colors')
+                        .eq('id', currentUser.organizationId)
+                        .single(),
+                    supabaseClient.rpc('get_environment_members', { org_id: currentUser.organizationId })
+                ]);
+
+                const { data: org, error: orgError } = orgResult;
+                const { data: members, error: membersError } = membersResult;
+
+                if (orgError || membersError) throw orgError || membersError;
+
+                const memberColors = org?.member_colors || {};
+
+                // Build member color settings UI
+                memberColorSettings.innerHTML = '';
+                members.forEach(member => {
+                    const currentColor = memberColors[member.user_id] ||
+                                       memberColors[member.username] ||
+                                       memberColors[member.display_name?.toLowerCase()] ||
+                                       '#4a9eff';
+
+                    const memberDiv = document.createElement('div');
+                    memberDiv.style.cssText = 'display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px;';
+                    memberDiv.innerHTML = `
+                        <div style="width: 24px; height: 24px; border-radius: 50%; background: ${currentColor}; border: 2px solid var(--border);"></div>
+                        <span style="flex: 1; color: var(--text-primary);">${member.display_name}</span>
+                        <input type="color" value="${currentColor}" data-member-id="${member.user_id}" style="width: 50px; height: 30px; border: none; border-radius: 4px; cursor: pointer;">
+                    `;
+                    memberColorSettings.appendChild(memberDiv);
+                });
+
+                // Show organization settings modal
+                orgSettingsGate.classList.remove('hidden');
+
+            } catch (err) {
+                console.error('Error loading organization settings:', err);
+                orgSettingsError.textContent = 'Failed to load organization settings';
+                orgSettingsError.classList.add('show');
+            }
+        }
+
+        // Close organization settings modal
+        function closeOrgSettings() {
+            const orgSettingsGate = document.getElementById('orgSettingsGate');
+            if (orgSettingsGate) {
+                orgSettingsGate.classList.add('hidden');
+            }
+        }
+
+        // Save organization settings
+        async function saveOrgSettings() {
+            const orgSettingsError = document.getElementById('orgSettingsError');
+            const orgSettingsSuccess = document.getElementById('orgSettingsSuccess');
+
+            if (!currentUser || !currentUser.isOwner) return;
+
+            try {
+                // Collect member colors
+                const memberColorInputs = document.querySelectorAll('#memberColorSettings input[type="color"]');
+                const memberColors = {};
+
+                memberColorInputs.forEach(input => {
+                    const memberId = input.dataset.memberId;
+                    const color = input.value;
+                    if (memberId && color) {
+                        memberColors[memberId] = color;
+                    }
+                });
+
+                // Save to database
+                const { error } = await supabaseClient
+                    .from('organizations')
+                    .update({ member_colors: memberColors })
+                    .eq('id', currentUser.organizationId);
+
+                if (error) throw error;
+
+                // Update global member colors
+                window.organizationMemberColors = memberColors;
+
+                // Refresh the task list and filters to show new colors
+                renderTaskList();
+                populateAssigneeFilterButtons();
+
+                // Show success message
+                orgSettingsError.classList.remove('show');
+                orgSettingsSuccess.classList.remove('hidden');
+
+                // Hide success message after 2 seconds
+                setTimeout(() => {
+                    orgSettingsSuccess.classList.add('hidden');
+                }, 2000);
+
+            } catch (err) {
+                console.error('Error saving organization settings:', err);
+                orgSettingsError.textContent = 'Failed to save organization settings';
+                orgSettingsError.classList.add('show');
+                orgSettingsSuccess.classList.add('hidden');
+            }
+        }
+
+        // Toggle settings dropdown menu
+        function toggleSettingsMenu() {
+            const dropdown = document.querySelector('.settings-dropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
+        }
+
+        // Close settings dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const settingsMenu = document.querySelector('.settings-menu');
+            const dropdown = document.querySelector('.settings-dropdown');
+            if (settingsMenu && dropdown && !settingsMenu.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
         // Update UI to show user and organization information
         function updateUIForUser() {
             if (currentUser) {
@@ -5708,7 +5895,13 @@
                         userInfo.className = 'user-info';
                         userInfo.innerHTML = `
                             <span class="user-display">Welcome, ${currentUser.displayName}</span>
-                            <button class="logout-btn" onclick="openSettings()" title="Settings">⚙️</button>
+                            <div class="settings-menu">
+                                <button class="logout-btn" onclick="toggleSettingsMenu()" title="Settings">⚙️</button>
+                                <div class="settings-dropdown hidden">
+                                    <button onclick="openSettings()">User Settings</button>
+                                    ${currentUser.isOwner ? '<button onclick="openOrgSettings()">Organization Settings</button>' : ''}
+                                </div>
+                            </div>
                             <button class="logout-btn" onclick="logout()">Logout</button>
                         `;
                         appHeader.appendChild(userInfo);
@@ -6301,6 +6494,18 @@
                 closeSettingsBtn.addEventListener('click', closeSettings);
             }
 
+            // Organization settings event listeners
+            const saveOrgSettingsBtn = document.getElementById('saveOrgSettingsBtn');
+            const closeOrgSettingsBtn = document.getElementById('closeOrgSettingsBtn');
+
+            if (saveOrgSettingsBtn) {
+                saveOrgSettingsBtn.addEventListener('click', saveOrgSettings);
+            }
+
+            if (closeOrgSettingsBtn) {
+                closeOrgSettingsBtn.addEventListener('click', closeOrgSettings);
+            }
+
             // Environment picker functions
             async function showEnvironmentPicker(user, environments) {
                 console.log('Showing environment picker for user:', user.email);
@@ -6365,6 +6570,22 @@
                     organizationName: environment.organization_name,
                     isOwner: environment.is_owner
                 };
+
+                // Load organization member colors
+                try {
+                    const { data: org, error } = await supabaseClient
+                        .from('organizations')
+                        .select('member_colors')
+                        .eq('id', currentUser.organizationId)
+                        .single();
+
+                    if (!error && org) {
+                        window.organizationMemberColors = org.member_colors || {};
+                    }
+                } catch (error) {
+                    console.warn('Failed to load organization member colors:', error);
+                    window.organizationMemberColors = {};
+                }
 
                 // Store session
                 const sessionData = {
@@ -7732,31 +7953,6 @@
             return 'mario'; // fallback
         }
 
-        /**
-         * Maps a display name or username to a valid database assignee value.
-         * The database constraint only allows: 'mario', 'maria', 'both'
-         */
-        function mapToValidAssignee(name) {
-            if (!name) return 'mario';
-            
-            const lowerName = name.toLowerCase().trim();
-            
-            // Direct matches
-            if (lowerName === 'mario' || lowerName === 'maria' || lowerName === 'both') {
-                return lowerName;
-            }
-            
-            // Check if name starts with mario or maria (e.g., "Mario S", "Maria Smith")
-            if (lowerName.startsWith('mario')) return 'mario';
-            if (lowerName.startsWith('maria')) return 'maria';
-            
-            // Check if name contains mario or maria
-            if (lowerName.includes('mario')) return 'mario';
-            if (lowerName.includes('maria')) return 'maria';
-            
-            // Fallback to mario for any other name
-            return 'mario';
-        }
         async function populateAssigneeButtons() {
             const assigneeGroup = document.getElementById('assigneeGroup');
             if (!assigneeGroup) {
@@ -7896,16 +8092,36 @@
             }
         }
 
+        // Helper function to get organization data with member colors
+        async function getOrganizationData(orgId) {
+            const { data: org, error } = await supabaseClient
+                .from('organizations')
+                .select('id, name, member_colors')
+                .eq('id', orgId)
+                .single();
+
+            if (error) throw error;
+            return org;
+        }
+
         async function populateAssigneeFilterButtons() {
             const assigneeFilter = document.getElementById('assigneeFilter');
             if (!assigneeFilter) return;
 
             try {
-                // Get environment members
-                const { data: members, error } = await supabaseClient
-                    .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                // Get environment members and organization data
+                const [membersResult, orgResult] = await Promise.all([
+                    supabaseClient.rpc('get_environment_members', { org_id: currentUser.organizationId }),
+                    getOrganizationData(currentUser.organizationId)
+                ]);
 
-                if (error) throw error;
+                const { data: members, error: membersError } = membersResult;
+                if (membersError) throw membersError;
+
+                const organization = orgResult;
+                // Set global member colors for task rendering
+                window.organizationMemberColors = organization.member_colors || {};
+                const memberColors = organization.member_colors || {};
 
                 // Clear existing buttons
                 assigneeFilter.innerHTML = '';
@@ -7925,12 +8141,19 @@
                 assigneeFilter.appendChild(allBtn);
 
                 if (members && members.length > 0) {
-                    // Add individual member filter buttons
+                    // Add individual member filter buttons with dynamic colors
                     members.forEach(member => {
                         const btn = document.createElement('button');
                         btn.className = 'assignee-filter-btn';
                         btn.dataset.filter = member.user_id;
-                        btn.innerHTML = `<span class="filter-dot" style="background: var(--accent-mario);"></span>${member.display_name}`;
+
+                        // Get color from organization settings, fallback to default colors
+                        const memberColor = memberColors[member.user_id] ||
+                                          memberColors[member.username] ||
+                                          memberColors[member.display_name?.toLowerCase()] ||
+                                          '#4a9eff'; // Default blue
+
+                        btn.innerHTML = `<span class="filter-dot" style="background: ${memberColor};"></span>${member.display_name}`;
 
                         btn.addEventListener('click', () => {
                             document.querySelectorAll('.assignee-filter-btn').forEach(b => b.classList.remove('active'));
@@ -9059,11 +9282,43 @@
                 modalTitle.textContent = 'Add to Plan';
                 tasksList.innerHTML = '';
 
-                // Show options for both Mario and Maria
-                const assignees = [
-                    { id: 'mario', name: 'Mario', icon: 'M', color: 'var(--accent-mario)' },
-                    { id: 'maria', name: 'Maria', icon: 'A', color: 'var(--accent-maria)' }
-                ];
+                // Load members dynamically from organization
+                const { data: members, error: membersError } = await supabaseClient
+                    .rpc('get_environment_members', { org_id: currentUser.organizationId });
+
+                if (membersError) {
+                    console.error('Error loading members:', membersError);
+                    return;
+                }
+
+                // Get organization data for member colors
+                const { data: org, error: orgError } = await supabaseClient
+                    .from('organizations')
+                    .select('member_colors')
+                    .eq('id', currentUser.organizationId)
+                    .single();
+
+                if (orgError) {
+                    console.error('Error loading organization:', orgError);
+                    return;
+                }
+
+                const memberColors = org.member_colors || {};
+
+                // Create dynamic assignees array
+                const assignees = (members || []).map(member => {
+                    const memberColor = memberColors[member.user_id] ||
+                                       memberColors[member.username] ||
+                                       memberColors[member.display_name?.toLowerCase()] ||
+                                       '#4a9eff'; // Default blue
+
+                    return {
+                        id: member.user_id,
+                        name: member.display_name,
+                        icon: member.display_name.charAt(0).toUpperCase(),
+                        color: memberColor
+                    };
+                });
 
                 const blocks = [
                     { name: 'morning', label: 'Morning', emoji: '🌅' },
@@ -9109,12 +9364,12 @@
                 const assigneePlan = todaysPlan[assignee] || { morning: [], afternoon: [], evening: [] };
                 const allPlannedForAssignee = [...assigneePlan.morning, ...assigneePlan.afternoon, ...assigneePlan.evening];
                 
-                // Show tasks assigned to this person (or 'both')
+                // Show tasks assigned to this person (or 'all'/'both')
                 const availableTasks = tasks.filter(t => 
                     !t.completed && 
                     !t.banked && 
                     !allPlannedForAssignee.includes(t.id) &&
-                    (t.assignee === assignee || t.assignee === 'both')
+                    (t.assignee === assignee || t.assignee === 'both' || t.assignee === 'all' || t.assignee_id === assignee)
                 );
 
                 if (availableTasks.length === 0) {
@@ -9437,8 +9692,8 @@
             homeTasksFirst.forEach(task => {
                 const taskTime = sizeMinutes[task.size] || 45;
                 
-                // For 'both' tasks, add to both Mario and Maria's schedules
-                if (task.assignee === 'both') {
+                // For 'all'/'both' tasks, add to both Mario and Maria's schedules
+                if (task.assignee === 'both' || task.assignee === 'all') {
                     for (const block of availableBlocks) {
                         // Check if both have room
                         if (used.mario[block] + taskTime <= budgets[block] && 
@@ -9965,12 +10220,12 @@
         }
 
         function showTooltip(e, task) {
-            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both' };
+            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario Maria Both', all: 'All' };
             const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
-            const completedByLabels = { mario: 'Completed by Mario', maria: 'Completed by Maria', both: 'Completed by Both' };
+            const completedByLabels = { mario: 'Completed by Mario', maria: 'Completed by Maria', both: 'Completed by Both', all: 'Completed by All' };
 
             tooltip.querySelector('.tooltip-name').textContent = task.name;
-            let metaText = `${assigneeLabels[task.assignee]} • ${sizeLabels[task.size]}`;
+            let metaText = `${assigneeLabels[task.assignee] || task.assignee} • ${sizeLabels[task.size]}`;
             if (task.completed && task.completed_by) {
                 metaText += ` • ${completedByLabels[task.completed_by]}`;
             }
@@ -10000,10 +10255,27 @@
             // Filter tasks by assignee
             const filteredTasks = tasks.filter(task => {
                 if (taskFilterAssignee === 'all') return true;
-                // For backward compatibility, handle both old and new assignee formats
-                if (taskFilterAssignee === 'mario') return task.assignee === 'mario' || task.assignee === 'both' || task.assignee === currentUser.id;
-                if (taskFilterAssignee === 'maria') return task.assignee === 'maria' || task.assignee === 'both';
-                return true;
+                
+                // Check by assignee_id first (new format)
+                if (task.assignee_id === taskFilterAssignee) return true;
+                
+                // Include 'all' tasks for everyone
+                if (task.assignee === 'all' || task.assignee === 'both') return true;
+                
+                // Legacy: check by assignee value for backward compatibility
+                if (task.assignee === taskFilterAssignee) return true;
+                
+                // Legacy: check by username if taskFilterAssignee is a legacy value
+                if (taskFilterAssignee === 'mario' || taskFilterAssignee === 'maria') {
+                    // Check if task is assigned to current user (for backward compat)
+                    if (task.assignee_id === currentUser?.id) {
+                        const currentUserName = (currentUser.displayName || currentUser.username || '').toLowerCase();
+                        if (taskFilterAssignee === 'mario' && currentUserName.includes('mario')) return true;
+                        if (taskFilterAssignee === 'maria' && currentUserName.includes('maria')) return true;
+                    }
+                }
+                
+                return false;
             });
 
             filteredTasks.forEach(task => {
@@ -10030,9 +10302,21 @@
                     <div class="group-label">${group.label}</div>`;
 
                 group.tasks.forEach(task => {
-                    const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Both' };
+                    const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Both', all: 'All' };
                     const sizeLabels = { xs: '5-10min', s: '10-30min', m: '30min-1hr', l: '1-2hrs', xl: '2hrs+' };
                     const iconDisplay = task.icon ? `<span style="margin-right: 4px">${task.icon}</span>` : '';
+
+                    // Get dynamic color for assignee
+                    let assigneeColor = '#4a9eff'; // Default blue
+                    if (currentUser && currentUser.organizationId) {
+                        // This will be set when organization data is loaded
+                        if (window.organizationMemberColors) {
+                            assigneeColor = window.organizationMemberColors[task.assignee_id] ||
+                                          window.organizationMemberColors[task.assignee] ||
+                                          '#4a9eff';
+                        }
+                    }
+
                     html += `
                         <div class="task-item${task.completed ? ' completed' : ''}" data-id="${task.id}">
                             <div class="task-item-checkbox${task.completed ? ' checked' : ''}" onclick="event.stopPropagation(); showTaskOptionsMenuById('${task.id}')">
@@ -10040,10 +10324,10 @@
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </div>
-                            <div class="task-item-dot ${task.assignee} ${task.size}">${task.icon || ''}</div>
+                            <div class="task-item-dot ${task.size}" style="background: ${assigneeColor};">${task.icon || ''}</div>
                             <div class="task-item-content" onclick="showViewTaskModalById('${task.id}')" style="cursor: pointer; flex: 1;">
                                 <div class="task-item-name">${iconDisplay}${escapeHtml(task.name)}</div>
-                                <div class="task-item-meta">${assigneeLabels[task.assignee]} • ${sizeLabels[task.size] || task.size}</div>
+                                <div class="task-item-meta">${assigneeLabels[task.assignee] || task.assignee} • ${sizeLabels[task.size] || task.size}</div>
                             </div>
                             <button class="task-delete-btn" onclick="event.stopPropagation(); deleteTask('${task.id}')">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -10064,9 +10348,27 @@
             // Filter tasks by current assignee filter
             const filteredTasks = tasks.filter(task => {
                 if (taskFilterAssignee === 'all') return true;
-                if (taskFilterAssignee === 'mario') return task.assignee === 'mario' || task.assignee === 'both';
-                if (taskFilterAssignee === 'maria') return task.assignee === 'maria' || task.assignee === 'both';
-                return true;
+                
+                // Check by assignee_id first (new format)
+                if (task.assignee_id === taskFilterAssignee) return true;
+                
+                // Include 'all' tasks for everyone
+                if (task.assignee === 'all' || task.assignee === 'both') return true;
+                
+                // Legacy: check by assignee value for backward compatibility
+                if (task.assignee === taskFilterAssignee) return true;
+                
+                // Legacy: check by username if taskFilterAssignee is a legacy value
+                if (taskFilterAssignee === 'mario' || taskFilterAssignee === 'maria') {
+                    // Check if task is assigned to current user (for backward compat)
+                    if (task.assignee_id === currentUser?.id) {
+                        const currentUserName = (currentUser.displayName || currentUser.username || '').toLowerCase();
+                        if (taskFilterAssignee === 'mario' && currentUserName.includes('mario')) return true;
+                        if (taskFilterAssignee === 'maria' && currentUserName.includes('maria')) return true;
+                    }
+                }
+                
+                return false;
             });
             const count = filteredTasks.length;
             const totalCount = tasks.length;
@@ -10192,10 +10494,31 @@
                 option.value = task.id;
                 const icon = task.icon ? `${task.icon} ` : '';
                 let assigneeLabel = '(All)';
-                if (task.assignee === 'mario') assigneeLabel = '(M)';
-                else if (task.assignee === 'maria') assigneeLabel = '(A)';
-                else if (task.assignee === 'both') assigneeLabel = '(Both)';
-                else if (task.assignee === currentUser.id) assigneeLabel = `(${currentUser.displayName.charAt(0)})`;
+                
+                // Check assignee_id first (new format)
+                if (task.assignee_id) {
+                    // Try to get display name from cache
+                    const member = environmentMembersCache?.find(m => m.user_id === task.assignee_id);
+                    if (member?.display_name) {
+                        assigneeLabel = `(${member.display_name.charAt(0)})`;
+                    } else if (task.assignee_id === currentUser?.id) {
+                        assigneeLabel = `(${(currentUser.displayName || currentUser.username || 'U').charAt(0)})`;
+                    } else {
+                        assigneeLabel = '(?)';
+                    }
+                } else if (task.assignee === 'all' || task.assignee === 'both') {
+                    assigneeLabel = '(All)';
+                } else if (task.assignee === 'mario') {
+                    assigneeLabel = '(M)';
+                } else if (task.assignee === 'maria') {
+                    assigneeLabel = '(A)';
+                } else if (task.assignee === currentUser?.id) {
+                    assigneeLabel = `(${(currentUser.displayName || currentUser.username || 'U').charAt(0)})`;
+                } else if (task.assignee && task.assignee.length > 0) {
+                    // Use first character of assignee name (could be display name)
+                    assigneeLabel = `(${task.assignee.charAt(0)})`;
+                }
+                
                 option.textContent = `${icon}${task.name} ${assigneeLabel}`;
                 modalDependsOn.appendChild(option);
             });
@@ -10544,18 +10867,18 @@
             const locationValue = modalLocation ? modalLocation.value.trim() : null;
             const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
 
-            // Handle assignee and assignee_id - map user IDs to legacy names for display
-            let assigneeValue = 'both';
+            // Handle assignee - use 'all' for group tasks, display_name for individual
+            let assigneeValue = 'all';
             let assigneeIdValue = null;
             
             if (selectedAssignee === 'all') {
-                assigneeValue = 'both';
+                assigneeValue = 'all';
                 assigneeIdValue = null;
             } else if (selectedAssignee) {
-                // selectedAssignee is a user ID - get the display name from cache or database
+                // Store the user's UUID
                 assigneeIdValue = selectedAssignee;
                 
-                // Try to get display name from cache first
+                // Get display name for the assignee column (for display/backward compat)
                 let member = null;
                 if (environmentMembersCache) {
                     member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
@@ -10564,47 +10887,33 @@
                 // If not in cache, try to fetch from database
                 if (!member && selectedAssignee !== 'all') {
                     try {
-                        // Query users table to get username
-                        const { data: userData, error: userError } = await supabaseClient
-                            .from('users')
-                            .select('username')
-                            .eq('id', selectedAssignee)
-                            .single();
+                        // Query environment_members for display_name
+                        const { data: envMember, error: envError } = await supabaseClient
+                            .rpc('get_environment_members', { org_id: currentUser.organizationId });
                         
-                        if (!userError && userData && userData.username) {
-                            assigneeValue = mapToValidAssignee(userData.username);
-                        } else {
-                            // Fallback: query environment_members for display_name
-                            const { data: envMember, error: envError } = await supabaseClient
-                                .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                        if (!envError && envMember) {
+                            // Update cache whenever we successfully fetch fresh data
+                            environmentMembersCache = envMember;
                             
-                            if (!envError && envMember) {
-                                // Update cache whenever we successfully fetch fresh data
-                                environmentMembersCache = envMember;
-                                
-                                const foundMember = envMember.find(m => m.user_id === selectedAssignee);
-                                if (foundMember && foundMember.display_name) {
-                                    assigneeValue = mapToValidAssignee(foundMember.display_name);
-                                }
+                            const foundMember = envMember.find(m => m.user_id === selectedAssignee);
+                            if (foundMember && foundMember.display_name) {
+                                member = foundMember;
                             }
                         }
                     } catch (error) {
                         console.error('Error fetching user info for assignee:', error);
                     }
-                } else if (member && member.display_name) {
-                    assigneeValue = mapToValidAssignee(member.display_name);
                 }
                 
-                // Final fallback: if still 'both', check if it's the current user
-                if (assigneeValue === 'both' && currentUser && selectedAssignee === currentUser.id) {
-                    assigneeValue = mapToValidAssignee(currentUser.displayName || currentUser.username);
-                }
-                
-                // Last resort: if we have a UUID but couldn't map it, default to 'mario' to avoid constraint violation
-                // This should rarely happen, but prevents database errors
-                if (assigneeValue === 'both' && assigneeIdValue) {
-                    console.warn('Could not map assignee UUID to username, defaulting to mario');
-                    assigneeValue = 'mario';
+                // Set assignee to display name if available
+                if (member && member.display_name) {
+                    assigneeValue = member.display_name;
+                } else if (currentUser && selectedAssignee === currentUser.id) {
+                    assigneeValue = currentUser.displayName || currentUser.username || selectedAssignee;
+                } else {
+                    // Fallback: use UUID as assignee if we can't get the name
+                    // The constraint only requires assignee_id to be set
+                    assigneeValue = selectedAssignee;
                 }
             }
 
@@ -10701,18 +11010,18 @@
             const locationValue = modalLocation ? modalLocation.value.trim() : null;
             const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
 
-            // Handle assignee and assignee_id - map user IDs to legacy names for display
-            let assigneeValue = 'both';
+            // Handle assignee - use 'all' for group tasks, display_name for individual
+            let assigneeValue = 'all';
             let assigneeIdValue = null;
             
             if (selectedAssignee === 'all') {
-                assigneeValue = 'both';
+                assigneeValue = 'all';
                 assigneeIdValue = null;
             } else if (selectedAssignee) {
-                // selectedAssignee is a user ID - get the display name from cache or database
+                // Store the user's UUID
                 assigneeIdValue = selectedAssignee;
                 
-                // Try to get display name from cache first
+                // Get display name for the assignee column (for display/backward compat)
                 let member = null;
                 if (environmentMembersCache) {
                     member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
@@ -10721,47 +11030,33 @@
                 // If not in cache, try to fetch from database
                 if (!member && selectedAssignee !== 'all') {
                     try {
-                        // Query users table to get username
-                        const { data: userData, error: userError } = await supabaseClient
-                            .from('users')
-                            .select('username')
-                            .eq('id', selectedAssignee)
-                            .single();
+                        // Query environment_members for display_name
+                        const { data: envMember, error: envError } = await supabaseClient
+                            .rpc('get_environment_members', { org_id: currentUser.organizationId });
                         
-                        if (!userError && userData && userData.username) {
-                            assigneeValue = mapToValidAssignee(userData.username);
-                        } else {
-                            // Fallback: query environment_members for display_name
-                            const { data: envMember, error: envError } = await supabaseClient
-                                .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                        if (!envError && envMember) {
+                            // Update cache whenever we successfully fetch fresh data
+                            environmentMembersCache = envMember;
                             
-                            if (!envError && envMember) {
-                                // Update cache whenever we successfully fetch fresh data
-                                environmentMembersCache = envMember;
-                                
-                                const foundMember = envMember.find(m => m.user_id === selectedAssignee);
-                                if (foundMember && foundMember.display_name) {
-                                    assigneeValue = mapToValidAssignee(foundMember.display_name);
-                                }
+                            const foundMember = envMember.find(m => m.user_id === selectedAssignee);
+                            if (foundMember && foundMember.display_name) {
+                                member = foundMember;
                             }
                         }
                     } catch (error) {
                         console.error('Error fetching user info for assignee:', error);
                     }
-                } else if (member && member.display_name) {
-                    assigneeValue = mapToValidAssignee(member.display_name);
                 }
                 
-                // Final fallback: if still 'both', check if it's the current user
-                if (assigneeValue === 'both' && currentUser && selectedAssignee === currentUser.id) {
-                    assigneeValue = mapToValidAssignee(currentUser.displayName || currentUser.username);
-                }
-                
-                // Last resort: if we have a UUID but couldn't map it, default to 'mario' to avoid constraint violation
-                // This should rarely happen, but prevents database errors
-                if (assigneeValue === 'both' && assigneeIdValue) {
-                    console.warn('Could not map assignee UUID to username, defaulting to mario');
-                    assigneeValue = 'mario';
+                // Set assignee to display name if available
+                if (member && member.display_name) {
+                    assigneeValue = member.display_name;
+                } else if (currentUser && selectedAssignee === currentUser.id) {
+                    assigneeValue = currentUser.displayName || currentUser.username || selectedAssignee;
+                } else {
+                    // Fallback: use UUID as assignee if we can't get the name
+                    // The constraint only requires assignee_id to be set
+                    assigneeValue = selectedAssignee;
                 }
             }
 
@@ -11434,7 +11729,7 @@
 
         // Build task context string for AI
         function buildTaskContext(task) {
-            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario and Maria' };
+            const assigneeLabels = { mario: 'Mario', maria: 'Maria', both: 'Mario and Maria', all: 'All' };
             const sizeLabels = { xs: '5-10 minutes', s: '10-30 minutes', m: '30 minutes to 1 hour', l: '1-2 hours', xl: '2+ hours' };
             const urgencyLabels = { 1: 'Whenever', 2: 'This Week', 3: 'Today', 4: 'Morning', 5: 'ASAP' };
             const importanceLabels = { 1: 'Optional', 2: 'Nice to Have', 3: 'Keeps us on track', 4: 'Matters a lot', 5: 'Critical' };
@@ -12419,6 +12714,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 const task1 = {
                     name: `${task.name} - Part 1`,
                     assignee: task.assignee,
+                    assignee_id: task.assignee_id,
                     size: task.size,
                     urgent: task.urgent,
                     important: task.important,
@@ -12432,6 +12728,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 const task2 = {
                     name: `${task.name} - Part 2`,
                     assignee: task.assignee,
+                    assignee_id: task.assignee_id,
                     size: task.size,
                     urgent: task.urgent,
                     important: task.important,
@@ -12469,11 +12766,19 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 const recipients = [];
                 
                 // Determine who should be notified based on assignee
-                if (task.assignee === 'mario') {
-                    recipients.push('mario');
-                } else if (task.assignee === 'maria') {
-                    recipients.push('maria');
-                } else if (task.assignee === 'both' || task.assignee === 'all') {
+                // Check assignee_id first (new format)
+                if (task.assignee_id) {
+                    // Task assigned to a specific user
+                    if (task.assignee_id !== currentUser.id) {
+                        // Notify the assignee
+                        try {
+                            const assigneeName = await getAssigneeDisplayName(task.assignee_id);
+                            recipients.push(assigneeName.toLowerCase());
+                        } catch (error) {
+                            console.error('Error getting assignee name for notification:', error);
+                        }
+                    }
+                } else if (task.assignee === 'all' || task.assignee === 'both') {
                     // For 'all' tasks, notify all members
                     try {
                         const { data: members, error } = await supabaseClient
@@ -12488,9 +12793,14 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     } catch (error) {
                         console.error('Error getting members for notification:', error);
                     }
+                } else if (task.assignee === 'mario' || task.assignee === 'maria') {
+                    // Legacy format - notify the assignee
+                    if (task.assignee !== currentUser.username?.toLowerCase()) {
+                        recipients.push(task.assignee);
+                    }
                 } else if (task.assignee === currentUser.id) {
                     // Task assigned to current user - no notification needed
-                } else {
+                } else if (task.assignee) {
                     // Task assigned to another user - try to find their name
                     try {
                         const assigneeName = await getAssigneeDisplayName(task.assignee);
@@ -12542,13 +12852,24 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 // When a task is completed, notify the OTHER person
                 let notifyRecipient = null;
                 
-                if (task.assignee === 'mario') {
-                    // Task assigned to Mario -> notify Maria when it's completed
-                    notifyRecipient = 'maria';
-                } else if (task.assignee === 'maria') {
-                    // Task assigned to Maria -> notify Mario when it's completed
-                    notifyRecipient = 'mario';
-                } else if (task.assignee === 'both' || task.assignee === 'all') {
+                // Check assignee_id first (new format)
+                if (task.assignee_id) {
+                    // Task assigned to a specific user - notify other members
+                    try {
+                        const { data: members, error } = await supabaseClient
+                            .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                        if (!error && members) {
+                            const otherMembers = members.filter(m => 
+                                m.user_id !== currentUser.id && m.user_id !== task.assignee_id
+                            );
+                            if (otherMembers.length > 0) {
+                                notifyRecipient = otherMembers[0].display_name.toLowerCase();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error getting members for completion notification:', error);
+                    }
+                } else if (task.assignee === 'all' || task.assignee === 'both') {
                     // Task assigned to all -> notify all other members
                     try {
                         const { data: members, error } = await supabaseClient
@@ -12562,6 +12883,9 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     } catch (error) {
                         console.error('Error getting members for completion notification:', error);
                     }
+                } else if (task.assignee === 'mario' || task.assignee === 'maria') {
+                    // Legacy format - notify the other person
+                    notifyRecipient = task.assignee === 'mario' ? 'maria' : 'mario';
                 } else if (task.assignee === currentUser.id) {
                     // Task assigned to current user - no notification needed
                 } else {

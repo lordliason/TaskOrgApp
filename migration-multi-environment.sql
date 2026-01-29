@@ -107,20 +107,31 @@ ALTER TABLE tasks ADD CONSTRAINT tasks_assignee_check CHECK (
 -- STEP 6: UPDATE SCORES SYSTEM
 -- ===========================================
 
--- Add user_id to scores table if not exists
+-- Add organization_id and user_id to scores table if not exists
+ALTER TABLE scores ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
 ALTER TABLE scores ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
 
--- Migrate existing player values to user_id
-UPDATE scores SET user_id = (
-    CASE
-        WHEN player = 'mario' THEN (SELECT id FROM users WHERE username = 'mario')
-        WHEN player = 'maria' THEN (SELECT id FROM users WHERE username = 'maria')
-        ELSE NULL
-    END
-) WHERE user_id IS NULL;
+-- Migrate existing player values to user_id and set organization_id
+UPDATE scores SET 
+    organization_id = (SELECT organization_id FROM users u WHERE u.id = (
+        CASE
+            WHEN scores.player = 'mario' THEN (SELECT id FROM users WHERE username = 'mario')
+            WHEN scores.player = 'maria' THEN (SELECT id FROM users WHERE username = 'maria')
+            ELSE NULL
+        END
+    )),
+    user_id = (
+        CASE
+            WHEN player = 'mario' THEN (SELECT id FROM users WHERE username = 'mario')
+            WHEN player = 'maria' THEN (SELECT id FROM users WHERE username = 'maria')
+            ELSE NULL
+        END
+    )
+WHERE user_id IS NULL OR organization_id IS NULL;
 
--- Make user_id NOT NULL for future scores
--- (existing data might have NULL, but new scores should have user_id)
+-- Create index for performance
+CREATE INDEX IF NOT EXISTS idx_scores_organization_id ON scores(organization_id);
+CREATE INDEX IF NOT EXISTS idx_scores_user_id ON scores(user_id);
 
 -- ===========================================
 -- STEP 7: CREATE INVITATIONS SYSTEM
