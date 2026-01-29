@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version: 2026-01-29-v4 - Event delegation fix for assignee buttons -->
+<!-- Version: 2026-01-29-v5 - Explicit display property for assignee buttons (flex blockification clarity) -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -745,6 +745,7 @@
         }
 
         .assignee-btn {
+            display: block; /* Explicit: flex items are blockified by spec */
             flex: 1;
             padding: 0.75rem 0.5rem;
             border: 2px solid var(--border);
