@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Version: 2026-01-29-v3 - Assignee display fix -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11138,40 +11139,67 @@
             const dependsOnValue = modalDependsOn ? modalDependsOn.value : null;
 
             // Handle assignee - use 'all' for group tasks, display_name for individual
+            // VERSION: 2026-01-29-v3
             let assigneeValue = 'all';
             let assigneeIdValue = null;
+            
+            console.log('=== UPDATE TASK v3: Starting assignee resolution ===');
+            console.log('selectedAssignee:', selectedAssignee);
+            console.log('environmentMembersCache:', environmentMembersCache);
             
             if (selectedAssignee === 'all') {
                 assigneeValue = 'all';
                 assigneeIdValue = null;
+                console.log('Assignee is "all"');
             } else if (selectedAssignee) {
                 // Store the user's UUID
                 assigneeIdValue = selectedAssignee;
                 
                 // Get display name for the assignee column (for display/backward compat)
                 let member = null;
-                console.log('=== UPDATE TASK: Resolving assignee display name ===');
-                console.log('selectedAssignee:', selectedAssignee);
-                console.log('environmentMembersCache:', environmentMembersCache);
                 
-                if (environmentMembersCache && environmentMembersCache.length > 0) {
-                    member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
-                    console.log('Found member in cache:', member);
+                // FIRST: Try to get from the button text directly (most reliable)
+                const assigneeGroup = document.getElementById('assigneeGroup');
+                if (assigneeGroup) {
+                    const activeBtn = assigneeGroup.querySelector('.assignee-btn.active');
+                    if (activeBtn && activeBtn.textContent && activeBtn.dataset.value === selectedAssignee) {
+                        assigneeValue = activeBtn.textContent.trim();
+                        console.log('Got display name from active button:', assigneeValue);
+                    }
                 }
                 
-                // If not in cache, try to fetch from database
-                if (!member && selectedAssignee !== 'all') {
+                // SECOND: Try to get from cache
+                if (assigneeValue === 'all' && environmentMembersCache && environmentMembersCache.length > 0) {
+                    member = environmentMembersCache.find(m => m.user_id === selectedAssignee);
+                    if (member && member.display_name) {
+                        assigneeValue = member.display_name;
+                        console.log('Got display name from cache:', assigneeValue);
+                    }
+                }
+                
+                // If still not resolved (assigneeValue is still 'all' but selectedAssignee is a UUID), fetch from DB
+                if (assigneeValue === 'all' && selectedAssignee !== 'all') {
                     try {
-                        console.log('Assignee cache miss, fetching from database for org:', currentUser.organizationId);
+                        console.log('Assignee not resolved yet, fetching from database for org:', currentUser.organizationId);
                         // Query environment_members for display_name
                         const { data: envMember, error: envError } = await supabaseClient
                             .rpc('get_environment_members', { org_id: currentUser.organizationId });
 
                         console.log('RPC result:', envMember, 'error:', envError);
 
-                        if (envError) {
-                            console.error('Error fetching environment members:', envError);
-                            // Try fallback: query users table directly
+                        if (!envError && envMember) {
+                            // Update cache whenever we successfully fetch fresh data
+                            environmentMembersCache = envMember;
+
+                            const foundMember = envMember.find(m => m.user_id === selectedAssignee);
+                            if (foundMember && foundMember.display_name) {
+                                assigneeValue = foundMember.display_name;
+                                console.log('Found member from fresh fetch:', foundMember.display_name);
+                            }
+                        }
+                        
+                        // If RPC failed or no member found, try direct user query
+                        if (assigneeValue === 'all') {
                             const { data: userData, error: userError } = await supabaseClient
                                 .from('users')
                                 .select('id, display_name, username')
@@ -11180,46 +11208,26 @@
                                 .single();
 
                             if (!userError && userData) {
-                                console.log('Found user via direct query:', userData);
-                                member = {
-                                    user_id: userData.id,
-                                    display_name: userData.display_name || userData.username
-                                };
-                            }
-                        } else if (envMember) {
-                            // Update cache whenever we successfully fetch fresh data
-                            environmentMembersCache = envMember;
-
-                            const foundMember = envMember.find(m => m.user_id === selectedAssignee);
-                            if (foundMember && foundMember.display_name) {
-                                member = foundMember;
-                                console.log('Found member from fresh fetch:', member);
+                                assigneeValue = userData.display_name || userData.username;
+                                console.log('Found user via direct query:', assigneeValue);
                             }
                         }
                     } catch (error) {
                         console.error('Error fetching user info for assignee:', error);
-                        // Final fallback: try to get current user info if it's the current user
-                        if (currentUser && selectedAssignee === currentUser.id) {
-                            member = {
-                                user_id: currentUser.id,
-                                display_name: currentUser.displayName || currentUser.username
-                            };
-                        }
                     }
                 }
 
-                // Set assignee to display name if available
-                if (member && member.display_name) {
-                    assigneeValue = member.display_name;
-                    console.log('Using display name from member:', assigneeValue);
-                } else if (currentUser && selectedAssignee === currentUser.id) {
-                    assigneeValue = currentUser.displayName || currentUser.username || selectedAssignee;
-                    console.log('Using current user display name:', assigneeValue);
-                } else {
-                    // Fallback: use UUID as assignee if we can't get the name
-                    // The constraint only requires assignee_id to be set
-                    console.warn('Could not resolve display name for assignee:', selectedAssignee, 'using UUID as fallback');
-                    assigneeValue = selectedAssignee;
+                // Final fallbacks
+                if (assigneeValue === 'all' && selectedAssignee !== 'all') {
+                    // Try current user
+                    if (currentUser && selectedAssignee === currentUser.id) {
+                        assigneeValue = currentUser.displayName || currentUser.username || selectedAssignee;
+                        console.log('Using current user display name:', assigneeValue);
+                    } else {
+                        // Last resort: use UUID
+                        console.warn('Could not resolve display name for assignee:', selectedAssignee, 'using UUID as fallback');
+                        assigneeValue = selectedAssignee;
+                    }
                 }
                 
                 console.log('Final assignee values - assigneeValue:', assigneeValue, 'assigneeIdValue:', assigneeIdValue);
