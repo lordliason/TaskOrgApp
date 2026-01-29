@@ -763,18 +763,11 @@
             background: var(--bg-hover);
         }
 
-        /* Generic active state for dynamically created assignee buttons (UUIDs) */
+        /* Generic active state - uses per-button CSS custom properties */
         .assignee-btn.active {
-            border-color: var(--accent);
-            background: rgba(99, 102, 241, 0.1);
-            color: var(--accent);
-        }
-
-        /* Active state for "all" assignee option */
-        .assignee-btn.active[data-value="all"] {
-            border-color: var(--accent-both);
-            background: rgba(167, 139, 250, 0.1);
-            color: var(--accent-both);
+            border-color: var(--btn-accent, var(--accent));
+            background: var(--btn-accent-bg, rgba(99, 102, 241, 0.1));
+            color: var(--btn-accent, var(--accent));
         }
 
         /* Size & Priority Selector */
@@ -7704,6 +7697,11 @@
                         btn.dataset.value = member.user_id;
                         btn.textContent = member.display_name || member.email || 'Unknown';
                         
+                        // Get member color and set CSS custom properties
+                        const memberColor = getMemberColor(member.user_id);
+                        btn.style.setProperty('--btn-accent', memberColor);
+                        btn.style.setProperty('--btn-accent-bg', hexToRgba(memberColor, 0.1));
+                        
                         // Check if this button matches the preserved assignee
                         if (preservedAssignee === member.user_id) {
                             btn.classList.add('active');
@@ -7727,6 +7725,11 @@
                     allBtn.className = 'assignee-btn';
                     allBtn.dataset.value = 'all';
                     allBtn.textContent = 'All Members';
+                    
+                    // Set "all" color
+                    const allColor = getMemberColor('all');
+                    allBtn.style.setProperty('--btn-accent', allColor);
+                    allBtn.style.setProperty('--btn-accent-bg', hexToRgba(allColor, 0.1));
                     
                     // Check if "All" matches the preserved assignee
                     if (preservedAssignee === 'all') {
@@ -7802,38 +7805,57 @@
             return org;
         }
 
-        // Helper function to get member color by user ID or legacy name
+        // Helper function to get member color by user ID or display name
         function getMemberColor(assigneeId) {
             const colors = window.organizationMemberColors || {};
-            const defaultColors = {
-                'all': '#a78bfa',  // Purple for shared tasks
-                'both': '#a78bfa'
-            };
             
-            // Check for 'all' or 'both' first
+            // Check for 'all' or 'both' first (now in normalized map)
             if (assigneeId === 'all' || assigneeId === 'both') {
-                return defaultColors.all;
+                return colors['all'] || '#a78bfa';
             }
             
-            // Try to find in organization member colors
+            // Try to find directly in UUID-keyed colors map
             if (colors[assigneeId]) {
                 return colors[assigneeId];
             }
             
-            // Try to find member by ID and get their color
+            // If assignee is a display name (fallback for old tasks), find the member by name
             if (environmentMembersCache) {
-                const member = environmentMembersCache.find(m => m.user_id === assigneeId);
+                // First try to find by user_id (UUID)
+                let member = environmentMembersCache.find(m => m.user_id === assigneeId);
+                
+                // If not found by ID, try by display name (case-insensitive)
+                if (!member && typeof assigneeId === 'string') {
+                    member = environmentMembersCache.find(m => 
+                        m.display_name?.toLowerCase() === assigneeId.toLowerCase() ||
+                        m.username?.toLowerCase() === assigneeId.toLowerCase()
+                    );
+                }
+                
                 if (member) {
-                    // Check by user_id, username, or display_name
-                    return colors[member.user_id] || 
-                           colors[member.username] || 
-                           colors[member.display_name?.toLowerCase()] ||
-                           '#4a9eff'; // Default blue
+                    // Return the color for this member's UUID
+                    return colors[member.user_id] || '#4a9eff';
                 }
             }
             
             // Fallback default
             return '#4a9eff';
+        }
+
+        // Helper function to convert hex color to rgba
+        function hexToRgba(hex, alpha) {
+            // Handle shorthand hex (#fff)
+            let r, g, b;
+            if (hex.length === 4) {
+                r = parseInt(hex[1] + hex[1], 16);
+                g = parseInt(hex[2] + hex[2], 16);
+                b = parseInt(hex[3] + hex[3], 16);
+            } else {
+                r = parseInt(hex.slice(1, 3), 16);
+                g = parseInt(hex.slice(3, 5), 16);
+                b = parseInt(hex.slice(5, 7), 16);
+            }
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
         // Helper function to get member display name by user ID
@@ -7871,9 +7893,27 @@
                 environmentMembersCache = members || [];
 
                 const organization = orgResult;
-                // Set global member colors for task rendering
-                window.organizationMemberColors = organization.member_colors || {};
-                const memberColors = organization.member_colors || {};
+                const legacyColors = organization.member_colors || {};
+                
+                // Build a normalized color map keyed by UUID
+                // This ensures getMemberColor() works with UUIDs directly
+                const normalizedColors = { 'all': '#a78bfa', 'both': '#a78bfa' };
+                const defaultMemberColors = ['#4a9eff', '#ff7eb3', '#22c55e', '#f59e0b', '#8b5cf6'];
+                
+                if (members && members.length > 0) {
+                    members.forEach((member, index) => {
+                        // Try to find color by user_id, username, or display_name
+                        const color = legacyColors[member.user_id] ||
+                                      legacyColors[member.username] ||
+                                      legacyColors[member.display_name?.toLowerCase()] ||
+                                      defaultMemberColors[index % defaultMemberColors.length];
+                        normalizedColors[member.user_id] = color;
+                    });
+                }
+                
+                // Set global member colors for task rendering (now keyed by UUID)
+                window.organizationMemberColors = normalizedColors;
+                const memberColors = normalizedColors;
 
                 // Clear existing buttons
                 assigneeFilter.innerHTML = '';
@@ -10407,14 +10447,26 @@
             const filteredTasks = tasks.filter(task => {
                 if (taskFilterAssignee === 'all') return true;
                 
-                // Check by assignee_id first (new format)
+                // Check by assignee_id first (new format with UUID)
                 if (task.assignee_id === taskFilterAssignee) return true;
                 
-                // Include 'all' tasks for everyone
-                if (task.assignee === 'all' || task.assignee === 'both') return true;
+                // Include 'all'/'both' tasks for everyone
+                if (task.assignee === 'all' || task.assignee === 'both' || 
+                    task.assignee_id === 'all') return true;
                 
                 // Check by assignee value (might be UUID)
                 if (task.assignee === taskFilterAssignee) return true;
+                
+                // Fallback: Check if task.assignee (display name) matches the member's display name
+                if (environmentMembersCache && typeof task.assignee === 'string') {
+                    const filterMember = environmentMembersCache.find(m => m.user_id === taskFilterAssignee);
+                    if (filterMember && (
+                        task.assignee.toLowerCase() === filterMember.display_name?.toLowerCase() ||
+                        task.assignee.toLowerCase() === filterMember.username?.toLowerCase()
+                    )) {
+                        return true;
+                    }
+                }
                 
                 return false;
             });
@@ -10425,7 +10477,11 @@
             });
 
             if (filteredTasks.length === 0) {
-                const filterText = taskFilterAssignee === 'all' ? '' : ` for ${taskFilterAssignee.charAt(0).toUpperCase() + taskFilterAssignee.slice(1)}`;
+                let filterText = '';
+                if (taskFilterAssignee !== 'all') {
+                    const memberName = getMemberDisplayName(taskFilterAssignee);
+                    filterText = ` for ${memberName}`;
+                }
                 taskList.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">○</div>
@@ -10492,14 +10548,26 @@
             const filteredTasks = tasks.filter(task => {
                 if (taskFilterAssignee === 'all') return true;
                 
-                // Check by assignee_id first (new format)
+                // Check by assignee_id first (new format with UUID)
                 if (task.assignee_id === taskFilterAssignee) return true;
                 
-                // Include 'all' tasks for everyone
-                if (task.assignee === 'all' || task.assignee === 'both') return true;
+                // Include 'all'/'both' tasks for everyone
+                if (task.assignee === 'all' || task.assignee === 'both' || 
+                    task.assignee_id === 'all') return true;
                 
                 // Check by assignee value (might be UUID)
                 if (task.assignee === taskFilterAssignee) return true;
+                
+                // Fallback: Check if task.assignee (display name) matches the member's display name
+                if (environmentMembersCache && typeof task.assignee === 'string') {
+                    const filterMember = environmentMembersCache.find(m => m.user_id === taskFilterAssignee);
+                    if (filterMember && (
+                        task.assignee.toLowerCase() === filterMember.display_name?.toLowerCase() ||
+                        task.assignee.toLowerCase() === filterMember.username?.toLowerCase()
+                    )) {
+                        return true;
+                    }
+                }
                 
                 return false;
             });
