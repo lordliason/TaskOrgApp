@@ -7932,7 +7932,16 @@
             }
 
             if (environmentMembersCache) {
-                const member = environmentMembersCache.find(m => m.user_id === assigneeValue);
+                // First try to find by user_id (UUID)
+                let member = environmentMembersCache.find(m => m.user_id === assigneeValue);
+
+                // If not found by UUID, try to find by display name
+                if (!member) {
+                    member = environmentMembersCache.find(m =>
+                        m.display_name.toLowerCase() === assigneeValue.toLowerCase()
+                    );
+                }
+
                 if (member) {
                     return member.display_name;
                 }
@@ -7943,7 +7952,8 @@
                 return currentUser.displayName;
             }
 
-            return 'Unknown';
+            // If we can't find the member, return the value as-is (might be a display name)
+            return assigneeValue;
         }
 
         async function getLegacyAssigneeName(assigneeValue) {
@@ -9641,94 +9651,145 @@
         }
 
         // Fallback basic auto-fill (used when AI is unavailable)
-        function fallbackAutoFillPlan() {
-            // Clear current plan
-            todaysPlan = {
-                mario: { morning: [], afternoon: [], evening: [] },
-                maria: { morning: [], afternoon: [], evening: [] }
-            };
+        async function fallbackAutoFillPlan() {
+            try {
+                // Get organization members dynamically
+                const { data: members, error } = await supabaseClient
+                    .rpc('get_environment_members', { org_id: currentUser.organizationId });
 
-            // Get current time to determine available blocks
-            const currentHour = new Date().getHours();
-            let availableBlocks = [];
-            if (currentHour < 12) {
-                availableBlocks = ['morning', 'afternoon', 'evening'];
-            } else if (currentHour < 17) {
-                availableBlocks = ['afternoon', 'evening'];
-            } else {
-                availableBlocks = ['evening'];
-            }
-
-            // Get available tasks sorted by priority
-            const availableTasks = tasks.filter(t => !t.completed && !t.banked);
-            availableTasks.sort((a, b) => {
-                const aScore = (a.urgent || 3) * 2 + (a.important || 3);
-                const bScore = (b.urgent || 3) * 2 + (b.important || 3);
-                return bScore - aScore;
-            });
-
-            // Time budgets per block (in minutes)
-            const budgets = { morning: 180, afternoon: 180, evening: 120 };
-            const used = { 
-                mario: { morning: 0, afternoon: 0, evening: 0 },
-                maria: { morning: 0, afternoon: 0, evening: 0 }
-            };
-            const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
-
-            // Group tasks by location for clustering
-            const homeTasksFirst = [...availableTasks].sort((a, b) => {
-                // Prioritize by urgency/importance first
-                const aScore = (a.urgent || 3) * 2 + (a.important || 3);
-                const bScore = (b.urgent || 3) * 2 + (b.important || 3);
-                if (bScore !== aScore) return bScore - aScore;
-                
-                // Then cluster by location
-                const aHome = (a.location || '').toLowerCase().includes('home') ? 1 : 0;
-                const bHome = (b.location || '').toLowerCase().includes('home') ? 1 : 0;
-                return bHome - aHome;
-            });
-
-            // Distribute tasks across available blocks by assignee
-            homeTasksFirst.forEach(task => {
-                const taskTime = sizeMinutes[task.size] || 45;
-                
-                // For 'all'/'both' tasks, add to both Mario and Maria's schedules
-                if (task.assignee === 'both' || task.assignee === 'all') {
-                    for (const block of availableBlocks) {
-                        // Check if both have room
-                        if (used.mario[block] + taskTime <= budgets[block] && 
-                            used.maria[block] + taskTime <= budgets[block]) {
-                            todaysPlan.mario[block].push(task.id);
-                            todaysPlan.maria[block].push(task.id);
-                            used.mario[block] += taskTime;
-                            used.maria[block] += taskTime;
-                            break;
-                        }
-                    }
-                } else {
-                    const assignee = task.assignee === 'maria' ? 'maria' : 'mario';
-                    for (const block of availableBlocks) {
-                        if (used[assignee][block] + taskTime <= budgets[block]) {
-                            todaysPlan[assignee][block].push(task.id);
-                            used[assignee][block] += taskTime;
-                            break;
-                        }
-                    }
+                if (error || !members || members.length === 0) {
+                    console.error('Error loading members for fallback plan:', error);
+                    return;
                 }
-            });
 
-            saveTodaysPlan();
-            renderPlan();
-        }
+                // Clear current plan and initialize with actual members
+                todaysPlan = {};
+                members.forEach(member => {
+                    todaysPlan[member.user_id] = { morning: [], afternoon: [], evening: [] };
+                });
 
-        function clearPlan() {
-            if (confirm('Clear all tasks from today\'s plan?')) {
-                todaysPlan = {
-                    mario: { morning: [], afternoon: [], evening: [] },
-                    maria: { morning: [], afternoon: [], evening: [] }
-                };
+                // Get current time to determine available blocks
+                const currentHour = new Date().getHours();
+                let availableBlocks = [];
+                if (currentHour < 12) {
+                    availableBlocks = ['morning', 'afternoon', 'evening'];
+                } else if (currentHour < 17) {
+                    availableBlocks = ['afternoon', 'evening'];
+                } else {
+                    availableBlocks = ['evening'];
+                }
+
+                // Get available tasks sorted by priority
+                const availableTasks = tasks.filter(t => !t.completed && !t.banked);
+                availableTasks.sort((a, b) => {
+                    const aScore = (a.urgent || 3) * 2 + (a.important || 3);
+                    const bScore = (b.urgent || 3) * 2 + (b.important || 3);
+                    return bScore - aScore;
+                });
+
+                // Time budgets per block (in minutes)
+                const budgets = { morning: 180, afternoon: 180, evening: 120 };
+                const used = {};
+                members.forEach(member => {
+                    used[member.user_id] = { morning: 0, afternoon: 0, evening: 0 };
+                });
+                const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
+
+                // Group tasks by location for clustering
+                const homeTasksFirst = [...availableTasks].sort((a, b) => {
+                    // Prioritize by urgency/importance first
+                    const aScore = (a.urgent || 3) * 2 + (a.important || 3);
+                    const bScore = (b.urgent || 3) * 2 + (b.important || 3);
+                    if (bScore !== aScore) return bScore - aScore;
+
+                    // Then cluster by location
+                    const aHome = (a.location || '').toLowerCase().includes('home') ? 1 : 0;
+                    const bHome = (b.location || '').toLowerCase().includes('home') ? 1 : 0;
+                    return bHome - aHome;
+                });
+
+                // Create member lookup map for assignee resolution
+                const memberLookup = {};
+                members.forEach(member => {
+                    memberLookup[member.user_id] = member;
+                    memberLookup[member.display_name.toLowerCase()] = member;
+                });
+
+                // Distribute tasks across available blocks by assignee
+                homeTasksFirst.forEach(task => {
+                    const taskTime = sizeMinutes[task.size] || 45;
+
+                    // For 'all' tasks, add to all members' schedules
+                    if (task.assignee === 'all') {
+                        for (const block of availableBlocks) {
+                            // Check if all members have room
+                            const allHaveRoom = members.every(member =>
+                                used[member.user_id][block] + taskTime <= budgets[block]
+                            );
+
+                            if (allHaveRoom) {
+                                members.forEach(member => {
+                                    todaysPlan[member.user_id][block].push(task.id);
+                                    used[member.user_id][block] += taskTime;
+                                });
+                                break;
+                            }
+                        }
+                    } else {
+                        // Find the assigned member
+                        let assignedMember = null;
+                        if (task.assignee_id) {
+                            assignedMember = memberLookup[task.assignee_id];
+                        } else {
+                            assignedMember = memberLookup[task.assignee.toLowerCase()];
+                        }
+
+                        // Default to first member if assignee not found
+                        if (!assignedMember) {
+                            assignedMember = members[0];
+                        }
+
+                        // Add to assigned member's schedule
+                        for (const block of availableBlocks) {
+                            if (used[assignedMember.user_id][block] + taskTime <= budgets[block]) {
+                                todaysPlan[assignedMember.user_id][block].push(task.id);
+                                used[assignedMember.user_id][block] += taskTime;
+                                break;
+                            }
+                        }
+                    }
+                });
+
                 saveTodaysPlan();
                 renderPlan();
+            } catch (error) {
+                console.error('Error in fallback auto-fill plan:', error);
+            }
+        }
+
+        async function clearPlan() {
+            if (confirm('Clear all tasks from today\'s plan?')) {
+                try {
+                    // Get organization members dynamically
+                    const { data: members, error } = await supabaseClient
+                        .rpc('get_environment_members', { org_id: currentUser.organizationId });
+
+                    if (error || !members) {
+                        console.error('Error loading members for clear plan:', error);
+                        return;
+                    }
+
+                    // Initialize empty plan with actual members
+                    todaysPlan = {};
+                    members.forEach(member => {
+                        todaysPlan[member.user_id] = { morning: [], afternoon: [], evening: [] };
+                    });
+
+                    saveTodaysPlan();
+                    renderPlan();
+                } catch (error) {
+                    console.error('Error clearing plan:', error);
+                }
             }
         }
 
@@ -12798,12 +12859,13 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     if (task.assignee !== currentUser.username?.toLowerCase()) {
                         recipients.push(task.assignee);
                     }
-                } else if (task.assignee === currentUser.id) {
+                } else if (task.assignee_id === currentUser.id || task.assignee === currentUser.id) {
                     // Task assigned to current user - no notification needed
-                } else if (task.assignee) {
+                } else if (task.assignee_id || task.assignee) {
                     // Task assigned to another user - try to find their name
                     try {
-                        const assigneeName = await getAssigneeDisplayName(task.assignee);
+                        const assigneeValue = task.assignee_id || task.assignee;
+                        const assigneeName = await getAssigneeDisplayName(assigneeValue);
                         recipients.push(assigneeName.toLowerCase());
                     } catch (error) {
                         console.error('Error getting assignee name for notification:', error);
@@ -12886,12 +12948,13 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 } else if (task.assignee === 'mario' || task.assignee === 'maria') {
                     // Legacy format - notify the other person
                     notifyRecipient = task.assignee === 'mario' ? 'maria' : 'mario';
-                } else if (task.assignee === currentUser.id) {
+                } else if (task.assignee_id === currentUser.id || task.assignee === currentUser.id) {
                     // Task assigned to current user - no notification needed
                 } else {
                     // Task assigned to another specific user - notify them
                     try {
-                        notifyRecipient = await getAssigneeDisplayName(task.assignee);
+                        const assigneeValue = task.assignee_id || task.assignee;
+                        notifyRecipient = await getAssigneeDisplayName(assigneeValue);
                         notifyRecipient = notifyRecipient.toLowerCase();
                     } catch (error) {
                         console.error('Error getting assignee name for completion notification:', error);
