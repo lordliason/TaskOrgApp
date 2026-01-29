@@ -3,10 +3,15 @@
  * Provides realistic test data for various scenarios
  */
 
+// Test member UUIDs - used for testing assignee values
+const TEST_MEMBER_1_ID = '550e8400-e29b-41d4-a716-446655440001';
+const TEST_MEMBER_2_ID = '550e8400-e29b-41d4-a716-446655440002';
+
 const baseTask = {
   id: 'task_123',
   name: 'Test Task',
-  assignee: 'mario',
+  assignee: TEST_MEMBER_1_ID,
+  assignee_id: TEST_MEMBER_1_ID,
   size: 'm',
   urgent: 3,
   important: 3,
@@ -62,9 +67,9 @@ const taskFixtures = {
 
   // Task collections
   taskList: [
-    { ...baseTask, id: 'task_1', name: 'Task One', assignee: 'mario' },
-    { ...baseTask, id: 'task_2', name: 'Task Two', assignee: 'maria' },
-    { ...baseTask, id: 'task_3', name: 'Task Three', assignee: 'both' }
+    { ...baseTask, id: 'task_1', name: 'Task One', assignee: TEST_MEMBER_1_ID, assignee_id: TEST_MEMBER_1_ID },
+    { ...baseTask, id: 'task_2', name: 'Task Two', assignee: TEST_MEMBER_2_ID, assignee_id: TEST_MEMBER_2_ID },
+    { ...baseTask, id: 'task_3', name: 'Task Three', assignee: 'all', assignee_id: null }
   ],
 
   // Eisenhower matrix positions
@@ -105,12 +110,12 @@ const taskFixtures = {
   createPayloads: {
     minimal: {
       name: 'New Task',
-      assignee: 'mario'
+      assignee: TEST_MEMBER_1_ID
     },
 
     full: {
       name: 'Complete Task',
-      assignee: 'maria',
+      assignee: TEST_MEMBER_2_ID,
       size: 'l',
       urgent: 4,
       important: 5,
@@ -120,7 +125,7 @@ const taskFixtures = {
     },
 
     invalid: {
-      assignee: 'mario' // missing name
+      assignee: TEST_MEMBER_1_ID // missing name
     }
   },
 
@@ -186,6 +191,8 @@ const createDecompositionFixture = (parentOverrides = {}, subTaskOverrides = [])
 });
 
 module.exports = {
+  TEST_MEMBER_1_ID,
+  TEST_MEMBER_2_ID,
   baseTask,
   taskFixtures,
   createTaskFixture,

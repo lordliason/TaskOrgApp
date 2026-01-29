@@ -47,13 +47,24 @@ const mockSupabaseClient = {
   }
 };
 
+// Test member UUIDs
+const TEST_MEMBER_1_ID = '550e8400-e29b-41d4-a716-446655440001';
+const TEST_MEMBER_2_ID = '550e8400-e29b-41d4-a716-446655440002';
+
 // Test data fixtures
 const testFixtures = {
+  // Test member IDs for use in tests
+  testMemberIds: {
+    member1: TEST_MEMBER_1_ID,
+    member2: TEST_MEMBER_2_ID
+  },
+
   // Valid task data
   validTask: {
     id: 'task_123',
     name: 'Test Task',
-    assignee: 'mario',
+    assignee: TEST_MEMBER_1_ID,
+    assignee_id: TEST_MEMBER_1_ID,
     size: 'm',
     urgent: 3,
     important: 3,
@@ -70,7 +81,7 @@ const testFixtures = {
   // Task creation payload
   taskPayload: {
     name: 'New Task',
-    assignee: 'maria',
+    assignee: TEST_MEMBER_2_ID,
     size: 'l',
     urgent: 4,
     important: 5,
@@ -84,7 +95,7 @@ const testFixtures = {
     parentTask: {
       id: 'parent_123',
       name: 'Plan Vacation',
-      assignee: 'both',
+      assignee: 'all',
       size: 'xl',
       urgent: 3,
       important: 4,
@@ -94,7 +105,8 @@ const testFixtures = {
       {
         id: 'sub_1',
         name: 'Research destinations',
-        assignee: 'mario',
+        assignee: TEST_MEMBER_1_ID,
+        assignee_id: TEST_MEMBER_1_ID,
         size: 'm',
         urgent: 3,
         important: 4,
@@ -104,7 +116,8 @@ const testFixtures = {
       {
         id: 'sub_2',
         name: 'Book flights',
-        assignee: 'maria',
+        assignee: TEST_MEMBER_2_ID,
+        assignee_id: TEST_MEMBER_2_ID,
         size: 's',
         urgent: 4,
         important: 5,
@@ -133,7 +146,10 @@ const testFixtures = {
   organization: {
     id: 'org_123',
     name: 'Test Organization',
-    members: ['mario', 'maria']
+    members: [
+      { user_id: TEST_MEMBER_1_ID, display_name: 'Test User 1' },
+      { user_id: TEST_MEMBER_2_ID, display_name: 'Test User 2' }
+    ]
   }
 };
 

@@ -7,12 +7,20 @@
 expect.extend({
   // Check if object has valid task structure
   toBeValidTask(received) {
+    // Validate assignee: must be 'all' or a UUID (36 chars with dashes)
+    const isValidAssignee = (assignee) => {
+      if (!assignee) return false;
+      if (assignee === 'all') return true;
+      // UUID format check
+      return typeof assignee === 'string' && assignee.length === 36 && assignee.includes('-');
+    };
+
     const pass = received &&
       typeof received === 'object' &&
       received.name &&
       typeof received.name === 'string' &&
       received.assignee &&
-      ['mario', 'maria', 'both'].includes(received.assignee) &&
+      isValidAssignee(received.assignee) &&
       received.size &&
       ['xs', 's', 'm', 'l', 'xl'].includes(received.size) &&
       typeof received.urgent === 'number' &&

@@ -3,6 +3,10 @@
  * Provides realistic API request/response data
  */
 
+// Test member UUIDs
+const TEST_MEMBER_1_ID = '550e8400-e29b-41d4-a716-446655440001';
+const TEST_MEMBER_2_ID = '550e8400-e29b-41d4-a716-446655440002';
+
 const apiFixtures = {
   // HTTP requests
   requests: {
@@ -15,7 +19,7 @@ const apiFixtures = {
       },
       body: {
         name: 'Test Task',
-        assignee: 'mario'
+        assignee: TEST_MEMBER_1_ID
       }
     },
 
@@ -26,7 +30,7 @@ const apiFixtures = {
         'Authorization': 'Bearer mock_token'
       },
       query: {
-        assignee: 'mario',
+        assignee: TEST_MEMBER_1_ID,
         completed: 'false'
       }
     },
@@ -168,7 +172,7 @@ const apiFixtures = {
           name: 'createTask',
           arguments: JSON.stringify({
             name: 'Buy groceries',
-            assignee: 'mario'
+            assignee: TEST_MEMBER_1_ID
           })
         }
       },
@@ -180,7 +184,7 @@ const apiFixtures = {
           name: 'decomposeTask',
           arguments: JSON.stringify({
             name: 'Plan family vacation',
-            assignee: 'both'
+            assignee: 'all'
           })
         }
       }
@@ -196,7 +200,7 @@ const apiFixtures = {
           task: {
             id: 'task_123',
             name: 'New Task',
-            assignee: 'mario'
+            assignee: TEST_MEMBER_1_ID
           }
         }
       },

@@ -4,29 +4,29 @@
 
 // Import from api/lib/appConfig.js (go up one level from api/lib/validation/ to api/lib/)
 const config = require('../appConfig');
-const LEGACY_ASSIGNEES = config.tasks.legacyAssignees;
 const isValidAssignee = config.tasks.isValidAssignee;
 const VALID_SIZES = config.tasks.validSizes;
 
 /**
- * Validate assignee for task creation (accepts user IDs, 'all', or legacy values).
+ * Validate assignee for task creation.
+ * Accepts only UUIDs for individual members or 'all' for shared tasks.
  * @param {string} assignee
  * @throws {Error} when invalid
  */
 function validateAssigneeCreate(assignee) {
     if (!isValidAssignee(assignee)) {
-        throw new Error(`Assignee must be a valid user ID (UUID), 'all', or one of the legacy values: ${LEGACY_ASSIGNEES.join(', ')}`);
+        throw new Error("Assignee must be a valid user ID (UUID) or 'all' for shared tasks");
     }
 }
 
 /**
- * Validate assignee for task updates (same validation as create).
+ * Validate assignee for task updates.
  * @param {string} assignee
  * @throws {Error} when invalid
  */
 function validateAssigneeUpdate(assignee) {
     if (!isValidAssignee(assignee)) {
-        throw new Error(`Assignee must be a valid user ID (UUID), 'all', or one of the legacy values: ${LEGACY_ASSIGNEES.join(', ')}`);
+        throw new Error("Assignee must be a valid user ID (UUID) or 'all' for shared tasks");
     }
 }
 
@@ -51,7 +51,6 @@ function clampUrgencyImportance(val) {
 }
 
 module.exports = {
-    LEGACY_ASSIGNEES,
     isValidAssignee,
     VALID_SIZES,
     validateAssigneeCreate,

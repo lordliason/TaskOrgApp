@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version: 2026-01-29-v6 - Generalized member system (removed hardcoded Mario/Maria, dynamic members) -->
+<!-- Version: 2026-01-29-v7 - Complete removal of legacy Mario/Maria support (UUID-only assignees) -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -770,20 +770,7 @@
             color: var(--accent);
         }
 
-        /* Specific active states override the generic one */
-        .assignee-btn.active[data-value="mario"] {
-            border-color: var(--accent-mario);
-            background: rgba(74, 158, 255, 0.1);
-            color: var(--accent-mario);
-        }
-
-        .assignee-btn.active[data-value="maria"] {
-            border-color: var(--accent-maria);
-            background: rgba(255, 126, 179, 0.1);
-            color: var(--accent-maria);
-        }
-
-        .assignee-btn.active[data-value="both"],
+        /* Active state for "all" assignee option */
         .assignee-btn.active[data-value="all"] {
             border-color: var(--accent-both);
             background: rgba(167, 139, 250, 0.1);
@@ -1088,13 +1075,7 @@
             color: white;
         }
 
-        .score-player.mario .score-avatar {
-            background: var(--accent-mario);
-        }
-
-        .score-player.maria .score-avatar {
-            background: var(--accent-maria);
-        }
+        /* Score avatars use dynamic inline styles for colors */
 
         .score-info {
             display: flex;
@@ -1586,9 +1567,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
-        .task-dot.mario { background: var(--accent-mario); }
-        .task-dot.maria { background: var(--accent-maria); }
-        .task-dot.both { background: var(--accent-both); }
+        /* Task dot colors are now applied via inline styles */
 
         .task-dot.completed {
             background: white !important;
@@ -1817,13 +1796,7 @@
             color: white;
         }
 
-        .leaderboard-avatar.mario {
-            background: var(--accent-mario);
-        }
-
-        .leaderboard-avatar.maria {
-            background: var(--accent-maria);
-        }
+        /* Leaderboard avatar colors are now applied via inline styles */
 
         .leaderboard-info {
             display: flex;
@@ -1950,13 +1923,7 @@
             overflow: hidden;
         }
 
-        .plan-column.mario {
-            border-top: 3px solid var(--accent-mario);
-        }
-
-        .plan-column.maria {
-            border-top: 3px solid var(--accent-maria);
-        }
+        /* Plan column borders use inline styles for dynamic colors */
 
         .plan-column-header {
             display: flex;
@@ -1979,13 +1946,7 @@
             color: white;
         }
 
-        .plan-column-avatar.mario {
-            background: linear-gradient(135deg, var(--accent-mario), #357abd);
-        }
-
-        .plan-column-avatar.maria {
-            background: linear-gradient(135deg, var(--accent-maria), #d65d8c);
-        }
+        /* Plan column avatar colors use inline styles */
 
         .plan-column-info {
             flex: 1;
@@ -2385,13 +2346,7 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
         }
 
-        .assignee-filter-btn.active.mario {
-            color: var(--accent-mario);
-        }
-
-        .assignee-filter-btn.active.maria {
-            color: var(--accent-maria);
-        }
+        /* Filter button colors use inline styles */
 
         .assignee-filter-btn .filter-dot {
             width: 8px;
@@ -2399,16 +2354,8 @@
             border-radius: 50%;
         }
 
-        .assignee-filter-btn .filter-dot.mario {
-            background: var(--accent-mario);
-        }
-
-        .assignee-filter-btn .filter-dot.maria {
-            background: var(--accent-maria);
-        }
-
         .assignee-filter-btn .filter-dot.both {
-            background: linear-gradient(135deg, var(--accent-mario) 50%, var(--accent-maria) 50%);
+            background: var(--accent-both);
         }
 
         .task-group {
@@ -2577,8 +2524,7 @@
             border-radius: 50%;
         }
 
-        .legend-dot.mario { background: var(--accent-mario); }
-        .legend-dot.maria { background: var(--accent-maria); }
+        /* Legend dot colors use inline styles for dynamic colors */
         .legend-dot.both { background: var(--accent-both); }
 
         /* Task Options Menu */
@@ -2727,15 +2673,7 @@
             color: #22c55e;
         }
 
-        .task-option-btn.remind.mario:hover {
-            background: rgba(74, 158, 255, 0.1);
-            color: var(--accent-mario);
-        }
-
-        .task-option-btn.remind.maria:hover {
-            background: rgba(168, 85, 247, 0.1);
-            color: var(--accent-maria);
-        }
+        /* Remind button hover colors use dynamic styles */
 
         .task-option-btn.remind .remind-icon {
             width: 18px;
@@ -2770,16 +2708,9 @@
             flex-shrink: 0;
         }
 
-        .task-option-icon.mario {
-            background: var(--accent-mario);
-        }
-
-        .task-option-icon.maria {
-            background: var(--accent-maria);
-        }
-
+        /* Task option icon colors use inline styles */
         .task-option-icon.both {
-            background: linear-gradient(135deg, var(--accent-mario) 50%, var(--accent-maria) 50%);
+            background: var(--accent-both);
         }
 
         .completion-indicator {
@@ -2795,16 +2726,9 @@
             line-height: 1;
         }
 
-        .completion-indicator.mario {
-            background: var(--accent-mario);
-        }
-
-        .completion-indicator.maria {
-            background: var(--accent-maria);
-        }
-
+        /* Completion indicator colors use inline styles */
         .completion-indicator.both {
-            background: linear-gradient(135deg, var(--accent-mario) 50%, var(--accent-maria) 50%);
+            background: var(--accent-both);
         }
 
         /* Loading Overlay */
@@ -3483,16 +3407,9 @@
             flex-shrink: 0;
         }
 
-        .view-task-icon.mario {
-            background: var(--accent-mario);
-        }
-
-        .view-task-icon.maria {
-            background: var(--accent-maria);
-        }
-
+        /* View task icon colors use inline styles */
         .view-task-icon.both {
-            background: linear-gradient(135deg, var(--accent-mario) 50%, var(--accent-maria) 50%);
+            background: var(--accent-both);
         }
 
         .view-task-title-section {
@@ -3681,29 +3598,7 @@
             border-color: rgba(34, 197, 94, 0.3);
         }
 
-        .view-task-action-btn.remind.mario {
-            background: rgba(74, 158, 255, 0.15);
-            color: var(--accent-mario);
-            border-color: rgba(74, 158, 255, 0.3);
-        }
-
-        .view-task-action-btn.remind.mario:hover {
-            background: rgba(74, 158, 255, 0.25);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
-        }
-
-        .view-task-action-btn.remind.maria {
-            background: rgba(168, 85, 247, 0.15);
-            color: var(--accent-maria);
-            border-color: rgba(168, 85, 247, 0.3);
-        }
-
-        .view-task-action-btn.remind.maria:hover {
-            background: rgba(168, 85, 247, 0.25);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
-        }
+        /* View task remind button colors use inline styles */
 
         .view-task-action-btn.split {
             background: #6b7280;
@@ -5468,7 +5363,7 @@
         let selectedUrgent = 3;
         let selectedImportant = 3;
         let selectedIcon = null;
-        let taskFilterAssignee = 'all'; // Filter for task list: 'all', 'mario', or 'maria'
+        let taskFilterAssignee = 'all'; // Filter for task list: 'all' or a member's UUID
         let isConnected = false;
         let currentUser = null;
 
@@ -6762,30 +6657,28 @@
             }
         }
 
-        async function updatePlayerScore(player, pointsToAdd, tasksToAdd = 1) {
+        async function updatePlayerScore(playerId, pointsToAdd, tasksToAdd = 1) {
             try {
                 const today = new Date().toISOString().split('T')[0];
 
-                // Handle both legacy player names and dynamic user keys
-                let scoreKey = player;
-                let userId = null;
+                // playerId should be a UUID - find member info
+                let scoreKey = playerId;
+                let userId = playerId;
 
-                // Check if this is a legacy player name
-                if (player === 'mario' || player === 'maria') {
-                    const userMap = {
-                        mario: '550e8400-e29b-41d4-a716-446655440001',
-                        maria: '550e8400-e29b-41d4-a716-446655440002'
-                    };
-                    userId = userMap[player];
-                    scoreKey = player;
-                } else {
-                    // This might be a user ID or display name key
-                    if (currentScores[player]) {
-                        userId = currentScores[player].userId;
-                        scoreKey = player;
-                    } else {
-                        console.warn('Invalid player for score:', player);
-                        return;
+                // Try to find member by UUID in cache
+                if (environmentMembersCache) {
+                    const member = environmentMembersCache.find(m => m.user_id === playerId);
+                    if (member) {
+                        scoreKey = member.display_name?.toLowerCase() || playerId;
+                    }
+                }
+
+                // Check if we have a score entry for this player
+                if (!currentScores[scoreKey]) {
+                    // Try to find by userId
+                    const existingKey = Object.keys(currentScores).find(k => currentScores[k].userId === playerId);
+                    if (existingKey) {
+                        scoreKey = existingKey;
                     }
                 }
 
@@ -7753,13 +7646,6 @@
             return assigneeValue;
         }
 
-        async function getLegacyAssigneeName(assigneeValue) {
-            // For backward compatibility, map user IDs to legacy names where possible
-            if (assigneeValue === 'all') return 'both';
-            if (assigneeValue === currentUser.id) return currentUser.username || 'mario';
-            return 'mario'; // fallback
-        }
-
         async function populateAssigneeButtons() {
             const assigneeGroup = document.getElementById('assigneeGroup');
             if (!assigneeGroup) {
@@ -7864,12 +7750,10 @@
                         
                         if (isUUID) {
                             // It's a UUID - preserve it even if no button matches
-                            // This can happen if the user was set before buttons were populated
-                            // The button selection will be handled by the setTimeout in openEditTaskModal
                             console.log('Preserving UUID assignee:', preservedAssignee, 'even though no matching button found');
                             selectedAssignee = preservedAssignee;
-                        } else if (!preservedAssignee || preservedAssignee === 'mario' || preservedAssignee === 'maria' || preservedAssignee === 'both' || preservedAssignee === 'all') {
-                            // Legacy assignee value or no assignee - default to first member
+                        } else if (!preservedAssignee || preservedAssignee === 'all') {
+                            // No assignee or 'all' - default to first member
                             const firstBtn = assigneeGroup.querySelector('.assignee-btn[data-value]');
                             if (firstBtn) {
                                 assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
@@ -7878,9 +7762,15 @@
                                 console.log('Defaulted to first member:', selectedAssignee);
                             }
                         } else {
-                            // Unknown value - preserve it
-                            selectedAssignee = preservedAssignee;
-                            console.log('Preserving unknown assignee value:', preservedAssignee);
+                            // Unknown value (might be a legacy name in existing tasks)
+                            // Default to first member
+                            const firstBtn = assigneeGroup.querySelector('.assignee-btn[data-value]');
+                            if (firstBtn) {
+                                assigneeGroup.querySelectorAll('.assignee-btn').forEach(b => b.classList.remove('active'));
+                                firstBtn.classList.add('active');
+                                selectedAssignee = firstBtn.dataset.value;
+                                console.log('Unknown assignee value, defaulted to first member:', preservedAssignee);
+                            }
                         }
                     }
                 } else {
@@ -8413,9 +8303,12 @@
                 if (task && task.completed && task.completed_by) {
                     const points = getTaskPoints(task.size);
                     if (points > 0) {
-                        if (task.completed_by === 'both') {
-                            await subtractPlayerScore('mario', points);
-                            await subtractPlayerScore('maria', points);
+                        if (task.completed_by === 'all' || task.completed_by === 'both') {
+                            // Award/subtract to all members
+                            const members = environmentMembersCache || [];
+                            for (const member of members) {
+                                await subtractPlayerScore(member.user_id, points);
+                            }
                         } else {
                             await subtractPlayerScore(task.completed_by, points);
                         }
@@ -8534,18 +8427,20 @@
                     const points = getTaskPoints(task.size);
                     console.log('Awarding points for completing task:', completedBy, points, 'Task was incomplete:', wasIncomplete);
                     if (points > 0) {
-                        // If both completed, award points to both players
-                        if (completedBy === 'both') {
-                            await updatePlayerScore('mario', points);
-                            await updatePlayerScore('maria', points);
+                        // If completed by 'all', award points to all members
+                        if (completedBy === 'all' || completedBy === 'both') {
+                            const members = environmentMembersCache || [];
+                            for (const member of members) {
+                                await updatePlayerScore(member.user_id, points);
+                            }
                         } else {
                             await updatePlayerScore(completedBy, points);
                         }
                     }
                     
-                    // Send SMS notification to the other person when task is completed
+                    // Send SMS notification when task is completed (if completedBy is a valid user ID)
                     console.log('Checking if should send completion notification:', { completed, completedBy, taskName: task.name });
-                    if (completedBy === 'mario' || completedBy === 'maria') {
+                    if (completedBy && completedBy !== 'all' && completedBy !== 'both') {
                         console.log('Sending completion notification for task:', task.name, 'completed by:', completedBy);
                         // Pass the original task with its assignee info
                         sendCompletionNotification(task, completedBy);
@@ -8999,8 +8894,9 @@
                 const saved = localStorage.getItem(PLAN_STORAGE_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    // Migrate old format to new format if needed
-                    if (parsed.morning !== undefined && !parsed.mario) {
+                    // Check if this is the very old format (single-user plan)
+                    if (parsed.morning !== undefined) {
+                        // Old single-user format - discard and use default
                         todaysPlan = defaultPlan;
                         localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(todaysPlan));
                     } else {
@@ -9011,9 +8907,13 @@
                 }
             }
 
-            // Ensure structure exists
-            if (!todaysPlan.mario) todaysPlan.mario = { morning: [], afternoon: [], evening: [] };
-            if (!todaysPlan.maria) todaysPlan.maria = { morning: [], afternoon: [], evening: [] };
+            // Ensure structure exists for all members
+            const members = environmentMembersCache || [];
+            members.forEach(member => {
+                if (!todaysPlan[member.user_id]) {
+                    todaysPlan[member.user_id] = { morning: [], afternoon: [], evening: [] };
+                }
+            });
         }
 
         function saveTodaysPlan() {
@@ -9330,15 +9230,18 @@
             const container = document.getElementById('planSuggestionsList');
             if (!container) return;
 
-            // Get all planned tasks across both assignees
-            const allPlannedTasks = [
-                ...(todaysPlan.mario?.morning || []),
-                ...(todaysPlan.mario?.afternoon || []),
-                ...(todaysPlan.mario?.evening || []),
-                ...(todaysPlan.maria?.morning || []),
-                ...(todaysPlan.maria?.afternoon || []),
-                ...(todaysPlan.maria?.evening || [])
-            ];
+            // Get all planned tasks across all members
+            const allPlannedTasks = [];
+            Object.keys(todaysPlan).forEach(memberId => {
+                const memberPlan = todaysPlan[memberId];
+                if (memberPlan) {
+                    allPlannedTasks.push(
+                        ...(memberPlan.morning || []),
+                        ...(memberPlan.afternoon || []),
+                        ...(memberPlan.evening || [])
+                    );
+                }
+            });
             const availableTasks = tasks.filter(t => 
                 !t.completed && 
                 !t.banked && 
@@ -9386,8 +9289,9 @@
                 addBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const currentBlock = getCurrentTimeBlock();
-                    // Add to the correct assignee's plan (default to mario for 'both' tasks)
-                    const assignee = (task.assignee === 'mario' || task.assignee === 'maria') ? task.assignee : 'mario';
+                    // Add to the assignee's plan (use assignee_id or default to first member)
+                    const assignee = task.assignee_id || 
+                        (environmentMembersCache?.length > 0 ? environmentMembersCache[0].user_id : 'all');
                     addTaskToPlan(task.id, assignee, currentBlock);
                 });
 
@@ -9745,19 +9649,23 @@
                 if (data.function_result && data.function_result.success && data.function_result.plan) {
                     const aiPlan = data.function_result.plan;
                     
-                    // Update todaysPlan with AI's recommendations
-                    todaysPlan = {
-                        mario: {
-                            morning: aiPlan.mario?.morning || [],
-                            afternoon: aiPlan.mario?.afternoon || [],
-                            evening: aiPlan.mario?.evening || []
-                        },
-                        maria: {
-                            morning: aiPlan.maria?.morning || [],
-                            afternoon: aiPlan.maria?.afternoon || [],
-                            evening: aiPlan.maria?.evening || []
+                    // Update todaysPlan with AI's recommendations for each member
+                    todaysPlan = {};
+                    const members = environmentMembersCache || [];
+                    
+                    // AI plan uses member IDs as keys
+                    members.forEach(member => {
+                        const memberPlan = aiPlan[member.user_id];
+                        if (memberPlan) {
+                            todaysPlan[member.user_id] = {
+                                morning: memberPlan.morning || [],
+                                afternoon: memberPlan.afternoon || [],
+                                evening: memberPlan.evening || []
+                            };
+                        } else {
+                            todaysPlan[member.user_id] = { morning: [], afternoon: [], evening: [] };
                         }
-                    };
+                    });
 
                     saveTodaysPlan();
                     renderPlan();
@@ -9945,15 +9853,18 @@
                 remainingBlocks = ['evening'];
             }
 
-            // Get all currently planned tasks
-            const allPlannedTaskIds = [
-                ...(todaysPlan.mario?.morning || []),
-                ...(todaysPlan.mario?.afternoon || []),
-                ...(todaysPlan.mario?.evening || []),
-                ...(todaysPlan.maria?.morning || []),
-                ...(todaysPlan.maria?.afternoon || []),
-                ...(todaysPlan.maria?.evening || [])
-            ];
+            // Get all currently planned tasks across all members
+            const allPlannedTaskIds = [];
+            Object.keys(todaysPlan).forEach(memberId => {
+                const memberPlan = todaysPlan[memberId];
+                if (memberPlan) {
+                    allPlannedTaskIds.push(
+                        ...(memberPlan.morning || []),
+                        ...(memberPlan.afternoon || []),
+                        ...(memberPlan.evening || [])
+                    );
+                }
+            });
 
             // Get unplanned tasks that aren't completed
             const unplannedTasks = tasks.filter(t => 
@@ -9984,16 +9895,24 @@
                 afternoon: currentHour < 17 ? (17 - currentHour) * 60 : 0,
                 evening: currentHour < 17 ? 180 : (24 - currentHour) * 60
             };
-            const used = { 
-                mario: { morning: 0, afternoon: 0, evening: 0 },
-                maria: { morning: 0, afternoon: 0, evening: 0 }
-            };
+            
+            // Initialize used time tracking for each member
+            const used = {};
+            const members = environmentMembersCache || [];
+            members.forEach(m => {
+                used[m.user_id] = { morning: 0, afternoon: 0, evening: 0 };
+            });
+            
             const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
 
             // Distribute tasks across remaining blocks by assignee
             unplannedTasks.forEach(task => {
                 const taskTime = sizeMinutes[task.size] || 45;
-                const assignee = (task.assignee === 'mario' || task.assignee === 'maria') ? task.assignee : 'mario';
+                // Use assignee_id or default to first member
+                const assignee = task.assignee_id || 
+                    (members.length > 0 ? members[0].user_id : null);
+                
+                if (!assignee || !used[assignee]) return;
 
                 // Find best block that has room
                 for (const block of remainingBlocks) {
@@ -10479,18 +10398,8 @@
                 // Include 'all' tasks for everyone
                 if (task.assignee === 'all' || task.assignee === 'both') return true;
                 
-                // Legacy: check by assignee value for backward compatibility
+                // Check by assignee value (might be UUID)
                 if (task.assignee === taskFilterAssignee) return true;
-                
-                // Legacy: check by username if taskFilterAssignee is a legacy value
-                if (taskFilterAssignee === 'mario' || taskFilterAssignee === 'maria') {
-                    // Check if task is assigned to current user (for backward compat)
-                    if (task.assignee_id === currentUser?.id) {
-                        const currentUserName = (currentUser.displayName || currentUser.username || '').toLowerCase();
-                        if (taskFilterAssignee === 'mario' && currentUserName.includes('mario')) return true;
-                        if (taskFilterAssignee === 'maria' && currentUserName.includes('maria')) return true;
-                    }
-                }
                 
                 return false;
             });
@@ -10592,18 +10501,8 @@
                 // Include 'all' tasks for everyone
                 if (task.assignee === 'all' || task.assignee === 'both') return true;
                 
-                // Legacy: check by assignee value for backward compatibility
+                // Check by assignee value (might be UUID)
                 if (task.assignee === taskFilterAssignee) return true;
-                
-                // Legacy: check by username if taskFilterAssignee is a legacy value
-                if (taskFilterAssignee === 'mario' || taskFilterAssignee === 'maria') {
-                    // Check if task is assigned to current user (for backward compat)
-                    if (task.assignee_id === currentUser?.id) {
-                        const currentUserName = (currentUser.displayName || currentUser.username || '').toLowerCase();
-                        if (taskFilterAssignee === 'mario' && currentUserName.includes('mario')) return true;
-                        if (taskFilterAssignee === 'maria' && currentUserName.includes('maria')) return true;
-                    }
-                }
                 
                 return false;
             });
@@ -10745,15 +10644,16 @@
                     }
                 } else if (task.assignee === 'all' || task.assignee === 'both') {
                     assigneeLabel = '(All)';
-                } else if (task.assignee === 'mario') {
-                    assigneeLabel = '(M)';
-                } else if (task.assignee === 'maria') {
-                    assigneeLabel = '(A)';
                 } else if (task.assignee === currentUser?.id) {
                     assigneeLabel = `(${(currentUser.displayName || currentUser.username || 'U').charAt(0)})`;
                 } else if (task.assignee && task.assignee.length > 0) {
-                    // Use first character of assignee name (could be display name)
-                    assigneeLabel = `(${task.assignee.charAt(0)})`;
+                    // Try to find member by assignee value
+                    const member = environmentMembersCache?.find(m => m.user_id === task.assignee);
+                    if (member) {
+                        assigneeLabel = `(${member.display_name.charAt(0)})`;
+                    } else {
+                        assigneeLabel = `(${task.assignee.charAt(0)})`; 
+                    }
                 }
                 
                 option.textContent = `${icon}${task.name} ${assigneeLabel}`;
@@ -10805,66 +10705,26 @@
             // Populate modal with task data
             modalTaskName.value = task.name || '';
             
-            // Convert legacy assignee values to new format (buttons use user IDs)
+            // Get assignee value - prefer assignee_id (UUID format)
             let assigneeValue = 'all';
             if (task.assignee_id) {
                 // Use assignee_id if available (new format)
                 assigneeValue = task.assignee_id;
             } else if (task.assignee === 'both' || task.assignee === 'all') {
                 assigneeValue = 'all';
-            } else if (task.assignee === 'mario' || task.assignee === 'maria') {
-                // Map legacy usernames to user IDs from environment members cache or database
-                let member = null;
-                
-                // Try cache first
-                if (environmentMembersCache) {
-                    member = environmentMembersCache.find(m => 
-                        m.display_name && m.display_name.toLowerCase() === task.assignee.toLowerCase()
-                    );
-                }
-                
-                // If not in cache, query database
-                if (!member) {
-                    try {
-                        // First try to get user by username
-                        const { data: userData, error: userError } = await supabaseClient
-                            .from('users')
-                            .select('id, username')
-                            .eq('username', task.assignee.toLowerCase())
-                            .single();
-                        
-                        if (!userError && userData && userData.id) {
-                            assigneeValue = userData.id;
-                        } else {
-                            // Fallback: query environment_members for display_name
-                            const { data: envMember, error: envError } = await supabaseClient
-                                .rpc('get_environment_members', { org_id: currentUser.organizationId });
-                            
-                            if (!envError && envMember) {
-                                // Update cache
-                                environmentMembersCache = envMember;
-                                
-                                const foundMember = envMember.find(m => 
-                                    m.display_name && m.display_name.toLowerCase() === task.assignee.toLowerCase()
-                                );
-                                if (foundMember) {
-                                    assigneeValue = foundMember.user_id;
-                                }
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error fetching user info for edit modal:', error);
-                    }
-                } else {
+            } else if (task.assignee && task.assignee.length === 36 && task.assignee.includes('-')) {
+                // It's already a UUID
+                assigneeValue = task.assignee;
+            } else if (task.assignee) {
+                // Try to find member by display name (for any legacy data)
+                const member = environmentMembersCache?.find(m => 
+                    m.display_name && m.display_name.toLowerCase() === task.assignee.toLowerCase()
+                );
+                if (member) {
                     assigneeValue = member.user_id;
-                }
-                
-                // Fallback to current user if they match
-                if (assigneeValue === 'all' && currentUser) {
-                    const currentUserName = (currentUser.displayName || currentUser.username || '').toLowerCase();
-                    if (currentUserName === task.assignee.toLowerCase()) {
-                        assigneeValue = currentUser.id;
-                    }
+                } else {
+                    // Default to first member or 'all'
+                    assigneeValue = environmentMembersCache?.length > 0 ? environmentMembersCache[0].user_id : 'all';
                 }
             }
             selectedAssignee = assigneeValue;
@@ -12394,7 +12254,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                                         type: 'object',
                                         properties: {
                                             name: { type: 'string', description: 'The name/title of the task' },
-                                            assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Who the task is assigned to' },
+                                            assignee: { type: 'string', description: 'Who the task is assigned to - use member UUID or "all" for everyone' },
                                             size: { type: 'string', enum: ['xs', 's', 'm', 'l', 'xl'], description: 'The estimated size/complexity' },
                                             urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
                                             important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
@@ -12455,7 +12315,7 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                                         type: 'object',
                                         properties: {
                                             name: { type: 'string', description: 'The name/title of the large task to decompose' },
-                                            assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Initial assignee preference' },
+                                            assignee: { type: 'string', description: 'Initial assignee preference - use member UUID or "all" for everyone' },
                                             deadline: { type: 'string', description: 'Overall deadline (YYYY-MM-DD format)' },
                                             urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
                                             important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
@@ -12956,9 +12816,11 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
 
                 // Subtract points from whoever completed the task
                 if (completedBy && points > 0) {
-                    if (completedBy === 'both') {
-                        await subtractPlayerScore('mario', points);
-                        await subtractPlayerScore('maria', points);
+                    if (completedBy === 'all' || completedBy === 'both') {
+                        const members = environmentMembersCache || [];
+                        for (const member of members) {
+                            await subtractPlayerScore(member.user_id, points);
+                        }
                     } else {
                         await subtractPlayerScore(completedBy, points);
                     }
@@ -12971,32 +12833,41 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
             }
         }
 
-        async function subtractPlayerScore(player, pointsToSubtract, tasksToSubtract = 1) {
+        async function subtractPlayerScore(playerId, pointsToSubtract, tasksToSubtract = 1) {
             try {
-                if (player !== 'mario' && player !== 'maria') {
-                    console.warn('Invalid player for score:', player);
+                // Find the score entry for this player
+                let scoreKey = playerId;
+                
+                // Try to find by display name (lowercase) or userId
+                if (!currentScores[scoreKey]) {
+                    scoreKey = Object.keys(currentScores).find(k => currentScores[k].userId === playerId);
+                }
+                
+                if (!scoreKey || !currentScores[scoreKey]) {
+                    console.warn('Invalid player for score subtraction:', playerId);
                     return;
                 }
 
                 const today = new Date().toISOString().split('T')[0];
 
                 // Update current scores (don't go below 0)
-                currentScores[player].points = Math.max(0, currentScores[player].points - pointsToSubtract);
-                currentScores[player].tasks = Math.max(0, currentScores[player].tasks - tasksToSubtract);
+                currentScores[scoreKey].points = Math.max(0, currentScores[scoreKey].points - pointsToSubtract);
+                currentScores[scoreKey].tasks = Math.max(0, currentScores[scoreKey].tasks - tasksToSubtract);
 
-                console.log('Subtracting score for', player, ':', currentScores[player]);
+                console.log('Subtracting score for', playerId, ':', currentScores[scoreKey]);
 
-                // Update database
+                // Update database using user_id
                 const { error } = await supabaseClient
                     .from('scores')
                     .upsert({
-                        player: player,
+                        user_id: currentScores[scoreKey].userId,
+                        player: scoreKey, // Keep for compatibility
                         date: today,
-                        points: currentScores[player].points,
-                        tasks_completed: currentScores[player].tasks,
+                        points: currentScores[scoreKey].points,
+                        tasks_completed: currentScores[scoreKey].tasks,
                         updated_at: new Date().toISOString()
                     }, {
-                        onConflict: 'player,date'
+                        onConflict: 'user_id,date'
                     });
 
                 if (error) {
@@ -13016,9 +12887,11 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                 if (task.completed && task.completed_by) {
                     const points = getTaskPoints(task.size);
                     if (points > 0) {
-                        if (task.completed_by === 'both') {
-                            await subtractPlayerScore('mario', points);
-                            await subtractPlayerScore('maria', points);
+                        if (task.completed_by === 'all' || task.completed_by === 'both') {
+                            const members = environmentMembersCache || [];
+                            for (const member of members) {
+                                await subtractPlayerScore(member.user_id, points);
+                            }
                         } else {
                             await subtractPlayerScore(task.completed_by, points);
                         }
@@ -13138,11 +13011,6 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     } catch (error) {
                         console.error('Error getting members for notification:', error);
                     }
-                } else if (task.assignee === 'mario' || task.assignee === 'maria') {
-                    // Legacy format - notify the assignee
-                    if (task.assignee !== currentUser.username?.toLowerCase()) {
-                        recipients.push(task.assignee);
-                    }
                 } else if (task.assignee_id === currentUser.id || task.assignee === currentUser.id) {
                     // Task assigned to current user - no notification needed
                 } else if (task.assignee_id || task.assignee) {
@@ -13229,9 +13097,6 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
                     } catch (error) {
                         console.error('Error getting members for completion notification:', error);
                     }
-                } else if (task.assignee === 'mario' || task.assignee === 'maria') {
-                    // Legacy format - notify the other person
-                    notifyRecipient = task.assignee === 'mario' ? 'maria' : 'mario';
                 } else if (task.assignee_id === currentUser.id || task.assignee === currentUser.id) {
                     // Task assigned to current user - no notification needed
                 } else {

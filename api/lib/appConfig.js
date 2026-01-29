@@ -17,17 +17,15 @@ const SIZE_LABELS = {
     xl: 'Extra Large (~150min)'
 };
 
-// Legacy assignee values (for backward compatibility)
-// New tasks should use UUID user IDs, but these legacy values are still accepted
-const LEGACY_ASSIGNEES = ['mario', 'maria', 'both', 'all'];
+// Valid assignee values: UUIDs for individual members, or 'all' for shared tasks
+// Note: Legacy values like 'mario', 'maria', 'both' are NO LONGER supported
+// All tasks must use member UUIDs or 'all'
 
-// Function to validate assignee - accepts UUIDs, legacy names, or 'all'
+// Function to validate assignee - accepts only UUIDs or 'all'
 function isValidAssignee(assignee) {
     if (!assignee) return false;
-    // Accept 'all' as a special value
+    // Accept 'all' as a special value for shared tasks
     if (assignee === 'all') return true;
-    // Accept legacy names for backward compatibility
-    if (LEGACY_ASSIGNEES.includes(assignee.toLowerCase())) return true;
     // Accept UUID format (36 chars with dashes)
     if (typeof assignee === 'string' && assignee.length === 36 && assignee.includes('-')) return true;
     return false;
@@ -49,16 +47,11 @@ function getOpenAIKey() {
 }
 
 /** 
- * @returns {{ mario?: string, maria?: string }} SMS recipient phone numbers
- * DEPRECATED: These are fallback values only. Phone numbers are now stored in the users table.
- * The remind.js API will first look up phone numbers from the database, and only fall back
- * to these values for backward compatibility with legacy users (mario/maria).
+ * Get Textbelt API key for SMS sending.
+ * Phone numbers are stored in the users table and looked up dynamically.
  */
-function getSmsRecipients() {
-    return {
-        mario: process.env.MARIO_PHONE || '8458289353',
-        maria: process.env.MARIA_PHONE || '5186185155'
-    };
+function getTextbeltKey() {
+    return process.env.TEXTBELT_API_KEY;
 }
 
 module.exports = {
@@ -68,14 +61,12 @@ module.exports = {
         validModels: VALID_MODELS
     },
     sms: {
-        getRecipients: getSmsRecipients,
-        getTextbeltKey: () => process.env.TEXTBELT_API_KEY
+        getTextbeltKey: getTextbeltKey
     },
     tasks: {
         validSizes: VALID_SIZES,
         sizeMinutes: SIZE_MINUTES,
         sizeLabels: SIZE_LABELS,
-        legacyAssignees: LEGACY_ASSIGNEES,
         isValidAssignee: isValidAssignee
     }
 };
