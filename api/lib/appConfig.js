@@ -17,8 +17,21 @@ const SIZE_LABELS = {
     xl: 'Extra Large (~150min)'
 };
 
-const VALID_ASSIGNEES_CREATE = ['mario', 'maria', 'both', 'all'];
-const VALID_ASSIGNEES_UPDATE = ['mario', 'maria', 'both'];
+// Legacy assignee values (for backward compatibility)
+// New tasks should use UUID user IDs, but these legacy values are still accepted
+const LEGACY_ASSIGNEES = ['mario', 'maria', 'both', 'all'];
+
+// Function to validate assignee - accepts UUIDs, legacy names, or 'all'
+function isValidAssignee(assignee) {
+    if (!assignee) return false;
+    // Accept 'all' as a special value
+    if (assignee === 'all') return true;
+    // Accept legacy names for backward compatibility
+    if (LEGACY_ASSIGNEES.includes(assignee.toLowerCase())) return true;
+    // Accept UUID format (36 chars with dashes)
+    if (typeof assignee === 'string' && assignee.length === 36 && assignee.includes('-')) return true;
+    return false;
+}
 
 /** @returns {string|undefined} OpenAI API key from env or config.js (local dev) */
 function getOpenAIKey() {
@@ -62,7 +75,7 @@ module.exports = {
         validSizes: VALID_SIZES,
         sizeMinutes: SIZE_MINUTES,
         sizeLabels: SIZE_LABELS,
-        validAssigneesCreate: VALID_ASSIGNEES_CREATE,
-        validAssigneesUpdate: VALID_ASSIGNEES_UPDATE
+        legacyAssignees: LEGACY_ASSIGNEES,
+        isValidAssignee: isValidAssignee
     }
 };

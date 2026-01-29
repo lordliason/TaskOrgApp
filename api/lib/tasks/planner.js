@@ -24,14 +24,39 @@ function getTaskLocationType(task) {
 }
 
 /**
+ * Get display name for assignee
+ * @param {object} task - Task object with assignee or assignee_id
+ * @param {object[]} [members] - Optional array of member objects with user_id and display_name
+ * @returns {string} Display name for the assignee
+ */
+function getAssigneeDisplay(task, members = []) {
+    const assigneeId = task.assignee_id || task.assignee;
+    
+    if (assigneeId === 'all' || assigneeId === 'both') {
+        return 'all team members together';
+    }
+    
+    // Look up member by user_id
+    if (members && members.length > 0) {
+        const member = members.find(m => m.user_id === assigneeId);
+        if (member) {
+            return `${member.display_name} only`;
+        }
+    }
+    
+    // Fallback to the assignee value itself
+    return `${assigneeId} only`;
+}
+
+/**
  * Autofill daily plan using OpenAI based on pending tasks and current time.
- * @param {{ tasks: object[], currentHour: number, currentMinutes: number }} params
+ * @param {{ tasks: object[], currentHour: number, currentMinutes: number, members?: object[] }} params
  * @param {string} apiKey - OpenAI API key
  * @param {string} [model='gpt-3.5-turbo']
  * @returns {Promise<{ success: boolean, plan?: object, reasoning?: string, message: string }>}
  */
 async function autofillDailyPlan(params, apiKey, model = 'gpt-3.5-turbo') {
-    const { tasks, currentHour, currentMinutes } = params;
+    const { tasks, currentHour, currentMinutes, members = [] } = params;
 
     let availableBlocks = [];
     if (currentHour < 12) availableBlocks = ['morning', 'afternoon', 'evening'];
@@ -60,24 +85,49 @@ async function autofillDailyPlan(params, apiKey, model = 'gpt-3.5-turbo') {
         }
     });
 
+    // Build member list for prompt
+    const memberNames = members.length > 0 
+        ? members.map(m => m.display_name || m.email).join(', ')
+        : 'team members';
+    
+    // Create a member ID to name lookup
+    const memberLookup = {};
+    members.forEach(m => {
+        memberLookup[m.user_id] = m.display_name || m.email || 'Unknown';
+    });
+
     const taskDescriptions = availableTasks.map(t => {
         const estimatedTime = SIZE_MINUTES[t.size] || 45;
         const deadlineInfo = t.deadline ? `, deadline: ${t.deadline}` : '';
         const locationInfo = t.location ? `, location: ${t.location}` : '';
         const dependsInfo = t.depends_on ? `, depends on another task` : '';
         const locationType = getTaskLocationType(t);
+        const assigneeDisplay = getAssigneeDisplay(t, members);
         return `- ID: ${t.id}
   Name: "${t.name}"
-  Assignee: ${t.assignee} (${t.assignee === 'both' ? 'Mario & Maria together' : t.assignee === 'mario' ? 'Mario only' : 'Maria only'})
+  Assignee: ${t.assignee_id || t.assignee} (${assigneeDisplay})
   Size: ${SIZE_LABELS[t.size] || t.size} (${estimatedTime} min)
   Urgency: ${t.urgent || 3}/5, Importance: ${t.important || 3}/5
   Priority Score: ${((t.urgent || 3) * 2 + (t.important || 3))}${deadlineInfo}${locationInfo}${dependsInfo}
   Task Type: ${locationType}`;
     }).join('\n\n');
 
-    const prompt = `You are a smart daily planner assistant for Mario and Maria, a couple who share tasks. Your job is to intelligently fill their daily plan for the remaining time today.
+    // Build JSON structure example based on actual members
+    const jsonExample = {};
+    members.forEach(m => {
+        jsonExample[m.user_id] = {
+            morning: ['task_id_example'],
+            afternoon: [],
+            evening: []
+        };
+    });
+
+    const prompt = `You are a smart daily planner assistant for a team (${memberNames}). Your job is to intelligently fill their daily plan for the remaining time today.
 
 CURRENT TIME: ${currentHour}:${currentMinutes.toString().padStart(2, '0')}
+
+TEAM MEMBERS:
+${members.map(m => `- ${m.display_name || m.email} (ID: ${m.user_id})`).join('\n')}
 
 AVAILABLE TIME BLOCKS:
 ${availableBlocks.map(block => `- ${block.charAt(0).toUpperCase() + block.slice(1)}: ~${remainingMinutes[block]} minutes remaining`).join('\n')}
@@ -96,35 +146,23 @@ SCHEDULING RULES (in priority order):
    - If a task mentions a store, depot, car, plates, DMV, shopping, or pickup → it's an OUTSIDE errand
    - If a task is paperwork, computer work, cleaning inside, or doesn't require leaving → it's a HOME task
    - Schedule outside errands consecutively so the person can do them in one trip
-5. "BOTH" TASKS TOGETHER: Tasks assigned to "both" should ideally be scheduled at the same time block for Mario AND Maria so they can work together.
+5. "ALL" TASKS TOGETHER: Tasks assigned to "all" should ideally be scheduled at the same time block for ALL team members so they can work together.
 6. SIZE FITTING: Don't overfill blocks - respect the time estimates and available minutes.
-7. BALANCED WORKLOAD: Try to balance task count and total time between Mario and Maria.
+7. BALANCED WORKLOAD: Try to balance task count and total time between all team members.
 8. DEPENDENCIES: If a task depends on another, schedule the dependency first.
 
-RESPONSE FORMAT - Return ONLY valid JSON in this exact structure:
-{
-  "mario": {
-    "morning": ["task_id_1", "task_id_2"],
-    "afternoon": ["task_id_3"],
-    "evening": []
-  },
-  "maria": {
-    "morning": ["task_id_1"],
-    "afternoon": ["task_id_4"],
-    "evening": ["task_id_5"]
-  },
-  "reasoning": "Brief explanation of your scheduling decisions"
-}
+RESPONSE FORMAT - Return ONLY valid JSON with member user IDs as keys:
+${JSON.stringify(jsonExample, null, 2).replace(/task_id_example/g, 'actual_task_id')}
+Add a "reasoning" key with a brief explanation.
 
 IMPORTANT:
+- Use member user IDs (UUIDs) as keys, NOT names
 - Only include blocks that are available (${availableBlocks.join(', ')})
 - Use actual task IDs from the list above
-- For "both" assignee tasks, add the SAME task ID to BOTH Mario's and Maria's schedule in the SAME time block
+- For "all" assignee tasks, add the SAME task ID to ALL team members' schedules in the SAME time block
 - Don't schedule more tasks than will fit in the available time
 - It's okay to leave some tasks unscheduled if there isn't enough time
 - CRITICAL: Group all "OUTSIDE ERRAND" tasks together in one time block, and all "HOME TASK" tasks together in a different block
-- Example: If someone has "Get drills from depot" (outside) and "Return plates" (outside), put them in the SAME block so they can do both errands in one trip
-- Example: If someone has "Refill papers" (home) and "Clean car" (outside), put them in DIFFERENT blocks
 - Return ONLY the JSON, no markdown code blocks or extra text`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -168,28 +206,35 @@ IMPORTANT:
         throw new Error('Failed to parse AI scheduling response');
     }
 
-    if (!plan.mario || !plan.maria) {
-        throw new Error('Invalid plan structure from AI');
-    }
-
+    // Validate plan structure - should have keys for each member
+    const memberIds = members.map(m => m.user_id);
     const emptyBlocks = { morning: [], afternoon: [], evening: [] };
-    plan.mario = { ...emptyBlocks, ...plan.mario };
-    plan.maria = { ...emptyBlocks, ...plan.maria };
+    
+    // Build plan object with all member IDs
+    const validatedPlan = {};
+    memberIds.forEach(memberId => {
+        if (plan[memberId]) {
+            validatedPlan[memberId] = { ...emptyBlocks, ...plan[memberId] };
+        } else {
+            validatedPlan[memberId] = { ...emptyBlocks };
+        }
+    });
 
+    // Filter to valid task IDs only
     const validTaskIds = new Set(availableTasks.map(t => t.id));
-    ['mario', 'maria'].forEach(person => {
+    memberIds.forEach(memberId => {
         ['morning', 'afternoon', 'evening'].forEach(block => {
-            if (Array.isArray(plan[person][block])) {
-                plan[person][block] = plan[person][block].filter(id => validTaskIds.has(id));
+            if (Array.isArray(validatedPlan[memberId][block])) {
+                validatedPlan[memberId][block] = validatedPlan[memberId][block].filter(id => validTaskIds.has(id));
             } else {
-                plan[person][block] = [];
+                validatedPlan[memberId][block] = [];
             }
         });
     });
 
     return {
         success: true,
-        plan: { mario: plan.mario, maria: plan.maria },
+        plan: validatedPlan,
         reasoning: plan.reasoning || 'Plan generated based on priority, location clustering, and time constraints.',
         message: `Daily plan created! ${plan.reasoning || ''}`
     };

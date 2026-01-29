@@ -8,8 +8,7 @@ const {
     validateAssigneeUpdate,
     validateSize,
     clampUrgencyImportance,
-    VALID_SIZES,
-    VALID_ASSIGNEES_UPDATE
+    VALID_SIZES
 } = require('../validation/taskValidation');
 
 /**
@@ -53,9 +52,12 @@ function splitTask(taskId, splitDescription, organizationId = null) {
         throw new ValidationError('Split description must include both part1 and part2 task names', 'splitDescription');
     }
 
+    // Use provided assignee or default to 'all' for team distribution
+    const assignee = splitDescription.assignee || 'all';
+    
     const task1 = {
         name: splitDescription.part1,
-        assignee: 'mario',
+        assignee: assignee,
         size: splitDescription.size1 || 'm',
         urgent: 3,
         important: 3,
@@ -67,7 +69,7 @@ function splitTask(taskId, splitDescription, organizationId = null) {
 
     const task2 = {
         name: splitDescription.part2,
-        assignee: 'mario',
+        assignee: assignee,
         size: splitDescription.size2 || 'm',
         urgent: 3,
         important: 3,
@@ -134,7 +136,7 @@ function updateTask(taskId, updates, organizationId = null) {
 function getTasks(filters = {}, organizationId = null) {
     return {
         tasks: [
-            { id: 'task_001', name: 'Sample task', assignee: 'mario', completed: false }
+            { id: 'task_001', name: 'Sample task', assignee: 'all', completed: false }
         ],
         count: 1,
         message: 'Tasks retrieved successfully.'

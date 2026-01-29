@@ -6,7 +6,8 @@ const { calculateDeadline, parseDeadline } = require('../utils/dateCalc');
 const { assignMatrixPositions, suggestIntegrations } = require('../utils/matrixPositions');
 const { reviewDecomposition } = require('../utils/decomposeHelpers');
 
-const DEFAULT_ASSIGNEES = ['mario', 'maria'];
+// Default assignee when none specified - uses 'all' for team tasks
+const DEFAULT_ASSIGNEE = 'all';
 
 /**
  * Decompose a large task into subtasks with dependencies.
@@ -47,7 +48,8 @@ function decomposeTask(taskDescription, organizationId = null) {
         const subtask = {
             id: subtaskId,
             name: `Subtask ${i + 1} for "${taskDescription.name}"`,
-            assignee: DEFAULT_ASSIGNEES[i % DEFAULT_ASSIGNEES.length],
+            // Use parent's assignee or default to 'all' for team distribution
+            assignee: taskDescription.assignee || DEFAULT_ASSIGNEE,
             size: ['s', 'm', 'l'][Math.floor(Math.random() * 3)],
             urgent: Math.floor(Math.random() * 3) + 2,
             important: Math.floor(Math.random() * 3) + 2,
@@ -100,14 +102,14 @@ function refineDecomposition(originalDecomposition, userAnswers) {
                 : `Budget: ${response}`;
         }
 
+        // Workload balancing now happens at the UI level based on organization members
+        // The AI can suggest reassignments but the actual member IDs are provided by the client
         if (question.includes('balance') || question.includes('workload')) {
-            if (response.includes('mario') || response.includes('more mario')) {
-                const mariaTasks = refinedSubtasks.filter(t => t.assignee === 'maria');
-                if (mariaTasks.length > 0) mariaTasks[0].assignee = 'mario';
-            } else if (response.includes('maria') || response.includes('more maria')) {
-                const marioTasks = refinedSubtasks.filter(t => t.assignee === 'mario');
-                if (marioTasks.length > 0) marioTasks[0].assignee = 'maria';
-            }
+            // Note: Workload balancing should be handled by the client-side
+            // which has access to the actual organization member IDs
+            refinedParentTask.completion_criteria = refinedParentTask.completion_criteria
+                ? `${refinedParentTask.completion_criteria}. Workload preference: ${response}`
+                : `Workload preference: ${response}`;
         }
 
         if (question.includes('first step') || question.includes('start')) {
@@ -163,15 +165,21 @@ function refineDecomposition(originalDecomposition, userAnswers) {
 function finalizeDecomposition(decomposition) {
     const { parentTask, subtasks } = decomposition;
 
+    // Count tasks by assignee dynamically
+    const assigneeCounts = {};
+    subtasks.forEach(t => {
+        const assignee = t.assignee_id || t.assignee || 'unassigned';
+        assigneeCounts[assignee] = (assigneeCounts[assignee] || 0) + 1;
+    });
+
     return {
         success: true,
         parentTask,
         subtasks,
         summary: {
             totalTasks: subtasks.length + 1,
-            marioTasks: subtasks.filter(t => t.assignee === 'mario').length,
-            mariaTasks: subtasks.filter(t => t.assignee === 'maria').length,
-            bothTasks: subtasks.filter(t => t.assignee === 'both').length,
+            assigneeCounts, // Dynamic count by assignee ID
+            sharedTasks: subtasks.filter(t => t.assignee === 'all' || t.assignee === 'both').length,
             deadlines: subtasks.filter(t => t.deadline).length,
             dependencies: subtasks.filter(t => t.depends_on && t.depends_on.length > 0).length
         },

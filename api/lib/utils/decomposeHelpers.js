@@ -93,16 +93,25 @@ function reviewDecomposition(decomposition, isRefinement = false) {
         }
     }
 
-    const marioTasks = subtasks.filter(t => t.assignee === 'mario').length;
-    const mariaTasks = subtasks.filter(t => t.assignee === 'maria').length;
-    const bothTasks = subtasks.filter(t => t.assignee === 'both').length;
-    const allTasks = subtasks.filter(t => t.assignee === 'all').length;
-    const totalAssignedTasks = marioTasks + mariaTasks + bothTasks + allTasks;
-    if (totalAssignedTasks > 0 && Math.abs(marioTasks - mariaTasks) > 2 && subtasks.length > 3) {
-        if (strictMode) {
-            issues.push('Unbalanced workload');
-            questions.push('Would you prefer to balance the workload differently between team members?');
+    // Check workload balance across assignees dynamically
+    const assigneeCounts = {};
+    subtasks.forEach(t => {
+        const assignee = t.assignee_id || t.assignee || 'unassigned';
+        // Don't count 'all' or 'both' as they're shared tasks
+        if (assignee !== 'all' && assignee !== 'both') {
+            assigneeCounts[assignee] = (assigneeCounts[assignee] || 0) + 1;
         }
+    });
+    
+    // Check if workload is significantly unbalanced between any two assignees
+    const counts = Object.values(assigneeCounts);
+    const maxCount = Math.max(...counts, 0);
+    const minCount = Math.min(...counts, 0);
+    const isUnbalanced = counts.length >= 2 && (maxCount - minCount) > 2 && subtasks.length > 3;
+    
+    if (isUnbalanced && strictMode) {
+        issues.push('Unbalanced workload');
+        questions.push('Would you prefer to balance the workload differently between team members?');
     }
 
     const today = new Date();

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Version: 2026-01-29-v5 - Explicit display property for assignee buttons (flex blockification clarity) -->
+<!-- Version: 2026-01-29-v6 - Generalized member system (removed hardcoded Mario/Maria, dynamic members) -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -4767,20 +4767,9 @@
                 </div>
             </div>
 
-            <!-- Legend under matrix -->
-            <div class="matrix-legend">
-                <div class="legend-item">
-                    <div class="legend-dot mario"></div>
-                    <span>Mario</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot maria"></div>
-                    <span>Maria</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-dot both"></div>
-                    <span>Both</span>
-                </div>
+            <!-- Legend under matrix - populated dynamically -->
+            <div class="matrix-legend" id="matrixLegend">
+                <!-- Legend items will be generated based on organization members -->
             </div>
         </div>
 
@@ -4873,111 +4862,9 @@
                 </div>
             </div>
 
-            <!-- Side-by-side Mario/Maria columns -->
-            <div class="plan-columns">
-                <!-- Mario's Column -->
-                <div class="plan-column mario">
-                    <div class="plan-column-header">
-                        <div class="plan-column-avatar mario">M</div>
-                        <div class="plan-column-info">
-                            <div class="plan-column-name">Mario</div>
-                            <div class="plan-column-stats" id="marioStats">0 tasks • 0h</div>
-                        </div>
-                    </div>
-                    <div class="plan-time-blocks">
-                        <!-- Morning Block -->
-                        <div class="plan-time-block" data-block="morning" data-assignee="mario">
-                            <div class="plan-time-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="5"/>
-                                    <line x1="12" y1="1" x2="12" y2="3"/>
-                                    <line x1="12" y1="21" x2="12" y2="23"/>
-                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                                    <line x1="1" y1="12" x2="3" y2="12"/>
-                                    <line x1="21" y1="12" x2="23" y2="12"/>
-                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                                </svg>
-                                Morning
-                            </div>
-                            <div class="plan-block-tasks" id="planMarioMorning"></div>
-                        </div>
-                        <!-- Afternoon Block -->
-                        <div class="plan-time-block" data-block="afternoon" data-assignee="mario">
-                            <div class="plan-time-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="5"/>
-                                    <line x1="12" y1="1" x2="12" y2="3"/>
-                                </svg>
-                                Afternoon
-                            </div>
-                            <div class="plan-block-tasks" id="planMarioAfternoon"></div>
-                        </div>
-                        <!-- Evening Block -->
-                        <div class="plan-time-block" data-block="evening" data-assignee="mario">
-                            <div class="plan-time-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                                </svg>
-                                Evening
-                            </div>
-                            <div class="plan-block-tasks" id="planMarioEvening"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Maria's Column -->
-                <div class="plan-column maria">
-                    <div class="plan-column-header">
-                        <div class="plan-column-avatar maria">A</div>
-                        <div class="plan-column-info">
-                            <div class="plan-column-name">Maria</div>
-                            <div class="plan-column-stats" id="mariaStats">0 tasks • 0h</div>
-                        </div>
-                    </div>
-                    <div class="plan-time-blocks">
-                        <!-- Morning Block -->
-                        <div class="plan-time-block" data-block="morning" data-assignee="maria">
-                            <div class="plan-time-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="5"/>
-                                    <line x1="12" y1="1" x2="12" y2="3"/>
-                                    <line x1="12" y1="21" x2="12" y2="23"/>
-                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                                    <line x1="1" y1="12" x2="3" y2="12"/>
-                                    <line x1="21" y1="12" x2="23" y2="12"/>
-                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                                </svg>
-                                Morning
-                            </div>
-                            <div class="plan-block-tasks" id="planMariaMorning"></div>
-                        </div>
-                        <!-- Afternoon Block -->
-                        <div class="plan-time-block" data-block="afternoon" data-assignee="maria">
-                            <div class="plan-time-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="5"/>
-                                    <line x1="12" y1="1" x2="12" y2="3"/>
-                                </svg>
-                                Afternoon
-                            </div>
-                            <div class="plan-block-tasks" id="planMariaAfternoon"></div>
-                        </div>
-                        <!-- Evening Block -->
-                        <div class="plan-time-block" data-block="evening" data-assignee="maria">
-                            <div class="plan-time-label">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                                </svg>
-                                Evening
-                            </div>
-                            <div class="plan-block-tasks" id="planMariaEvening"></div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Dynamic member columns - populated by JavaScript -->
+            <div class="plan-columns" id="planColumns">
+                <!-- Columns will be dynamically generated based on organization members -->
             </div>
 
             <!-- Task Suggestions -->
@@ -5064,18 +4951,8 @@
             <div class="task-options-body">
                 <div class="task-option-group" id="markCompleteGroup">
                     <div class="task-option-group-title">Mark Complete</div>
-                    <button class="task-option-btn complete" id="markCompleteMarioBtn">
-                        <div class="task-option-icon mario"></div>
-                        Mario
-                    </button>
-                    <button class="task-option-btn complete" id="markCompleteMariaBtn">
-                        <div class="task-option-icon maria"></div>
-                        Maria
-                    </button>
-                    <button class="task-option-btn complete" id="markCompleteBothBtn">
-                        <div class="task-option-icon both"></div>
-                        Both
-                    </button>
+                    <!-- Completion buttons will be generated dynamically -->
+                    <div id="dynamicCompleteButtons"></div>
                 </div>
                 <button class="task-option-btn undo" id="undoCompleteBtn" style="display: none;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -5113,16 +4990,8 @@
                 </button>
                 <div class="task-option-group" id="remindGroup">
                     <div class="task-option-group-title">Send Reminder</div>
-                    <button class="task-option-btn remind mario" id="remindMarioBtn">
-                        <span class="remind-icon">📧</span>
-                        <div class="task-option-icon mario"></div>
-                        Remind Mario
-                    </button>
-                    <button class="task-option-btn remind maria" id="remindMariaBtn">
-                        <span class="remind-icon">📧</span>
-                        <div class="task-option-icon maria"></div>
-                        Remind Maria
-                    </button>
+                    <!-- Remind buttons will be generated dynamically -->
+                    <div id="dynamicRemindButtons"></div>
                 </div>
                 <button class="task-option-btn delete" id="deleteTaskBtn">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -5393,18 +5262,15 @@
             
             <div class="view-task-actions">
                 <div class="view-task-primary-actions" id="viewTaskPrimaryActions">
-                    <!-- Mark Complete buttons (shown when task is not completed) -->
+                    <!-- Mark Complete buttons (shown when task is not completed) - generated dynamically -->
                     <div class="view-task-complete-group" id="viewTaskCompleteGroup" style="display: none;">
-                        <button class="view-task-action-btn complete" id="viewTaskCompleteMarioBtn">✓ Mario</button>
-                        <button class="view-task-action-btn complete" id="viewTaskCompleteMariaBtn">✓ Maria</button>
-                        <button class="view-task-action-btn complete" id="viewTaskCompleteBothBtn">✓ Both</button>
+                        <!-- Complete buttons populated dynamically -->
                     </div>
                     <!-- Undo Complete button (shown when task is completed) -->
                     <button class="view-task-action-btn undo" id="viewTaskUndoBtn" style="display: none;">Undo Completion</button>
                 </div>
-                <div class="view-task-remind-group">
-                    <button class="view-task-action-btn remind mario" id="viewTaskRemindMarioBtn">📧 Remind Mario</button>
-                    <button class="view-task-action-btn remind maria" id="viewTaskRemindMariaBtn">📧 Remind Maria</button>
+                <div class="view-task-remind-group" id="viewTaskRemindGroup">
+                    <!-- Remind buttons populated dynamically -->
                 </div>
                 <div class="view-task-secondary-actions">
                     <button class="view-task-action-btn primary" id="viewTaskEditBtn">Edit Task</button>
@@ -5553,8 +5419,8 @@
         let floatingAddBtn, addTaskModal, modalClose, modalTaskName, modalAddTaskBtn, modalTitle, modalFirstStep, modalCompletionCriteria, modalDeadline, modalLocation, modalDependsOn, modalRepeatPreset, customRepeatOptions, customRRule, repeatToggleBtn, repeatSectionContent;
         let taskOptionsMenu, taskOptionsClose, markCompleteGroup;
         let viewTaskModal, viewTaskClose, viewTaskEditBtn, viewTaskCloseBtn, viewTaskTitle, viewTaskSubtitle, viewTaskIcon, viewTaskProperties;
-        let viewTaskCompleteGroup, viewTaskCompleteMarioBtn, viewTaskCompleteMariaBtn, viewTaskCompleteBothBtn, viewTaskUndoBtn, viewTaskDeleteBtn, viewTaskSplitBtn;
-        let viewTaskRemindMarioBtn, viewTaskRemindMariaBtn;
+        let viewTaskCompleteGroup, viewTaskUndoBtn, viewTaskDeleteBtn, viewTaskSplitBtn;
+        // Note: viewTaskCompleteXxxBtn and viewTaskRemindXxxBtn are now generated dynamically
         let taskChatbotContainer, taskChatbotHeader, taskChatbotToggle, taskChatbotContent, taskChatbotMessages, taskChatbotInput, taskChatbotSend;
         let currentTaskForChat = null;
         let globalAiBtn, globalAiModal, globalAiClose, globalAiMessages, globalAiInput, globalAiSend;
@@ -5582,9 +5448,8 @@
                 planModelSelector.value = model;
             }
         }
-        let markCompleteMarioBtn, markCompleteMariaBtn, markCompleteBothBtn;
+        // Note: markCompleteXxxBtn and remindXxxBtn are now generated dynamically
         let undoCompleteBtn, moveToBankBtn, deleteTaskBtn, editTaskBtn, splitTaskBtn;
-        let remindMarioBtn, remindMariaBtn;
         let selectedTaskForOptions = null;
         let editingTaskId = null;
         let resizeHandle;
@@ -5593,7 +5458,7 @@
         let bankedTasks = JSON.parse(localStorage.getItem('taskMatrixBank') || '[]');
         let completedTasks = JSON.parse(localStorage.getItem('taskMatrixCompleted') || '[]');
         const TASK_POINTS = { xs: 2, s: 4, m: 6, l: 8, xl: 10 };
-        let currentScores = { mario: { points: 0, tasks: 0 }, maria: { points: 0, tasks: 0 } };
+        let currentScores = {}; // Will be populated dynamically based on organization members
         let quadrants = {};
 
         // State
@@ -5984,16 +5849,12 @@
             taskOptionsMenu = document.getElementById('taskOptionsMenu');
             taskOptionsClose = document.getElementById('taskOptionsClose');
             markCompleteGroup = document.getElementById('markCompleteGroup');
-            markCompleteMarioBtn = document.getElementById('markCompleteMarioBtn');
-            markCompleteMariaBtn = document.getElementById('markCompleteMariaBtn');
-            markCompleteBothBtn = document.getElementById('markCompleteBothBtn');
+            // Note: individual complete/remind buttons are generated dynamically
             undoCompleteBtn = document.getElementById('undoCompleteBtn');
             moveToBankBtn = document.getElementById('moveToBankBtn');
             deleteTaskBtn = document.getElementById('deleteTaskBtn');
             editTaskBtn = document.getElementById('editTaskBtn');
             splitTaskBtn = document.getElementById('splitTaskBtn');
-            remindMarioBtn = document.getElementById('remindMarioBtn');
-            remindMariaBtn = document.getElementById('remindMariaBtn');
             resizeHandle = document.getElementById('resizeHandle');
             modalTitle = document.getElementById('modalTitle');
             viewTaskModal = document.getElementById('viewTaskModal');
@@ -6005,14 +5866,10 @@
             viewTaskIcon = document.getElementById('viewTaskIcon');
             viewTaskProperties = document.getElementById('viewTaskProperties');
             viewTaskCompleteGroup = document.getElementById('viewTaskCompleteGroup');
-            viewTaskCompleteMarioBtn = document.getElementById('viewTaskCompleteMarioBtn');
-            viewTaskCompleteMariaBtn = document.getElementById('viewTaskCompleteMariaBtn');
-            viewTaskCompleteBothBtn = document.getElementById('viewTaskCompleteBothBtn');
+            // Note: individual complete/remind buttons in view modal are generated dynamically
             viewTaskUndoBtn = document.getElementById('viewTaskUndoBtn');
             viewTaskDeleteBtn = document.getElementById('viewTaskDeleteBtn');
             viewTaskSplitBtn = document.getElementById('viewTaskSplitBtn');
-            viewTaskRemindMarioBtn = document.getElementById('viewTaskRemindMarioBtn');
-            viewTaskRemindMariaBtn = document.getElementById('viewTaskRemindMariaBtn');
             
             // Chatbot elements
             taskChatbotContainer = document.getElementById('taskChatbotContainer');
@@ -6741,6 +6598,9 @@
                 initPlanEventListeners();
                 await loadTasks();
                 await populateAssigneeFilterButtons(); // Populate dynamic assignee filters
+                populateMatrixLegend(); // Populate legend dynamically
+                populateTaskOptionButtons(); // Populate task options menu buttons
+                populateViewTaskButtons(); // Populate view task modal buttons
                 await loadTodayScores();
                 setupRealtimeSubscription();
                 renderTaskBank();
@@ -6859,44 +6719,12 @@
                     });
                 } else {
                     // Fallback for no members
-                    scoreDisplay.innerHTML = `
-                        <div class="score-player mario">
-                            <div class="score-avatar">M</div>
-                            <div class="score-info">
-                                <div class="score-points" id="marioScore">0</div>
-                                <div class="score-label">pts</div>
-                            </div>
-                        </div>
-                        <div class="score-divider">vs</div>
-                        <div class="score-player maria">
-                            <div class="score-avatar">A</div>
-                            <div class="score-info">
-                                <div class="score-points" id="mariaScore">0</div>
-                                <div class="score-label">pts</div>
-                            </div>
-                        </div>
-                    `;
+                    scoreDisplay.innerHTML = `<div class="score-player"><div class="score-info" style="text-align: center; color: var(--text-muted);">No members</div></div>`;
                 }
             } catch (error) {
                 console.error('Error populating score displays:', error);
                 // Fallback
-                scoreDisplay.innerHTML = `
-                    <div class="score-player mario">
-                        <div class="score-avatar">M</div>
-                        <div class="score-info">
-                            <div class="score-points" id="marioScore">0</div>
-                            <div class="score-label">pts</div>
-                        </div>
-                    </div>
-                    <div class="score-divider">vs</div>
-                    <div class="score-player maria">
-                        <div class="score-avatar">A</div>
-                        <div class="score-info">
-                            <div class="score-points" id="mariaScore">0</div>
-                            <div class="score-label">pts</div>
-                        </div>
-                    </div>
-                `;
+                scoreDisplay.innerHTML = `<div class="score-player"><div class="score-info" style="text-align: center; color: var(--text-muted);">Loading...</div></div>`;
             }
         }
 
@@ -7166,14 +6994,24 @@
                 else if (rank === 2) rankClass = 'silver';
                 else if (rank === 3) rankClass = 'bronze';
 
-                const playerNames = { mario: 'Mario', maria: 'Maria' };
-                const playerName = playerNames[entry.player] || entry.player;
+                // Get player name from members cache or fall back to entry data
+                let playerName = entry.player;
+                let playerColor = getMemberColor(entry.user_id || entry.player);
+                let playerInitial = playerName.charAt(0).toUpperCase();
+                
+                if (entry.user_id && environmentMembersCache) {
+                    const member = environmentMembersCache.find(m => m.user_id === entry.user_id);
+                    if (member) {
+                        playerName = member.display_name || member.email || entry.player;
+                        playerInitial = playerName.charAt(0).toUpperCase();
+                    }
+                }
 
                 return `
                     <div class="leaderboard-entry">
                         <div class="leaderboard-rank ${rankClass}">${rank}</div>
                         <div class="leaderboard-player">
-                            <div class="leaderboard-avatar ${entry.player}">${entry.player === 'mario' ? 'Mario' : 'Maria'}</div>
+                            <div class="leaderboard-avatar" style="background: ${playerColor};">${playerInitial}</div>
                             <div class="leaderboard-info">
                                 <div class="leaderboard-name">${playerName}</div>
                                 <div class="leaderboard-stats">${entry.tasks} tasks • ${entry.days} day${entry.days !== 1 ? 's' : ''}</div>
@@ -7365,26 +7203,7 @@
                 }
             });
 
-            viewTaskCompleteMarioBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    toggleTaskComplete(selectedTaskForOptions.id, true, 'mario');
-                    closeViewTaskModal();
-                }
-            });
-
-            viewTaskCompleteMariaBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    toggleTaskComplete(selectedTaskForOptions.id, true, 'maria');
-                    closeViewTaskModal();
-                }
-            });
-
-            viewTaskCompleteBothBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    toggleTaskComplete(selectedTaskForOptions.id, true, 'both');
-                    closeViewTaskModal();
-                }
-            });
+            // Note: viewTaskCompleteXxxBtn event handlers are now added dynamically in populateViewTaskButtons()
 
             viewTaskUndoBtn.addEventListener('click', () => {
                 if (selectedTaskForOptions) {
@@ -7472,38 +7291,7 @@
                 }
             });
 
-            viewTaskRemindMarioBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    sendReminderFromViewModal('mario', selectedTaskForOptions);
-                }
-            });
-
-            viewTaskRemindMariaBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    sendReminderFromViewModal('maria', selectedTaskForOptions);
-                }
-            });
-
-            markCompleteMarioBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    toggleTaskComplete(selectedTaskForOptions.id, true, 'mario');
-                    closeTaskOptionsMenu();
-                }
-            });
-
-            markCompleteMariaBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    toggleTaskComplete(selectedTaskForOptions.id, true, 'maria');
-                    closeTaskOptionsMenu();
-                }
-            });
-
-            markCompleteBothBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    toggleTaskComplete(selectedTaskForOptions.id, true, 'both');
-                    closeTaskOptionsMenu();
-                }
-            });
+            // Note: viewTaskRemindXxxBtn and markCompleteXxxBtn event handlers are now added dynamically
 
             moveToBankBtn.addEventListener('click', () => {
                 if (selectedTaskForOptions) {
@@ -7542,17 +7330,7 @@
                 }
             });
 
-            remindMarioBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    sendReminder('mario', selectedTaskForOptions);
-                }
-            });
-
-            remindMariaBtn.addEventListener('click', () => {
-                if (selectedTaskForOptions) {
-                    sendReminder('maria', selectedTaskForOptions);
-                }
-            });
+            // Note: remindXxxBtn event handlers are now added dynamically in populateTaskOptionButtons()
 
             modalAddTaskBtn.addEventListener('click', () => {
                 if (editingTaskId) {
@@ -8133,6 +7911,57 @@
             return org;
         }
 
+        // Helper function to get member color by user ID or legacy name
+        function getMemberColor(assigneeId) {
+            const colors = window.organizationMemberColors || {};
+            const defaultColors = {
+                'all': '#a78bfa',  // Purple for shared tasks
+                'both': '#a78bfa'
+            };
+            
+            // Check for 'all' or 'both' first
+            if (assigneeId === 'all' || assigneeId === 'both') {
+                return defaultColors.all;
+            }
+            
+            // Try to find in organization member colors
+            if (colors[assigneeId]) {
+                return colors[assigneeId];
+            }
+            
+            // Try to find member by ID and get their color
+            if (environmentMembersCache) {
+                const member = environmentMembersCache.find(m => m.user_id === assigneeId);
+                if (member) {
+                    // Check by user_id, username, or display_name
+                    return colors[member.user_id] || 
+                           colors[member.username] || 
+                           colors[member.display_name?.toLowerCase()] ||
+                           '#4a9eff'; // Default blue
+                }
+            }
+            
+            // Fallback default
+            return '#4a9eff';
+        }
+
+        // Helper function to get member display name by user ID
+        function getMemberDisplayName(assigneeId) {
+            if (assigneeId === 'all' || assigneeId === 'both') {
+                return 'All Members';
+            }
+            
+            if (environmentMembersCache) {
+                const member = environmentMembersCache.find(m => m.user_id === assigneeId);
+                if (member) {
+                    return member.display_name || member.email || 'Unknown';
+                }
+            }
+            
+            // Fallback
+            return assigneeId;
+        }
+
         async function populateAssigneeFilterButtons() {
             const assigneeFilter = document.getElementById('assigneeFilter');
             if (!assigneeFilter) return;
@@ -8204,6 +8033,186 @@
                     </button>
                 `;
             }
+        }
+
+        // Populate the matrix legend dynamically based on organization members
+        async function populateMatrixLegend() {
+            const legend = document.getElementById('matrixLegend');
+            if (!legend) return;
+
+            const members = environmentMembersCache || [];
+            const memberColors = window.organizationMemberColors || {};
+
+            legend.innerHTML = '';
+
+            // Add individual member legend items
+            members.forEach(member => {
+                const memberColor = memberColors[member.user_id] || 
+                                   memberColors[member.username] || 
+                                   memberColors[member.display_name?.toLowerCase()] || 
+                                   '#4a9eff';
+                
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-dot" style="background: ${memberColor};"></div>
+                    <span>${member.display_name || member.email}</span>
+                `;
+                legend.appendChild(item);
+            });
+
+            // Add "All Members" legend item
+            const allItem = document.createElement('div');
+            allItem.className = 'legend-item';
+            allItem.innerHTML = `
+                <div class="legend-dot" style="background: #a78bfa;"></div>
+                <span>All Members</span>
+            `;
+            legend.appendChild(allItem);
+        }
+
+        // Populate dynamic complete and remind buttons in task options menu
+        function populateTaskOptionButtons() {
+            const completeButtonsContainer = document.getElementById('dynamicCompleteButtons');
+            const remindButtonsContainer = document.getElementById('dynamicRemindButtons');
+            
+            if (!completeButtonsContainer || !remindButtonsContainer) return;
+
+            const members = environmentMembersCache || [];
+            const memberColors = window.organizationMemberColors || {};
+
+            // Clear existing buttons
+            completeButtonsContainer.innerHTML = '';
+            remindButtonsContainer.innerHTML = '';
+
+            // Add buttons for each member
+            members.forEach(member => {
+                const memberColor = memberColors[member.user_id] || 
+                                   memberColors[member.username] || 
+                                   memberColors[member.display_name?.toLowerCase()] || 
+                                   '#4a9eff';
+                const memberName = member.display_name || member.email || 'Unknown';
+
+                // Complete button
+                const completeBtn = document.createElement('button');
+                completeBtn.className = 'task-option-btn complete';
+                completeBtn.dataset.memberId = member.user_id;
+                completeBtn.innerHTML = `
+                    <div class="task-option-icon" style="background: ${memberColor};"></div>
+                    ${memberName}
+                `;
+                completeBtn.addEventListener('click', () => {
+                    if (selectedTaskForOptions) {
+                        toggleTaskComplete(selectedTaskForOptions.id, true, member.user_id);
+                        closeTaskOptionsMenu();
+                    }
+                });
+                completeButtonsContainer.appendChild(completeBtn);
+
+                // Remind button
+                const remindBtn = document.createElement('button');
+                remindBtn.className = 'task-option-btn remind';
+                remindBtn.dataset.memberId = member.user_id;
+                remindBtn.innerHTML = `
+                    <span class="remind-icon">📧</span>
+                    <div class="task-option-icon" style="background: ${memberColor};"></div>
+                    Remind ${memberName}
+                `;
+                remindBtn.addEventListener('click', () => {
+                    if (selectedTaskForOptions) {
+                        sendReminder(member.user_id, selectedTaskForOptions);
+                        closeTaskOptionsMenu();
+                    }
+                });
+                remindButtonsContainer.appendChild(remindBtn);
+            });
+
+            // Add "All Members" complete button
+            const allCompleteBtn = document.createElement('button');
+            allCompleteBtn.className = 'task-option-btn complete';
+            allCompleteBtn.dataset.memberId = 'all';
+            allCompleteBtn.innerHTML = `
+                <div class="task-option-icon" style="background: #a78bfa;"></div>
+                All Members
+            `;
+            allCompleteBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    toggleTaskComplete(selectedTaskForOptions.id, true, 'all');
+                    closeTaskOptionsMenu();
+                }
+            });
+            completeButtonsContainer.appendChild(allCompleteBtn);
+        }
+
+        // Populate dynamic buttons in view task modal
+        function populateViewTaskButtons() {
+            const completeGroup = document.getElementById('viewTaskCompleteGroup');
+            const remindGroup = document.getElementById('viewTaskRemindGroup');
+            
+            if (!completeGroup || !remindGroup) return;
+
+            const members = environmentMembersCache || [];
+            const memberColors = window.organizationMemberColors || {};
+
+            // Clear and rebuild complete buttons
+            completeGroup.innerHTML = '';
+            members.forEach(member => {
+                const memberColor = memberColors[member.user_id] || 
+                                   memberColors[member.username] || 
+                                   memberColors[member.display_name?.toLowerCase()] || 
+                                   '#4a9eff';
+                const memberName = member.display_name || member.email || 'Unknown';
+
+                const btn = document.createElement('button');
+                btn.className = 'view-task-action-btn complete';
+                btn.style.background = memberColor;
+                btn.dataset.memberId = member.user_id;
+                btn.textContent = `✓ ${memberName}`;
+                btn.addEventListener('click', () => {
+                    if (selectedTaskForOptions) {
+                        toggleTaskComplete(selectedTaskForOptions.id, true, member.user_id);
+                        closeViewTaskModal();
+                    }
+                });
+                completeGroup.appendChild(btn);
+            });
+
+            // Add "All" button
+            const allBtn = document.createElement('button');
+            allBtn.className = 'view-task-action-btn complete';
+            allBtn.style.background = '#a78bfa';
+            allBtn.dataset.memberId = 'all';
+            allBtn.textContent = '✓ All';
+            allBtn.addEventListener('click', () => {
+                if (selectedTaskForOptions) {
+                    toggleTaskComplete(selectedTaskForOptions.id, true, 'all');
+                    closeViewTaskModal();
+                }
+            });
+            completeGroup.appendChild(allBtn);
+
+            // Clear and rebuild remind buttons
+            remindGroup.innerHTML = '';
+            members.forEach(member => {
+                const memberColor = memberColors[member.user_id] || 
+                                   memberColors[member.username] || 
+                                   memberColors[member.display_name?.toLowerCase()] || 
+                                   '#4a9eff';
+                const memberName = member.display_name || member.email || 'Unknown';
+
+                const btn = document.createElement('button');
+                btn.className = 'view-task-action-btn remind';
+                btn.style.borderColor = memberColor;
+                btn.style.color = memberColor;
+                btn.dataset.memberId = member.user_id;
+                btn.textContent = `📧 Remind ${memberName}`;
+                btn.addEventListener('click', () => {
+                    if (selectedTaskForOptions) {
+                        sendReminderFromViewModal(member.user_id, selectedTaskForOptions);
+                    }
+                });
+                remindGroup.appendChild(btn);
+            });
         }
 
         // ===========================================
@@ -9012,7 +9021,117 @@
             localStorage.setItem(PLAN_DATE_KEY, new Date().toDateString());
         }
 
-        function renderPlan() {
+        // Generate the morning SVG icon
+        function getMorningSvg() {
+            return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>`;
+        }
+        
+        function getAfternoonSvg() {
+            return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+            </svg>`;
+        }
+        
+        function getEveningSvg() {
+            return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>`;
+        }
+
+        // Populate planner columns dynamically based on organization members
+        async function populatePlannerColumns() {
+            const planColumns = document.getElementById('planColumns');
+            if (!planColumns) return;
+
+            // Get members from cache or load them
+            let members = environmentMembersCache;
+            if (!members && currentUser?.organizationId) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .rpc('get_environment_members', { org_id: currentUser.organizationId });
+                    if (!error && data) {
+                        members = data;
+                        environmentMembersCache = data;
+                    }
+                } catch (error) {
+                    console.error('Error loading members for planner:', error);
+                }
+            }
+
+            if (!members || members.length === 0) {
+                planColumns.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">No members found in organization</div>';
+                return;
+            }
+
+            // Get member colors
+            const memberColors = window.organizationMemberColors || {};
+
+            // Generate columns for each member
+            planColumns.innerHTML = '';
+            members.forEach(member => {
+                const memberId = member.user_id;
+                const memberName = member.display_name || member.email || 'Unknown';
+                const memberInitial = memberName.charAt(0).toUpperCase();
+                const memberColor = memberColors[memberId] || 
+                                   memberColors[member.username] || 
+                                   memberColors[memberName.toLowerCase()] || 
+                                   '#4a9eff';
+
+                // Initialize plan structure for this member if not exists
+                if (!todaysPlan[memberId]) {
+                    todaysPlan[memberId] = { morning: [], afternoon: [], evening: [] };
+                }
+
+                const columnHtml = `
+                    <div class="plan-column" data-member-id="${memberId}">
+                        <div class="plan-column-header">
+                            <div class="plan-column-avatar" style="background: ${memberColor};">${memberInitial}</div>
+                            <div class="plan-column-info">
+                                <div class="plan-column-name">${memberName}</div>
+                                <div class="plan-column-stats" id="planStats_${memberId}">0 tasks • 0m</div>
+                            </div>
+                        </div>
+                        <div class="plan-time-blocks">
+                            <div class="plan-time-block" data-block="morning" data-assignee="${memberId}">
+                                <div class="plan-time-label">
+                                    ${getMorningSvg()}
+                                    Morning
+                                </div>
+                                <div class="plan-block-tasks" id="plan_${memberId}_morning"></div>
+                            </div>
+                            <div class="plan-time-block" data-block="afternoon" data-assignee="${memberId}">
+                                <div class="plan-time-label">
+                                    ${getAfternoonSvg()}
+                                    Afternoon
+                                </div>
+                                <div class="plan-block-tasks" id="plan_${memberId}_afternoon"></div>
+                            </div>
+                            <div class="plan-time-block" data-block="evening" data-assignee="${memberId}">
+                                <div class="plan-time-label">
+                                    ${getEveningSvg()}
+                                    Evening
+                                </div>
+                                <div class="plan-block-tasks" id="plan_${memberId}_evening"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                planColumns.insertAdjacentHTML('beforeend', columnHtml);
+            });
+        }
+
+        async function renderPlan() {
             loadTodaysPlan();
 
             // Update date display
@@ -9023,15 +9142,20 @@
                 planDate.textContent = today.toLocaleDateString('en-US', options);
             }
 
-            // Render Mario's time blocks
-            renderPlanBlock('mario', 'morning', 'planMarioMorning');
-            renderPlanBlock('mario', 'afternoon', 'planMarioAfternoon');
-            renderPlanBlock('mario', 'evening', 'planMarioEvening');
+            // Populate columns dynamically if not already done
+            const planColumns = document.getElementById('planColumns');
+            if (planColumns && planColumns.children.length === 0) {
+                await populatePlannerColumns();
+            }
 
-            // Render Maria's time blocks
-            renderPlanBlock('maria', 'morning', 'planMariaMorning');
-            renderPlanBlock('maria', 'afternoon', 'planMariaAfternoon');
-            renderPlanBlock('maria', 'evening', 'planMariaEvening');
+            // Render time blocks for each member dynamically
+            const members = environmentMembersCache || [];
+            members.forEach(member => {
+                const memberId = member.user_id;
+                ['morning', 'afternoon', 'evening'].forEach(blockName => {
+                    renderPlanBlock(memberId, blockName, `plan_${memberId}_${blockName}`);
+                });
+            });
 
             // Update stats
             updatePlanStats();
@@ -9147,43 +9271,39 @@
 
         function updatePlanStats() {
             const sizeMinutes = { xs: 7.5, s: 20, m: 45, l: 90, xl: 150 };
+            const members = environmentMembersCache || [];
+            
+            let totalMinutes = 0;
+            let plannedCount = 0;
 
-            // Calculate Mario's stats
-            const marioTasks = [
-                ...(todaysPlan.mario?.morning || []),
-                ...(todaysPlan.mario?.afternoon || []),
-                ...(todaysPlan.mario?.evening || [])
-            ];
-            let marioMinutes = 0;
-            marioTasks.forEach(taskId => {
-                const task = tasks.find(t => t.id === taskId);
-                if (task) marioMinutes += sizeMinutes[task.size] || 45;
+            // Calculate stats for each member dynamically
+            members.forEach(member => {
+                const memberId = member.user_id;
+                const memberTasks = [
+                    ...(todaysPlan[memberId]?.morning || []),
+                    ...(todaysPlan[memberId]?.afternoon || []),
+                    ...(todaysPlan[memberId]?.evening || [])
+                ];
+                
+                let memberMinutes = 0;
+                memberTasks.forEach(taskId => {
+                    const task = tasks.find(t => t.id === taskId);
+                    if (task) memberMinutes += sizeMinutes[task.size] || 45;
+                });
+                
+                const memberHours = Math.floor(memberMinutes / 60);
+                const memberMins = Math.round(memberMinutes % 60);
+                const memberTimeStr = memberHours > 0 ? `${memberHours}h ${memberMins}m` : `${memberMins}m`;
+
+                // Update member stats display
+                const statsEl = document.getElementById(`planStats_${memberId}`);
+                if (statsEl) {
+                    statsEl.textContent = `${memberTasks.length} tasks • ${memberTimeStr}`;
+                }
+
+                totalMinutes += memberMinutes;
+                plannedCount += memberTasks.length;
             });
-            const marioHours = Math.floor(marioMinutes / 60);
-            const marioMins = Math.round(marioMinutes % 60);
-            const marioTimeStr = marioHours > 0 ? `${marioHours}h ${marioMins}m` : `${marioMins}m`;
-
-            // Calculate Maria's stats
-            const mariaTasks = [
-                ...(todaysPlan.maria?.morning || []),
-                ...(todaysPlan.maria?.afternoon || []),
-                ...(todaysPlan.maria?.evening || [])
-            ];
-            let mariaMinutes = 0;
-            mariaTasks.forEach(taskId => {
-                const task = tasks.find(t => t.id === taskId);
-                if (task) mariaMinutes += sizeMinutes[task.size] || 45;
-            });
-            const mariaHours = Math.floor(mariaMinutes / 60);
-            const mariaMins = Math.round(mariaMinutes % 60);
-            const mariaTimeStr = mariaHours > 0 ? `${mariaHours}h ${mariaMins}m` : `${mariaMins}m`;
-
-            // Update display
-            const marioStatsEl = document.getElementById('marioStats');
-            const mariaStatsEl = document.getElementById('mariaStats');
-
-            if (marioStatsEl) marioStatsEl.textContent = `${marioTasks.length} tasks • ${marioTimeStr}`;
-            if (mariaStatsEl) mariaStatsEl.textContent = `${mariaTasks.length} tasks • ${mariaTimeStr}`;
 
             const hours = Math.floor(totalMinutes / 60);
             const mins = Math.round(totalMinutes % 60);
@@ -10028,8 +10148,16 @@
         function createTaskDot(task) {
             const isRecurring = task.recurrence_rule && task.recurrence_rule.trim() !== '';
             const dot = document.createElement('div');
-            dot.className = `task-dot ${task.assignee} ${task.size}${task.completed ? ' completed' : ''}${isRecurring ? ' recurring' : ''}`;
+            // Use assignee_id if available, fall back to assignee for legacy support
+            const assigneeId = task.assignee_id || task.assignee;
+            dot.className = `task-dot ${task.size}${task.completed ? ' completed' : ''}${isRecurring ? ' recurring' : ''}`;
             dot.dataset.id = task.id;
+            
+            // Apply dynamic member color (only if not completed - completed tasks have white background)
+            if (!task.completed) {
+                const memberColor = getMemberColor(assigneeId);
+                dot.style.background = memberColor;
+            }
 
             // Positioning based on 1-5 scale
             const urgentVal = typeof task.urgent === 'boolean' ? (task.urgent ? 5 : 1) : task.urgent;
@@ -10052,20 +10180,9 @@
             let content = '';
             
             if (task.completed) {
-                if (task.completed_by === 'mario') {
-                    content = `<div class="completion-indicator mario">✓</div>`;
-                } else if (task.completed_by === 'maria') {
-                    content = `<div class="completion-indicator maria">✓</div>`;
-                } else if (task.completed_by === 'both') {
-                    content = `<div class="completion-indicator both">✓</div>`;
-                } else {
-                    // Fallback for tasks completed before this feature
-                    content = `
-                        <svg width="50%" height="50%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    `;
-                }
+                // Get the color of the person who completed the task
+                const completedByColor = getMemberColor(task.completed_by || assigneeId);
+                content = `<div class="completion-indicator" style="color: ${completedByColor};">✓</div>`;
             } else if (task.icon) {
                 content = `<span class="dot-icon">${task.icon}</span>`;
             } else {
@@ -11732,8 +11849,15 @@
                                 ? `\n\n📅 Suggested Integrations:\n${decomposition.integrations.map(i => `  • ${i.type}: ${i.details}`).join('\n')}`
                                 : '';
                             
+                            // Build dynamic assignee summary
+                            const assigneeSummary = [];
+                            const sharedCount = decomposition.subtasks.filter(st => st.assignee === 'all' || st.assignee === 'both').length;
+                            if (sharedCount > 0) assigneeSummary.push(`  • Shared: ${sharedCount}`);
+                            const individualCount = decomposition.subtasks.length - sharedCount;
+                            if (individualCount > 0) assigneeSummary.push(`  • Individual: ${individualCount}`);
+                            
                             return {
-                                message: `✅ Decomposed "${decomposition.parentTask.name}" into ${decomposition.subtasks.length} subtasks!\n\n📊 Summary:\n  • Total tasks: ${decomposition.subtasks.length + 1}\n  • Mario: ${decomposition.subtasks.filter(st => st.assignee === 'mario').length}\n  • Maria: ${decomposition.subtasks.filter(st => st.assignee === 'maria').length}\n  • Both: ${decomposition.subtasks.filter(st => st.assignee === 'both').length}${matrixSummary ? `\n\n🎯 Matrix Positions:\n${matrixSummary}` : ''}${integrationsText}`,
+                                message: `✅ Decomposed "${decomposition.parentTask.name}" into ${decomposition.subtasks.length} subtasks!\n\n📊 Summary:\n  • Total tasks: ${decomposition.subtasks.length + 1}\n${assigneeSummary.join('\n')}${matrixSummary ? `\n\n🎯 Matrix Positions:\n${matrixSummary}` : ''}${integrationsText}`,
                                 success: true,
                                 parentTask: parentData[0],
                                 subtasks: subtasksData
@@ -11780,8 +11904,12 @@
                                     ? `\n\n📝 Next Steps:\n${functionResult.next_steps.map((step, i) => `  ${i + 1}. ${step}`).join('\n')}`
                                     : '';
                                 
+                                // Build dynamic summary
+                                const autoSharedCount = autoFinalDecomposition.subtasks.filter(st => st.assignee === 'all' || st.assignee === 'both').length;
+                                const autoIndividualCount = autoFinalDecomposition.subtasks.length - autoSharedCount;
+                                
                                 return {
-                                    message: `✅ ${functionResult.message || 'Task decomposition finalized!'}\n\n📊 Final Summary:\n  • Total tasks: ${functionResult.summary?.totalTasks || autoFinalDecomposition.subtasks.length + 1}\n  • Mario: ${functionResult.summary?.marioTasks || autoFinalDecomposition.subtasks.filter(st => st.assignee === 'mario').length}\n  • Maria: ${functionResult.summary?.mariaTasks || autoFinalDecomposition.subtasks.filter(st => st.assignee === 'maria').length}\n  • Deadlines set: ${functionResult.summary?.deadlines || autoFinalDecomposition.subtasks.filter(st => st.deadline).length}\n  • Dependencies: ${functionResult.summary?.dependencies || autoFinalDecomposition.subtasks.filter(st => st.depends_on && st.depends_on.length > 0).length}${nextStepsText}`,
+                                    message: `✅ ${functionResult.message || 'Task decomposition finalized!'}\n\n📊 Final Summary:\n  • Total tasks: ${functionResult.summary?.totalTasks || autoFinalDecomposition.subtasks.length + 1}\n  • Shared tasks: ${functionResult.summary?.sharedTasks || autoSharedCount}\n  • Individual tasks: ${autoIndividualCount}\n  • Deadlines set: ${functionResult.summary?.deadlines || autoFinalDecomposition.subtasks.filter(st => st.deadline).length}\n  • Dependencies: ${functionResult.summary?.dependencies || autoFinalDecomposition.subtasks.filter(st => st.depends_on && st.depends_on.length > 0).length}${nextStepsText}`,
                                     success: true,
                                     parentTask: autoParentData[0],
                                     subtasks: autoSubtasksData
@@ -11886,8 +12014,12 @@
                                 ? `\n\n📝 Next Steps:\n${functionResult.next_steps.map((step, i) => `  ${i + 1}. ${step}`).join('\n')}`
                                 : '';
                             
+                            // Build dynamic summary
+                            const finalSharedCount = finalDecomposition.subtasks.filter(st => st.assignee === 'all' || st.assignee === 'both').length;
+                            const finalIndividualCount = finalDecomposition.subtasks.length - finalSharedCount;
+                            
                             return {
-                                message: `✅ ${functionResult.message || 'Task decomposition finalized!'}\n\n📊 Final Summary:\n  • Total tasks: ${functionResult.summary?.totalTasks || finalDecomposition.subtasks.length + 1}\n  • Mario: ${functionResult.summary?.marioTasks || finalDecomposition.subtasks.filter(st => st.assignee === 'mario').length}\n  • Maria: ${functionResult.summary?.mariaTasks || finalDecomposition.subtasks.filter(st => st.assignee === 'maria').length}\n  • Deadlines set: ${functionResult.summary?.deadlines || finalDecomposition.subtasks.filter(st => st.deadline).length}\n  • Dependencies: ${functionResult.summary?.dependencies || finalDecomposition.subtasks.filter(st => st.depends_on && st.depends_on.length > 0).length}${nextStepsText}`,
+                                message: `✅ ${functionResult.message || 'Task decomposition finalized!'}\n\n📊 Final Summary:\n  • Total tasks: ${functionResult.summary?.totalTasks || finalDecomposition.subtasks.length + 1}\n  • Shared tasks: ${functionResult.summary?.sharedTasks || finalSharedCount}\n  • Individual tasks: ${finalIndividualCount}\n  • Deadlines set: ${functionResult.summary?.deadlines || finalDecomposition.subtasks.filter(st => st.deadline).length}\n  • Dependencies: ${functionResult.summary?.dependencies || finalDecomposition.subtasks.filter(st => st.depends_on && st.depends_on.length > 0).length}${nextStepsText}`,
                                 success: true,
                                 parentTask: finalParentData[0],
                                 subtasks: finalSubtasksData
@@ -13237,13 +13369,15 @@ ${conversationHistory.length > 0 ? `\nRecent conversation:\n${conversationHistor
 
         // Send reminder from Task Options Menu
         async function sendReminder(recipient, task) {
-            const btn = recipient === 'mario' ? remindMarioBtn : remindMariaBtn;
+            // Find the button dynamically by member ID
+            const btn = document.querySelector(`#dynamicRemindButtons button[data-member-id="${recipient}"]`);
             await sendReminderCore(recipient, task, btn, closeTaskOptionsMenu);
         }
 
         // Send reminder from View Task Modal
         async function sendReminderFromViewModal(recipient, task) {
-            const btn = recipient === 'mario' ? viewTaskRemindMarioBtn : viewTaskRemindMariaBtn;
+            // Find the button dynamically by member ID
+            const btn = document.querySelector(`#viewTaskRemindGroup button[data-member-id="${recipient}"]`);
             await sendReminderCore(recipient, task, btn, closeViewTaskModal);
         }
     </script>

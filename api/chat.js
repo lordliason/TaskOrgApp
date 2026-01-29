@@ -33,7 +33,7 @@ const FUNCTION_DEFINITIONS = [
             type: 'object',
             properties: {
                 name: { type: 'string', description: 'The name/title of the task' },
-                assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Who the task is assigned to' },
+                assignee: { type: 'string', description: 'Who the task is assigned to - use user ID (UUID) for organization members, or "all" for everyone' },
                 size: { type: 'string', enum: ['xs', 's', 'm', 'l', 'xl'], description: 'The estimated size/complexity' },
                 urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
                 important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
@@ -98,7 +98,7 @@ const FUNCTION_DEFINITIONS = [
             type: 'object',
             properties: {
                 name: { type: 'string', description: 'The name/title of the large task to decompose' },
-                assignee: { type: 'string', enum: ['mario', 'maria', 'both'], description: 'Initial assignee preference' },
+                assignee: { type: 'string', description: 'Initial assignee preference - use user ID (UUID) for organization members, or "all" for everyone' },
                 deadline: { type: 'string', description: 'Overall deadline (YYYY-MM-DD format)' },
                 urgent: { type: 'integer', minimum: 1, maximum: 5, description: 'Urgency level (1-5)' },
                 important: { type: 'integer', minimum: 1, maximum: 5, description: 'Importance level (1-5)' },
@@ -145,7 +145,7 @@ const FUNCTION_DEFINITIONS = [
     },
     {
         name: 'autofillDailyPlan',
-        description: 'Intelligently auto-fill the daily planner for Mario and Maria based on pending tasks, current time, priorities, locations, and scheduling constraints',
+        description: 'Intelligently auto-fill the daily planner for organization members based on pending tasks, current time, priorities, locations, and scheduling constraints',
         parameters: {
             type: 'object',
             properties: {
@@ -173,10 +173,10 @@ CORE BEHAVIOR:
 - When users ask to decompose/break down large tasks, immediately call decomposeTask()
 - Be collaborative: ask clarifying questions instead of assuming details
 - Be iterative: refine plans based on user answers until confident
-- Consider workload balance among team members in the organization
+- Consider workload balance among all team members in the organization
 - Suggest calendar/shopping integrations when relevant
 - Use Eisenhower matrix for prioritization (urgent+important=DO, etc.)
-- Always assign tasks to valid organization members
+- Always assign tasks to valid organization members using their user IDs (UUIDs), or use "all" for tasks assigned to everyone
 
 DECOMPOSITION PROCESS:
 1. Generate initial draft with decomposeTask()
