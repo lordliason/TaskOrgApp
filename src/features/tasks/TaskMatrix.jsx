@@ -59,13 +59,22 @@ function TaskMatrix({ onEditTask }) {
     ? activeTasks 
     : activeTasks.filter((t) => t.assignee_id === filter);
 
-  // Categorize tasks into quadrants
+  // Categorize tasks into quadrants and sort by urgency and importance
   const getQuadrantTasks = (urgentHigh, importantHigh) => {
-    return filteredTasks.filter((t) => {
-      const isUrgentHigh = t.urgent >= 3;
-      const isImportantHigh = t.important >= 3;
-      return isUrgentHigh === urgentHigh && isImportantHigh === importantHigh;
-    });
+    return filteredTasks
+      .filter((t) => {
+        const isUrgentHigh = t.urgent >= 3;
+        const isImportantHigh = t.important >= 3;
+        return isUrgentHigh === urgentHigh && isImportantHigh === importantHigh;
+      })
+      .sort((a, b) => {
+        // Sort by urgency first (descending - higher urgency first)
+        if (b.urgent !== a.urgent) {
+          return b.urgent - a.urgent;
+        }
+        // Then by importance (descending - higher importance first)
+        return b.important - a.important;
+      });
   };
 
   const quadrants = {
