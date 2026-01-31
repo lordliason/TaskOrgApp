@@ -34,7 +34,7 @@ function Layout() {
               {profile?.displayName?.charAt(0).toUpperCase()}
             </div>
             <span className="text-sm text-text-secondary hidden sm:block">
-              {profile?.displayName}
+              {profile?.displayName?.split(' ')[0]}
             </span>
           </div>
 

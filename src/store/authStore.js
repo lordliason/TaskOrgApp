@@ -89,6 +89,11 @@ export const useAuthStore = create((set, get) => ({
 
       if (error) throw error;
 
+      // Explicitly fetch user data after login instead of relying on listener
+      if (data?.user) {
+        await get().fetchUserData(data.user.id);
+      }
+
       return { success: true };
     } catch (error) {
       set({ error: error.message });
@@ -127,6 +132,9 @@ export const useAuthStore = create((set, get) => ({
 
       if (rpcError) throw rpcError;
       if (result && !result.success) throw new Error(result.error);
+
+      // Fetch user data after signup
+      await get().fetchUserData(userId);
 
       return { success: true };
     } catch (error) {

@@ -49,9 +49,17 @@ export const useTaskStore = create((set, get) => ({
             let tasks = [...state.tasks];
 
             if (eventType === 'INSERT') {
-              tasks = [newRecord, ...tasks];
+              // Check if task already exists (from optimistic update)
+              const existingIndex = tasks.findIndex((t) => t.id === newRecord.id);
+              if (existingIndex >= 0) {
+                // Merge with existing to preserve relation data
+                tasks[existingIndex] = { ...tasks[existingIndex], ...newRecord };
+              } else {
+                tasks = [newRecord, ...tasks];
+              }
             } else if (eventType === 'UPDATE') {
-              tasks = tasks.map((t) => (t.id === newRecord.id ? newRecord : t));
+              // Merge instead of replace to preserve relation data (assignee, etc.)
+              tasks = tasks.map((t) => (t.id === newRecord.id ? { ...t, ...newRecord } : t));
             } else if (eventType === 'DELETE') {
               tasks = tasks.filter((t) => t.id !== oldRecord.id);
             }

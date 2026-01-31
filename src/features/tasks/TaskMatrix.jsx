@@ -1,13 +1,55 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
+import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { EFFORT_SIZES } from '../../lib/constants';
 
 function TaskMatrix({ onEditTask }) {
-  const { tasks, isLoading, completeTask, uncompleteTask } = useTaskStore();
+  const { tasks, isLoading, completeTask, uncompleteTask, updateTask } = useTaskStore();
   const { members } = useOrganizationStore();
   const [tooltip, setTooltip] = useState({ visible: false, task: null, x: 0, y: 0 });
   const [filter, setFilter] = useState('all'); // 'all' or member id
+  const [activeTask, setActiveTask] = useState(null);
+
+  // Configure drag sensor with activation constraint to distinguish from clicks
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required to start drag
+      },
+    })
+  );
+
+  // Quadrant mappings for drag & drop
+  const quadrantValues = {
+    'do-first': { urgent: 5, important: 5 },
+    'schedule': { urgent: 1, important: 5 },
+    'delegate': { urgent: 5, important: 1 },
+    'eliminate': { urgent: 1, important: 1 },
+  };
+
+  const handleDragStart = (event) => {
+    const task = tasks.find((t) => t.id === event.active.id);
+    setActiveTask(task);
+    setTooltip({ visible: false, task: null, x: 0, y: 0 });
+  };
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    setActiveTask(null);
+
+    if (over && active.id !== over.id) {
+      const quadrantId = over.id;
+      const values = quadrantValues[quadrantId];
+      
+      if (values) {
+        await updateTask(active.id, {
+          urgent: values.urgent,
+          important: values.important,
+        });
+      }
+    }
+  };
 
   // Filter out completed tasks
   const activeTasks = tasks.filter((t) => t.status !== 'done');
@@ -94,7 +136,7 @@ function TaskMatrix({ onEditTask }) {
   const getAssigneeName = (assigneeId) => {
     if (!assigneeId) return 'Unassigned';
     const member = members.find((m) => m.id === assigneeId);
-    return member?.display_name || 'Unknown';
+    return member?.display_name?.split(' ')[0] || 'Unknown';
   };
 
   if (isLoading) {
@@ -106,69 +148,72 @@ function TaskMatrix({ onEditTask }) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Assignee Filter */}
-      <div className="assignee-filter">
-        <button
-          onClick={() => setFilter('all')}
-          className={`assignee-filter-btn ${filter === 'all' ? 'active' : ''}`}
-        >
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ background: 'linear-gradient(135deg, #4a9eff, #ff7eb3)' }}
-          />
-          All
-        </button>
-        {members.map((member) => (
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-4">
+        {/* Assignee Filter */}
+        <div className="assignee-filter">
           <button
-            key={member.id}
-            onClick={() => setFilter(member.id)}
-            className={`assignee-filter-btn ${filter === member.id ? 'active' : ''}`}
+            onClick={() => setFilter('all')}
+            className={`assignee-filter-btn ${filter === 'all' ? 'active' : ''}`}
           >
             <span
               className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: member.color }}
+              style={{ background: 'linear-gradient(135deg, #4a9eff, #ff7eb3)' }}
             />
-            {member.display_name}
+            All
           </button>
-        ))}
-      </div>
-
-      {/* Matrix Container */}
-      <div className="flex flex-col">
-        {/* Top axis labels */}
-        <div className="grid grid-cols-[40px_1fr_1fr] mb-2">
-          <div /> {/* Spacer for left labels */}
-          <div className="text-center text-xs font-semibold uppercase tracking-wider text-text-muted">
-            Urgent
-          </div>
-          <div className="text-center text-xs font-semibold uppercase tracking-wider text-text-muted">
-            Not Urgent
-          </div>
+          {members.map((member) => (
+            <button
+              key={member.id}
+              onClick={() => setFilter(member.id)}
+              className={`assignee-filter-btn ${filter === member.id ? 'active' : ''}`}
+            >
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: member.color }}
+              />
+              {member.display_name?.split(' ')[0]}
+            </button>
+          ))}
         </div>
 
-        {/* Matrix body */}
-        <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[500px]">
-          {/* Left axis labels */}
-          <div className="row-span-2 flex flex-col">
-            <div className="flex-1 flex items-center justify-center">
-              <span className="transform -rotate-90 whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-text-muted">
-                Important
-              </span>
+        {/* Matrix Container */}
+        <div className="flex flex-col">
+          {/* Top axis labels */}
+          <div className="grid grid-cols-[40px_1fr_1fr] mb-2">
+            <div /> {/* Spacer for left labels */}
+            <div className="text-center text-xs font-semibold uppercase tracking-wider text-text-muted">
+              Urgent
             </div>
-            <div className="flex-1 flex items-center justify-center">
-              <span className="transform -rotate-90 whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-text-muted">
-                Not Important
-              </span>
+            <div className="text-center text-xs font-semibold uppercase tracking-wider text-text-muted">
+              Not Urgent
             </div>
           </div>
 
-          {/* Quadrants - Row 1 */}
-          <div className={`quadrant ${quadrants['do-first'].class}`}>
-            <span className="quadrant-label">{quadrants['do-first'].title}</span>
-            <div className="flex flex-wrap gap-2 pt-8 content-start">
+          {/* Matrix body */}
+          <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[500px]">
+            {/* Left axis labels */}
+            <div className="row-span-2 flex flex-col">
+              <div className="flex-1 flex items-center justify-center">
+                <span className="transform -rotate-90 whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-text-muted">
+                  Important
+                </span>
+              </div>
+              <div className="flex-1 flex items-center justify-center">
+                <span className="transform -rotate-90 whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-text-muted">
+                  Not Important
+                </span>
+              </div>
+            </div>
+
+            {/* Quadrants - Row 1 */}
+            <DroppableQuadrant id="do-first" quadrant={quadrants['do-first']}>
               {quadrants['do-first'].tasks.map((task) => (
-                <TaskDot
+                <DraggableTaskDot
                   key={task.id}
                   task={task}
                   sizeClass={sizeClasses[task.effort] || 'm'}
@@ -178,14 +223,11 @@ function TaskMatrix({ onEditTask }) {
                   onClick={handleDotClick}
                 />
               ))}
-            </div>
-          </div>
+            </DroppableQuadrant>
 
-          <div className={`quadrant ${quadrants['schedule'].class}`}>
-            <span className="quadrant-label">{quadrants['schedule'].title}</span>
-            <div className="flex flex-wrap gap-2 pt-8 content-start">
+            <DroppableQuadrant id="schedule" quadrant={quadrants['schedule']}>
               {quadrants['schedule'].tasks.map((task) => (
-                <TaskDot
+                <DraggableTaskDot
                   key={task.id}
                   task={task}
                   sizeClass={sizeClasses[task.effort] || 'm'}
@@ -195,15 +237,12 @@ function TaskMatrix({ onEditTask }) {
                   onClick={handleDotClick}
                 />
               ))}
-            </div>
-          </div>
+            </DroppableQuadrant>
 
-          {/* Quadrants - Row 2 */}
-          <div className={`quadrant ${quadrants['delegate'].class}`}>
-            <span className="quadrant-label">{quadrants['delegate'].title}</span>
-            <div className="flex flex-wrap gap-2 pt-8 content-start">
+            {/* Quadrants - Row 2 */}
+            <DroppableQuadrant id="delegate" quadrant={quadrants['delegate']}>
               {quadrants['delegate'].tasks.map((task) => (
-                <TaskDot
+                <DraggableTaskDot
                   key={task.id}
                   task={task}
                   sizeClass={sizeClasses[task.effort] || 'm'}
@@ -213,14 +252,11 @@ function TaskMatrix({ onEditTask }) {
                   onClick={handleDotClick}
                 />
               ))}
-            </div>
-          </div>
+            </DroppableQuadrant>
 
-          <div className={`quadrant ${quadrants['eliminate'].class}`}>
-            <span className="quadrant-label">{quadrants['eliminate'].title}</span>
-            <div className="flex flex-wrap gap-2 pt-8 content-start">
+            <DroppableQuadrant id="eliminate" quadrant={quadrants['eliminate']}>
               {quadrants['eliminate'].tasks.map((task) => (
-                <TaskDot
+                <DraggableTaskDot
                   key={task.id}
                   task={task}
                   sizeClass={sizeClasses[task.effort] || 'm'}
@@ -230,62 +266,108 @@ function TaskMatrix({ onEditTask }) {
                   onClick={handleDotClick}
                 />
               ))}
+            </DroppableQuadrant>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-4 border-t border-dark-border">
+          <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Size:</span>
+          {Object.entries(EFFORT_SIZES).map(([key, value]) => (
+            <div key={key} className="flex items-center gap-2">
+              <div
+                className={`task-dot ${key} bg-text-muted`}
+                style={{ animation: 'none' }}
+              />
+              <span className="text-xs text-text-secondary">{value.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Tooltip */}
+        {tooltip.visible && tooltip.task && !activeTask && (
+          <div
+            className="fixed bg-dark-card border border-dark-border px-4 py-3 rounded-xl text-sm z-50 max-w-[200px] shadow-xl"
+            style={{
+              left: tooltip.x,
+              top: tooltip.y,
+              transform: 'translate(-50%, -100%)',
+              pointerEvents: 'none',
+            }}
+          >
+            <div className="font-semibold text-text-primary mb-1">
+              {tooltip.task.title}
+            </div>
+            <div className="text-xs text-text-muted">
+              {getAssigneeName(tooltip.task.assignee_id)} • {EFFORT_SIZES[tooltip.task.effort]?.label || 'M'}
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 pt-4 border-t border-dark-border">
-        <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Size:</span>
-        {Object.entries(EFFORT_SIZES).map(([key, value]) => (
-          <div key={key} className="flex items-center gap-2">
-            <div
-              className={`task-dot ${key} bg-text-muted`}
-              style={{ animation: 'none' }}
-            />
-            <span className="text-xs text-text-secondary">{value.label}</span>
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {activeTask ? (
+          <div
+            className={`task-dot ${sizeClasses[activeTask.effort] || 'm'}`}
+            style={{ 
+              backgroundColor: getAssigneeColor(activeTask.assignee_id),
+              cursor: 'grabbing',
+              opacity: 0.9,
+              transform: 'scale(1.1)',
+            }}
+          >
+            <span className="dot-text">
+              {activeTask.icon || activeTask.title?.slice(0, 2).toUpperCase()}
+            </span>
           </div>
-        ))}
-      </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
 
-      {/* Tooltip */}
-      {tooltip.visible && tooltip.task && (
-        <div
-          className="fixed bg-dark-card border border-dark-border px-4 py-3 rounded-xl text-sm z-50 max-w-[200px] shadow-xl"
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-            transform: 'translate(-50%, -100%)',
-            pointerEvents: 'none',
-          }}
-        >
-          <div className="font-semibold text-text-primary mb-1">
-            {tooltip.task.title}
-          </div>
-          <div className="text-xs text-text-muted">
-            {getAssigneeName(tooltip.task.assignee_id)} • {EFFORT_SIZES[tooltip.task.effort]?.label || 'M'}
-          </div>
-        </div>
-      )}
+// Droppable Quadrant Component
+function DroppableQuadrant({ id, quadrant, children }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`quadrant ${quadrant.class} ${isOver ? 'ring-2 ring-accent-blue ring-inset' : ''}`}
+      style={{ transition: 'box-shadow 0.2s ease' }}
+    >
+      <span className="quadrant-label">{quadrant.title}</span>
+      <div className="flex flex-wrap gap-2 pt-8 content-start">
+        {children}
+      </div>
     </div>
   );
 }
 
-// Task Dot Component
-function TaskDot({ task, sizeClass, color, onHover, onLeave, onClick }) {
+// Draggable Task Dot Component
+function DraggableTaskDot({ task, sizeClass, color, onHover, onLeave, onClick }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+  });
+
   const isCompleted = task.status === 'done';
-  
-  // Show icon if present, otherwise first 2 chars of title
   const content = task.icon || task.title?.slice(0, 2).toUpperCase();
 
   return (
     <div
-      className={`task-dot ${sizeClass} ${isCompleted ? 'completed' : ''}`}
-      style={{ backgroundColor: isCompleted ? undefined : color }}
-      onMouseEnter={(e) => onHover(task, e)}
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={`task-dot ${sizeClass} ${isCompleted ? 'completed' : ''} ${isDragging ? 'opacity-50' : ''}`}
+      style={{ 
+        backgroundColor: isCompleted ? undefined : color,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        touchAction: 'none',
+      }}
+      onMouseEnter={(e) => !isDragging && onHover(task, e)}
       onMouseLeave={onLeave}
-      onClick={() => onClick(task)}
+      onClick={() => !isDragging && onClick(task)}
       title={task.title}
     >
       <span className="dot-text">{content}</span>

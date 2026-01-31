@@ -23,7 +23,7 @@ function TaskCard({ task, onEdit, compact = false }) {
 
   const isCompleted = task.status === 'done';
   const assigneeColor = task.assignee?.color || '#6b6b75';
-  const assigneeName = task.assignee?.display_name || 'Unassigned';
+  const assigneeName = task.assignee?.display_name?.split(' ')[0] || 'Unassigned';
   const effort = EFFORT_SIZES[task.effort] || EFFORT_SIZES.m;
 
   if (compact) {

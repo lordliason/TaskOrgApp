@@ -143,7 +143,7 @@ function DailyPlanner({ onEditTask }) {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-text-primary">
-                    {member.display_name}
+                    {member.display_name?.split(' ')[0]}
                   </div>
                   <div className="text-xs text-text-muted">
                     {memberTasks.length} tasks • {getTimeEstimate(memberTasks)} estimated

@@ -34,7 +34,7 @@ function Leaderboard() {
 
     return {
       id: member.id,
-      displayName: member.display_name,
+      displayName: member.display_name?.split(' ')[0] || 'Unknown',
       color: member.color,
       totalPoints,
       totalTasks,
