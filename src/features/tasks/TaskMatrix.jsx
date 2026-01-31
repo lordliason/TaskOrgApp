@@ -1,94 +1,294 @@
+import { useState, useRef } from 'react';
 import { useTaskStore } from '../../store/taskStore';
-import TaskCard from './TaskCard';
+import { useOrganizationStore } from '../../store/organizationStore';
+import { EFFORT_SIZES } from '../../lib/constants';
 
 function TaskMatrix({ onEditTask }) {
-  const { tasks, isLoading } = useTaskStore();
+  const { tasks, isLoading, completeTask, uncompleteTask } = useTaskStore();
+  const { members } = useOrganizationStore();
+  const [tooltip, setTooltip] = useState({ visible: false, task: null, x: 0, y: 0 });
+  const [filter, setFilter] = useState('all'); // 'all' or member id
 
   // Filter out completed tasks
   const activeTasks = tasks.filter((t) => t.status !== 'done');
 
+  // Apply member filter
+  const filteredTasks = filter === 'all' 
+    ? activeTasks 
+    : activeTasks.filter((t) => t.assignee_id === filter);
+
   // Categorize tasks into quadrants
+  const getQuadrantTasks = (urgentHigh, importantHigh) => {
+    return filteredTasks.filter((t) => {
+      const isUrgentHigh = t.urgent >= 3;
+      const isImportantHigh = t.important >= 3;
+      return isUrgentHigh === urgentHigh && isImportantHigh === importantHigh;
+    });
+  };
+
   const quadrants = {
-    1: { // Do First: High Urgent, High Important
+    'do-first': {
       title: 'Do First',
-      subtitle: 'Urgent & Important',
-      color: 'red',
-      tasks: activeTasks.filter((t) => t.urgent >= 3 && t.important >= 3),
+      class: 'quadrant-do',
+      tasks: getQuadrantTasks(true, true),
     },
-    2: { // Schedule: Low Urgent, High Important
+    'schedule': {
       title: 'Schedule',
-      subtitle: 'Important, Not Urgent',
-      color: 'blue',
-      tasks: activeTasks.filter((t) => t.urgent < 3 && t.important >= 3),
+      class: 'quadrant-schedule',
+      tasks: getQuadrantTasks(false, true),
     },
-    3: { // Delegate: High Urgent, Low Important
+    'delegate': {
       title: 'Delegate',
-      subtitle: 'Urgent, Not Important',
-      color: 'yellow',
-      tasks: activeTasks.filter((t) => t.urgent >= 3 && t.important < 3),
+      class: 'quadrant-delegate',
+      tasks: getQuadrantTasks(true, false),
     },
-    4: { // Eliminate: Low Urgent, Low Important
+    'eliminate': {
       title: 'Eliminate',
-      subtitle: 'Neither Urgent Nor Important',
-      color: 'gray',
-      tasks: activeTasks.filter((t) => t.urgent < 3 && t.important < 3),
+      class: 'quadrant-eliminate',
+      tasks: getQuadrantTasks(false, false),
     },
   };
 
-  const colorClasses = {
-    red: 'border-red-200 bg-red-50',
-    blue: 'border-blue-200 bg-blue-50',
-    yellow: 'border-yellow-200 bg-yellow-50',
-    gray: 'border-gray-200 bg-gray-50',
+  // Size mapping for dots
+  const sizeClasses = {
+    xs: 'xs',
+    s: 's',
+    m: 'm',
+    l: 'l',
+    xl: 'xl',
   };
 
-  const headerColors = {
-    red: 'text-red-700 bg-red-100',
-    blue: 'text-blue-700 bg-blue-100',
-    yellow: 'text-yellow-700 bg-yellow-100',
-    gray: 'text-gray-700 bg-gray-100',
+  const handleDotHover = (task, e) => {
+    const rect = e.target.getBoundingClientRect();
+    setTooltip({
+      visible: true,
+      task,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 10,
+    });
+  };
+
+  const handleDotLeave = () => {
+    setTooltip({ visible: false, task: null, x: 0, y: 0 });
+  };
+
+  const handleDotClick = (task) => {
+    onEditTask(task);
+  };
+
+  const handleToggleComplete = async (task, e) => {
+    e.stopPropagation();
+    if (task.status === 'done') {
+      await uncompleteTask(task.id);
+    } else {
+      await completeTask(task.id);
+    }
+  };
+
+  const getAssigneeColor = (assigneeId) => {
+    if (!assigneeId) return '#6b6b75';
+    const member = members.find((m) => m.id === assigneeId);
+    return member?.color || '#a78bfa';
+  };
+
+  const getAssigneeName = (assigneeId) => {
+    if (!assigneeId) return 'Unassigned';
+    const member = members.find((m) => m.id === assigneeId);
+    return member?.display_name || 'Unknown';
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-blue"></div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {Object.entries(quadrants).map(([key, quadrant]) => (
-        <div
-          key={key}
-          className={`rounded-xl border-2 ${colorClasses[quadrant.color]} min-h-[300px] flex flex-col`}
+    <div className="space-y-4">
+      {/* Assignee Filter */}
+      <div className="assignee-filter">
+        <button
+          onClick={() => setFilter('all')}
+          className={`assignee-filter-btn ${filter === 'all' ? 'active' : ''}`}
         >
-          {/* Quadrant header */}
-          <div className={`px-4 py-3 rounded-t-lg ${headerColors[quadrant.color]}`}>
-            <h3 className="font-semibold">{quadrant.title}</h3>
-            <p className="text-sm opacity-75">{quadrant.subtitle}</p>
-          </div>
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ background: 'linear-gradient(135deg, #4a9eff, #ff7eb3)' }}
+          />
+          All
+        </button>
+        {members.map((member) => (
+          <button
+            key={member.id}
+            onClick={() => setFilter(member.id)}
+            className={`assignee-filter-btn ${filter === member.id ? 'active' : ''}`}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: member.color }}
+            />
+            {member.display_name}
+          </button>
+        ))}
+      </div>
 
-          {/* Tasks list */}
-          <div className="flex-1 p-3 space-y-2 overflow-y-auto max-h-[400px]">
-            {quadrant.tasks.length === 0 ? (
-              <p className="text-center text-gray-400 py-8 text-sm">
-                No tasks in this quadrant
-              </p>
-            ) : (
-              quadrant.tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={() => onEditTask(task)}
-                  compact
-                />
-              ))
-            )}
+      {/* Matrix Container */}
+      <div className="flex flex-col">
+        {/* Top axis labels */}
+        <div className="grid grid-cols-[40px_1fr_1fr] mb-2">
+          <div /> {/* Spacer for left labels */}
+          <div className="text-center text-xs font-semibold uppercase tracking-wider text-text-muted">
+            Urgent
+          </div>
+          <div className="text-center text-xs font-semibold uppercase tracking-wider text-text-muted">
+            Not Urgent
           </div>
         </div>
-      ))}
+
+        {/* Matrix body */}
+        <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[500px]">
+          {/* Left axis labels */}
+          <div className="row-span-2 flex flex-col">
+            <div className="flex-1 flex items-center justify-center">
+              <span className="transform -rotate-90 whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-text-muted">
+                Important
+              </span>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <span className="transform -rotate-90 whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-text-muted">
+                Not Important
+              </span>
+            </div>
+          </div>
+
+          {/* Quadrants - Row 1 */}
+          <div className={`quadrant ${quadrants['do-first'].class}`}>
+            <span className="quadrant-label">{quadrants['do-first'].title}</span>
+            <div className="flex flex-wrap gap-2 pt-8 content-start">
+              {quadrants['do-first'].tasks.map((task) => (
+                <TaskDot
+                  key={task.id}
+                  task={task}
+                  sizeClass={sizeClasses[task.effort] || 'm'}
+                  color={getAssigneeColor(task.assignee_id)}
+                  onHover={handleDotHover}
+                  onLeave={handleDotLeave}
+                  onClick={handleDotClick}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className={`quadrant ${quadrants['schedule'].class}`}>
+            <span className="quadrant-label">{quadrants['schedule'].title}</span>
+            <div className="flex flex-wrap gap-2 pt-8 content-start">
+              {quadrants['schedule'].tasks.map((task) => (
+                <TaskDot
+                  key={task.id}
+                  task={task}
+                  sizeClass={sizeClasses[task.effort] || 'm'}
+                  color={getAssigneeColor(task.assignee_id)}
+                  onHover={handleDotHover}
+                  onLeave={handleDotLeave}
+                  onClick={handleDotClick}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Quadrants - Row 2 */}
+          <div className={`quadrant ${quadrants['delegate'].class}`}>
+            <span className="quadrant-label">{quadrants['delegate'].title}</span>
+            <div className="flex flex-wrap gap-2 pt-8 content-start">
+              {quadrants['delegate'].tasks.map((task) => (
+                <TaskDot
+                  key={task.id}
+                  task={task}
+                  sizeClass={sizeClasses[task.effort] || 'm'}
+                  color={getAssigneeColor(task.assignee_id)}
+                  onHover={handleDotHover}
+                  onLeave={handleDotLeave}
+                  onClick={handleDotClick}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className={`quadrant ${quadrants['eliminate'].class}`}>
+            <span className="quadrant-label">{quadrants['eliminate'].title}</span>
+            <div className="flex flex-wrap gap-2 pt-8 content-start">
+              {quadrants['eliminate'].tasks.map((task) => (
+                <TaskDot
+                  key={task.id}
+                  task={task}
+                  sizeClass={sizeClasses[task.effort] || 'm'}
+                  color={getAssigneeColor(task.assignee_id)}
+                  onHover={handleDotHover}
+                  onLeave={handleDotLeave}
+                  onClick={handleDotClick}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center justify-center gap-4 pt-4 border-t border-dark-border">
+        <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Size:</span>
+        {Object.entries(EFFORT_SIZES).map(([key, value]) => (
+          <div key={key} className="flex items-center gap-2">
+            <div
+              className={`task-dot ${key} bg-text-muted`}
+              style={{ animation: 'none' }}
+            />
+            <span className="text-xs text-text-secondary">{value.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Tooltip */}
+      {tooltip.visible && tooltip.task && (
+        <div
+          className="fixed bg-dark-card border border-dark-border px-4 py-3 rounded-xl text-sm z-50 max-w-[200px] shadow-xl"
+          style={{
+            left: tooltip.x,
+            top: tooltip.y,
+            transform: 'translate(-50%, -100%)',
+            pointerEvents: 'none',
+          }}
+        >
+          <div className="font-semibold text-text-primary mb-1">
+            {tooltip.task.title}
+          </div>
+          <div className="text-xs text-text-muted">
+            {getAssigneeName(tooltip.task.assignee_id)} • {EFFORT_SIZES[tooltip.task.effort]?.label || 'M'}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Task Dot Component
+function TaskDot({ task, sizeClass, color, onHover, onLeave, onClick }) {
+  const isCompleted = task.status === 'done';
+  
+  // Show icon if present, otherwise first 2 chars of title
+  const content = task.icon || task.title?.slice(0, 2).toUpperCase();
+
+  return (
+    <div
+      className={`task-dot ${sizeClass} ${isCompleted ? 'completed' : ''}`}
+      style={{ backgroundColor: isCompleted ? undefined : color }}
+      onMouseEnter={(e) => onHover(task, e)}
+      onMouseLeave={onLeave}
+      onClick={() => onClick(task)}
+      title={task.title}
+    >
+      <span className="dot-text">{content}</span>
     </div>
   );
 }

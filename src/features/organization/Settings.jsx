@@ -35,24 +35,24 @@ function Settings() {
     <div className="space-y-8 max-w-4xl">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <SettingsIcon className="h-6 w-6 text-gray-400" />
-        <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
+        <SettingsIcon className="h-6 w-6 text-text-muted" />
+        <h2 className="text-xl font-semibold text-text-primary">Settings</h2>
       </div>
 
       {/* Organization Info */}
       <div className="card">
         <div className="flex items-center gap-3 mb-4">
-          <Building2 className="h-5 w-5 text-gray-400" />
-          <h3 className="font-semibold text-gray-900">Organization</h3>
+          <Building2 className="h-5 w-5 text-text-muted" />
+          <h3 className="font-semibold text-text-primary">Organization</h3>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm text-gray-500">Name</label>
-            <p className="font-medium">{organization?.name}</p>
+            <label className="text-sm text-text-muted">Name</label>
+            <p className="font-medium text-text-primary">{organization?.name}</p>
           </div>
           <div>
-            <label className="text-sm text-gray-500">Members</label>
-            <p className="font-medium">{members.length} / 2</p>
+            <label className="text-sm text-text-muted">Members</label>
+            <p className="font-medium text-text-primary">{members.length} / 2</p>
           </div>
         </div>
       </div>
@@ -61,8 +61,8 @@ function Settings() {
       <div className="card">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Users className="h-5 w-5 text-gray-400" />
-            <h3 className="font-semibold text-gray-900">Team Members</h3>
+            <Users className="h-5 w-5 text-text-muted" />
+            <h3 className="font-semibold text-text-primary">Team Members</h3>
           </div>
 
           {canAddMember && (
@@ -77,7 +77,7 @@ function Settings() {
         </div>
 
         {success && (
-          <div className="flex items-center gap-2 p-3 mb-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          <div className="flex items-center gap-2 p-3 mb-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-sm">
             <Check className="h-4 w-4" />
             {success}
           </div>
@@ -87,7 +87,7 @@ function Settings() {
           {members.map((member) => (
             <div
               key={member.id}
-              className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+              className="flex items-center gap-4 p-4 bg-dark-hover rounded-xl"
             >
               {/* Avatar */}
               <div
@@ -100,25 +100,25 @@ function Settings() {
               {/* Info */}
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-text-primary">
                     {member.display_name}
                   </span>
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full ${
                       member.role === 'admin'
-                        ? 'bg-primary-100 text-primary-700'
-                        : 'bg-gray-200 text-gray-600'
+                        ? 'bg-accent-blue/20 text-accent-blue'
+                        : 'bg-dark-border text-text-muted'
                     }`}
                   >
                     {member.role}
                   </span>
                   {member.id === profile.id && (
-                    <span className="text-xs text-gray-400">(You)</span>
+                    <span className="text-xs text-text-muted">(You)</span>
                   )}
                 </div>
-                <div className="text-sm text-gray-500">{member.email}</div>
+                <div className="text-sm text-text-muted">{member.email}</div>
                 {member.phone && (
-                  <div className="text-sm text-gray-500">{member.phone}</div>
+                  <div className="text-sm text-text-muted">{member.phone}</div>
                 )}
               </div>
 
@@ -126,7 +126,7 @@ function Settings() {
               {(isAdmin || member.id === profile.id) && (
                 <button
                   onClick={() => setEditingMember(member)}
-                  className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-white transition-colors"
+                  className="p-2 text-text-muted hover:text-accent-blue rounded-lg hover:bg-dark-card transition-colors"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
@@ -136,7 +136,7 @@ function Settings() {
         </div>
 
         {members.length === 1 && (
-          <p className="text-sm text-gray-500 mt-4 text-center">
+          <p className="text-sm text-text-muted mt-4 text-center">
             You can add one more member to your organization.
           </p>
         )}
@@ -227,7 +227,7 @@ function AddMemberModal({ isOpen, onClose, organizationId, onSuccess }) {
     <Modal isOpen={isOpen} onClose={onClose} title="Add Team Member">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             {error}
           </div>
@@ -294,7 +294,7 @@ function AddMemberModal({ isOpen, onClose, organizationId, onSuccess }) {
             className="input"
             placeholder="At least 6 characters"
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-text-muted mt-1">
             Share this password with the new member so they can log in.
           </p>
         </div>
@@ -305,7 +305,7 @@ function AddMemberModal({ isOpen, onClose, organizationId, onSuccess }) {
           onChange={(color) => setFormData((prev) => ({ ...prev, color }))}
         />
 
-        <div className="flex justify-end gap-3 pt-4">
+        <div className="flex justify-end gap-3 pt-4 border-t border-dark-border">
           <button
             type="button"
             onClick={onClose}
@@ -379,7 +379,7 @@ function EditMemberModal({ isOpen, onClose, member, onSuccess }) {
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Member">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             {error}
           </div>
@@ -420,7 +420,7 @@ function EditMemberModal({ isOpen, onClose, member, onSuccess }) {
           onChange={(color) => setFormData((prev) => ({ ...prev, color }))}
         />
 
-        <div className="flex justify-end gap-3 pt-4">
+        <div className="flex justify-end gap-3 pt-4 border-t border-dark-border">
           <button
             type="button"
             onClick={onClose}

@@ -1,21 +1,34 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useOrganizationStore } from '../../store/organizationStore';
-import { Trophy, Medal, Award, TrendingUp } from 'lucide-react';
+import { Trophy, TrendingUp, Calendar, Sparkles } from 'lucide-react';
 
 function Leaderboard() {
   const { organization } = useAuthStore();
   const { members, scores, fetchScores, isLoading } = useOrganizationStore();
+  const [period, setPeriod] = useState('week'); // 'day', 'week', 'month', 'alltime'
 
   useEffect(() => {
     if (organization?.id) {
-      fetchScores(organization.id, 7); // Last 7 days
+      const days = period === 'day' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 365;
+      fetchScores(organization.id, days);
     }
-  }, [organization?.id]);
+  }, [organization?.id, period]);
 
-  // Calculate leaderboard data
+  // Calculate leaderboard data based on period
+  const todayStr = new Date().toISOString().split('T')[0];
+  
+  const getFilteredScores = () => {
+    if (period === 'day') {
+      return scores.filter((s) => s.date === todayStr);
+    }
+    return scores;
+  };
+
+  const filteredScores = getFilteredScores();
+
   const leaderboard = members.map((member) => {
-    const userScores = scores.filter((s) => s.user_id === member.id);
+    const userScores = filteredScores.filter((s) => s.user_id === member.id);
     const totalPoints = userScores.reduce((sum, s) => sum + s.points, 0);
     const totalTasks = userScores.reduce((sum, s) => sum + s.tasks_completed, 0);
 
@@ -28,180 +41,162 @@ function Leaderboard() {
     };
   }).sort((a, b) => b.totalPoints - a.totalPoints);
 
-  // Get today's scores
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayScores = members.map((member) => {
-    const todayScore = scores.find(
-      (s) => s.user_id === member.id && s.date === todayStr
-    );
-    return {
-      id: member.id,
-      displayName: member.display_name,
-      color: member.color,
-      points: todayScore?.points || 0,
-      tasks: todayScore?.tasks_completed || 0,
-    };
-  }).sort((a, b) => b.points - a.points);
+  const periods = [
+    { id: 'day', label: 'Today' },
+    { id: 'week', label: 'This Week' },
+    { id: 'month', label: 'This Month' },
+    { id: 'alltime', label: 'All Time' },
+  ];
 
-  const getRankIcon = (index) => {
-    switch (index) {
-      case 0:
-        return <Trophy className="h-6 w-6 text-yellow-500" />;
-      case 1:
-        return <Medal className="h-6 w-6 text-gray-400" />;
-      default:
-        return <Award className="h-6 w-6 text-amber-600" />;
-    }
+  const getRankClass = (index) => {
+    if (index === 0) return 'gold';
+    if (index === 1) return 'silver';
+    if (index === 2) return 'bronze';
+    return 'normal';
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-blue"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Trophy className="h-6 w-6 text-yellow-500" />
-        <h2 className="text-xl font-semibold text-gray-900">Leaderboard</h2>
+      <div className="leaderboard-header">
+        <h1 className="font-serif text-2xl text-text-primary flex items-center gap-3 mb-4">
+          <Trophy className="h-7 w-7 text-yellow-500" />
+          Leaderboard
+        </h1>
+
+        {/* Period Selector */}
+        <div className="flex gap-2 flex-wrap">
+          {periods.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                period === p.id
+                  ? 'bg-accent-blue text-white border-accent-blue'
+                  : 'bg-dark-card text-text-primary border-dark-border hover:bg-dark-hover'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Weekly standings */}
-        <div className="card">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary-600" />
-            This Week
-          </h3>
-          
-          {leaderboard.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
-              No scores recorded yet
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {leaderboard.map((player, index) => (
+      {/* Leaderboard Content */}
+      <div className="space-y-4">
+        {leaderboard.length === 0 ? (
+          <div className="text-center py-12 text-text-muted">
+            <Trophy className="h-16 w-16 mx-auto mb-4 opacity-30" />
+            <p className="text-lg">No scores recorded yet</p>
+            <p className="text-sm mt-2">Complete tasks to earn points!</p>
+          </div>
+        ) : (
+          leaderboard.map((player, index) => (
+            <div
+              key={player.id}
+              className="leaderboard-entry"
+            >
+              {/* Rank */}
+              <div className={`leaderboard-rank ${getRankClass(index)}`}>
+                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+              </div>
+
+              {/* Player info */}
+              <div className="flex items-center gap-4 flex-1">
+                {/* Avatar */}
                 <div
-                  key={player.id}
-                  className={`flex items-center gap-4 p-3 rounded-lg ${
-                    index === 0 ? 'bg-yellow-50' : 'bg-gray-50'
-                  }`}
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                  style={{ backgroundColor: player.color }}
                 >
-                  {/* Rank */}
-                  <div className="flex-shrink-0">
-                    {getRankIcon(index)}
-                  </div>
+                  {player.displayName.charAt(0).toUpperCase()}
+                </div>
 
-                  {/* Avatar */}
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: player.color }}
-                  >
-                    {player.displayName.charAt(0).toUpperCase()}
+                {/* Name and stats */}
+                <div className="flex-1">
+                  <div className="font-semibold text-text-primary text-lg">
+                    {player.displayName}
                   </div>
-
-                  {/* Name and stats */}
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">
-                      {player.displayName}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {player.totalTasks} tasks completed
-                    </div>
-                  </div>
-
-                  {/* Points */}
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary-600">
-                      {player.totalPoints}
-                    </div>
-                    <div className="text-xs text-gray-500">points</div>
+                  <div className="text-sm text-text-muted">
+                    {player.totalTasks} tasks completed
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
 
-        {/* Today's scores */}
-        <div className="card">
-          <h3 className="font-semibold text-gray-900 mb-4">Today</h3>
-          
-          {todayScores.every((s) => s.points === 0) ? (
-            <p className="text-gray-500 text-center py-8">
-              No tasks completed today yet
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {todayScores.map((player, index) => (
-                <div
-                  key={player.id}
-                  className="flex items-center gap-4 p-3 rounded-lg bg-gray-50"
-                >
-                  {/* Rank number */}
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm">
-                    {index + 1}
-                  </div>
-
-                  {/* Avatar */}
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: player.color }}
-                  >
-                    {player.displayName.charAt(0).toUpperCase()}
-                  </div>
-
-                  {/* Name */}
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900">
-                      {player.displayName}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {player.tasks} tasks
-                    </div>
-                  </div>
-
-                  {/* Points */}
-                  <div className="text-xl font-bold text-gray-900">
-                    {player.points} pts
-                  </div>
+              {/* Points */}
+              <div className="text-right">
+                <div className="text-2xl font-bold text-text-primary">
+                  {player.totalPoints}
                 </div>
-              ))}
+                <div className="text-xs text-text-muted uppercase tracking-wider">
+                  points
+                </div>
+              </div>
             </div>
-          )}
+          ))
+        )}
+      </div>
+
+      {/* Points Guide */}
+      <div className="bg-dark-card border border-dark-border rounded-2xl p-6">
+        <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-accent-purple" />
+          Points Guide
+        </h3>
+        <div className="grid grid-cols-5 gap-3 text-center">
+          {[
+            { size: 'XS', points: 5 },
+            { size: 'S', points: 10 },
+            { size: 'M', points: 20 },
+            { size: 'L', points: 35 },
+            { size: 'XL', points: 50 },
+          ].map((item) => (
+            <div
+              key={item.size}
+              className="bg-dark-hover border border-dark-border rounded-xl p-3 transition-all duration-200 hover:border-accent-blue"
+            >
+              <div className="font-bold text-lg text-text-primary">
+                {item.size}
+              </div>
+              <div className="text-sm text-text-muted">
+                {item.points} pts
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Points guide */}
-      <div className="card">
-        <h3 className="font-semibold text-gray-900 mb-3">Points Guide</h3>
-        <div className="grid grid-cols-5 gap-4 text-center">
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="font-bold text-lg">XS</div>
-            <div className="text-sm text-gray-500">5 pts</div>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="font-bold text-lg">S</div>
-            <div className="text-sm text-gray-500">10 pts</div>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="font-bold text-lg">M</div>
-            <div className="text-sm text-gray-500">20 pts</div>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="font-bold text-lg">L</div>
-            <div className="text-sm text-gray-500">35 pts</div>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <div className="font-bold text-lg">XL</div>
-            <div className="text-sm text-gray-500">50 pts</div>
+      {/* Streak / Motivation (optional fun addition) */}
+      {leaderboard.length > 0 && leaderboard[0].totalPoints > 0 && (
+        <div className="bg-gradient-to-r from-accent-blue/10 to-accent-purple/10 border border-dark-border rounded-2xl p-6">
+          <div className="flex items-center gap-4">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-lg"
+              style={{ backgroundColor: leaderboard[0].color }}
+            >
+              👑
+            </div>
+            <div>
+              <div className="text-sm text-text-muted uppercase tracking-wider">
+                Current Leader
+              </div>
+              <div className="text-xl font-bold text-text-primary">
+                {leaderboard[0].displayName}
+              </div>
+              <div className="text-sm text-text-secondary">
+                {leaderboard[0].totalPoints} points with {leaderboard[0].totalTasks} tasks
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

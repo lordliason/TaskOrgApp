@@ -1,6 +1,6 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { LayoutDashboard, Settings, LogOut, CheckSquare } from 'lucide-react';
+import { Settings, LogOut, Users } from 'lucide-react';
 
 function Layout() {
   const { profile, organization, logout } = useAuthStore();
@@ -12,79 +12,63 @@ function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <CheckSquare className="h-8 w-8 text-primary-600" />
-              <span className="font-bold text-xl text-gray-900">
-                {organization?.name || 'TaskOrgApp'}
-              </span>
+    <div className="min-h-screen bg-dark-main">
+      {/* Top Navigation Bar */}
+      <header className="top-nav">
+        {/* Logo */}
+        <div className="logo-gradient text-2xl mr-4">
+          {organization?.name || 'Task Matrix'}
+        </div>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* User info and actions */}
+        <div className="flex items-center gap-3">
+          {/* User display */}
+          <div className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+              style={{ backgroundColor: profile?.color || '#4a9eff' }}
+            >
+              {profile?.displayName?.charAt(0).toUpperCase()}
             </div>
-
-            {/* Navigation */}
-            <nav className="flex items-center gap-1">
-              <NavLink
-                to="/"
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`
-                }
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </NavLink>
-
-              <NavLink
-                to="/settings"
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`
-                }
-              >
-                <Settings className="h-4 w-4" />
-                Settings
-              </NavLink>
-            </nav>
-
-            {/* User menu */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium"
-                  style={{ backgroundColor: profile?.color || '#3B82F6' }}
-                >
-                  {profile?.displayName?.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {profile?.displayName}
-                </span>
-              </div>
-
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
-            </div>
+            <span className="text-sm text-text-secondary hidden sm:block">
+              {profile?.displayName}
+            </span>
           </div>
+
+          {/* Settings */}
+          <NavLink
+            to="/settings"
+            className={({ isActive }) =>
+              `p-2 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? 'bg-accent-blue text-white'
+                  : 'text-text-muted hover:bg-dark-hover hover:text-text-primary'
+              }`
+            }
+            title="Settings"
+          >
+            <Settings className="h-5 w-5" />
+          </NavLink>
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg text-text-muted hover:bg-dark-hover hover:text-text-primary transition-all duration-200"
+            title="Logout"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
+      {/* Main content - offset for fixed header */}
+      <main className="pt-16 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

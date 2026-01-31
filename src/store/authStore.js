@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -9,6 +9,11 @@ export const useAuthStore = create((set, get) => ({
   error: null,
 
   initialize: async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      set({ isLoading: false, error: 'Supabase is not configured' });
+      return;
+    }
+
     try {
       set({ isLoading: true, error: null });
 
@@ -107,32 +112,21 @@ export const useAuthStore = create((set, get) => ({
 
       const userId = authData.user.id;
 
-      // 2. Create organization
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          name: organizationName,
-          settings: {},
-        })
-        .select()
-        .single();
+      // 2. Use database function to create organization and profile (bypasses RLS)
+      const { data: result, error: rpcError } = await supabase.rpc(
+        'create_user_and_organization',
+        {
+          p_user_id: userId,
+          p_email: email,
+          p_display_name: displayName,
+          p_phone: phone || null,
+          p_color: color,
+          p_organization_name: organizationName,
+        }
+      );
 
-      if (orgError) throw orgError;
-
-      // 3. Create admin profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          organization_id: orgData.id,
-          email,
-          display_name: displayName,
-          phone,
-          role: 'admin',
-          color,
-        });
-
-      if (profileError) throw profileError;
+      if (rpcError) throw rpcError;
+      if (result && !result.success) throw new Error(result.error);
 
       return { success: true };
     } catch (error) {

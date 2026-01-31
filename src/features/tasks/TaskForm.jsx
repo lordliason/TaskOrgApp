@@ -3,7 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS } from '../../lib/constants';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Calendar, RefreshCw } from 'lucide-react';
 
 function TaskForm({ task, onClose }) {
   const { profile, organization } = useAuthStore();
@@ -89,18 +89,18 @@ function TaskForm({ task, onClose }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {error}
         </div>
       )}
 
       {/* Title */}
-      <div>
+      <div className="form-section">
         <label htmlFor="title" className="label">
-          Task Title *
+          Task Name
         </label>
         <input
           id="title"
@@ -115,63 +115,66 @@ function TaskForm({ task, onClose }) {
         />
       </div>
 
-      {/* Assignee */}
-      <div>
-        <label htmlFor="assignee_id" className="label">
-          Assign To
-        </label>
-        <select
-          id="assignee_id"
-          name="assignee_id"
-          value={formData.assignee_id || ''}
-          onChange={handleChange}
-          className="input"
-        >
-          <option value="">Unassigned</option>
+      {/* Assignee - Button Style */}
+      <div className="form-section">
+        <label className="label">Assign To</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setFormData((prev) => ({ ...prev, assignee_id: null }))}
+            className={`assignee-btn ${!formData.assignee_id ? 'active' : ''}`}
+            style={{
+              '--btn-accent': '#6b6b75',
+              '--btn-accent-bg': 'rgba(107, 107, 117, 0.1)',
+            }}
+          >
+            None
+          </button>
           {members.map((member) => (
-            <option key={member.id} value={member.id}>
+            <button
+              key={member.id}
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, assignee_id: member.id }))}
+              className={`assignee-btn ${formData.assignee_id === member.id ? 'active' : ''}`}
+              style={{
+                '--btn-accent': member.color,
+                '--btn-accent-bg': `${member.color}1a`,
+              }}
+            >
               {member.display_name}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
-      {/* Effort */}
-      <div>
-        <label className="label">Effort Size</label>
-        <div className="flex gap-2">
+      {/* Effort Size */}
+      <div className="form-section">
+        <label className="label">Size (Effort)</label>
+        <div className="flex gap-1">
           {Object.entries(EFFORT_SIZES).map(([key, value]) => (
             <button
               key={key}
               type="button"
               onClick={() => setFormData((prev) => ({ ...prev, effort: key }))}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
-                formData.effort === key
-                  ? 'bg-primary-600 text-white border-primary-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
+              className={`size-btn ${formData.effort === key ? 'active' : ''}`}
             >
               <div>{value.label}</div>
-              <div className="text-xs opacity-75">{value.description}</div>
+              <div className="text-[0.6rem] opacity-70 mt-0.5">{value.description}</div>
             </button>
           ))}
         </div>
       </div>
 
       {/* Urgency */}
-      <div>
+      <div className="form-section">
         <label className="label">Urgency</label>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="flex gap-1">
           {Object.entries(URGENCY_LEVELS).map(([key, value]) => (
             <button
               key={key}
               type="button"
               onClick={() => setFormData((prev) => ({ ...prev, urgent: parseInt(key) }))}
-              className={`py-2 px-2 rounded-lg text-xs font-medium border transition-colors ${
-                formData.urgent === parseInt(key)
-                  ? 'bg-primary-600 text-white border-primary-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
+              className={`size-btn ${formData.urgent === parseInt(key) ? 'active' : ''}`}
             >
               {value.label}
             </button>
@@ -180,19 +183,15 @@ function TaskForm({ task, onClose }) {
       </div>
 
       {/* Importance */}
-      <div>
+      <div className="form-section">
         <label className="label">Importance</label>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="flex gap-1">
           {Object.entries(IMPORTANCE_LEVELS).map(([key, value]) => (
             <button
               key={key}
               type="button"
               onClick={() => setFormData((prev) => ({ ...prev, important: parseInt(key) }))}
-              className={`py-2 px-2 rounded-lg text-xs font-medium border transition-colors ${
-                formData.important === parseInt(key)
-                  ? 'bg-primary-600 text-white border-primary-600'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              }`}
+              className={`size-btn ${formData.important === parseInt(key) ? 'active' : ''}`}
             >
               {value.label}
             </button>
@@ -200,23 +199,43 @@ function TaskForm({ task, onClose }) {
         </div>
       </div>
 
-      {/* Due Date */}
-      <div>
-        <label htmlFor="due_date" className="label">
-          Due Date
-        </label>
-        <input
-          id="due_date"
-          name="due_date"
-          type="date"
-          value={formData.due_date}
-          onChange={handleChange}
-          className="input"
-        />
+      {/* Due Date & Recurring */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="form-section">
+          <label htmlFor="due_date" className="label flex items-center gap-2">
+            <Calendar className="h-3 w-3" />
+            Due Date
+          </label>
+          <input
+            id="due_date"
+            name="due_date"
+            type="date"
+            value={formData.due_date}
+            onChange={handleChange}
+            className="input"
+          />
+        </div>
+
+        <div className="form-section">
+          <label className="label flex items-center gap-2">
+            <RefreshCw className="h-3 w-3" />
+            Recurring
+          </label>
+          <div className="toggle-switch mt-2">
+            <input
+              type="checkbox"
+              id="is_recurring"
+              name="is_recurring"
+              checked={formData.is_recurring}
+              onChange={handleChange}
+            />
+            <span className="toggle-slider" onClick={() => setFormData(prev => ({ ...prev, is_recurring: !prev.is_recurring }))}></span>
+          </div>
+        </div>
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+      <div className="flex justify-end gap-3 pt-4 border-t border-dark-border">
         <button
           type="button"
           onClick={onClose}
@@ -238,7 +257,7 @@ function TaskForm({ task, onClose }) {
           ) : task ? (
             'Update Task'
           ) : (
-            'Create Task'
+            'Add Task'
           )}
         </button>
       </div>

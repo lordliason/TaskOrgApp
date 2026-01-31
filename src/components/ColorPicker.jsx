@@ -12,7 +12,7 @@ function ColorPicker({ value, onChange, label }) {
             onClick={() => onChange(color)}
             className={`w-8 h-8 rounded-full border-2 transition-all ${
               value === color
-                ? 'border-gray-900 scale-110'
+                ? 'border-text-primary scale-110 ring-2 ring-offset-2 ring-offset-dark-main ring-accent-blue'
                 : 'border-transparent hover:scale-105'
             }`}
             style={{ backgroundColor: color }}
@@ -23,11 +23,11 @@ function ColorPicker({ value, onChange, label }) {
       <div className="mt-2 flex items-center gap-2">
         <input
           type="color"
-          value={value || '#3B82F6'}
+          value={value || '#4a9eff'}
           onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 rounded cursor-pointer"
+          className="w-8 h-8 rounded cursor-pointer bg-dark-card border border-dark-border"
         />
-        <span className="text-sm text-gray-500">Custom color</span>
+        <span className="text-sm text-text-muted">Custom color</span>
       </div>
     </div>
   );

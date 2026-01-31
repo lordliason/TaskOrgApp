@@ -1,9 +1,13 @@
 import { useTaskStore } from '../../store/taskStore';
-import TaskCard from './TaskCard';
-import { Calendar, CheckCircle2 } from 'lucide-react';
+import { useOrganizationStore } from '../../store/organizationStore';
+import { useAuthStore } from '../../store/authStore';
+import { EFFORT_SIZES } from '../../lib/constants';
+import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock } from 'lucide-react';
 
 function DailyPlanner({ onEditTask }) {
-  const { tasks, isLoading } = useTaskStore();
+  const { tasks, isLoading, completeTask } = useTaskStore();
+  const { members, scores } = useOrganizationStore();
+  const { profile } = useAuthStore();
 
   // Get today's date
   const today = new Date();
@@ -30,16 +34,48 @@ function DailyPlanner({ onEditTask }) {
     return false;
   });
 
-  // Sort by urgency (highest first) then importance
-  const sortedTasks = [...todaysTasks].sort((a, b) => {
-    if (b.urgent !== a.urgent) return b.urgent - a.urgent;
-    return b.important - a.important;
-  });
+  // Group tasks by member
+  const getTasksByMember = (memberId) => {
+    return todaysTasks
+      .filter((t) => t.assignee_id === memberId)
+      .sort((a, b) => b.important - a.important);
+  };
+
+  const getCompletedByMember = (memberId) => {
+    return completedToday.filter((t) => t.assignee_id === memberId);
+  };
+
+  // Get member's score for today
+  const getMemberScore = (memberId) => {
+    const todayScore = scores.find(
+      (s) => s.user_id === memberId && s.date === todayStr
+    );
+    return todayScore?.points || 0;
+  };
+
+  // Calculate total time estimate (simple version based on effort)
+  const getTimeEstimate = (memberTasks) => {
+    const effortMinutes = { xs: 15, s: 30, m: 60, l: 120, xl: 240 };
+    const total = memberTasks.reduce(
+      (sum, t) => sum + (effortMinutes[t.effort] || 60),
+      0
+    );
+    const hours = Math.floor(total / 60);
+    const mins = total % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
+  // Time blocks
+  const timeBlocks = [
+    { id: 'morning', label: 'Morning', icon: Sun, color: '#fcd34d' },
+    { id: 'afternoon', label: 'Afternoon', icon: Sunset, color: '#fb923c' },
+    { id: 'evening', label: 'Evening', icon: Moon, color: '#a78bfa' },
+  ];
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-blue"></div>
       </div>
     );
   }
@@ -47,13 +83,13 @@ function DailyPlanner({ onEditTask }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Calendar className="h-6 w-6 text-primary-600" />
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            Today's Focus
-          </h2>
-          <p className="text-sm text-gray-500">
+      <div className="plan-header flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="plan-header-left">
+          <h1 className="plan-title font-serif text-2xl text-text-primary flex items-center gap-3">
+            <Calendar className="h-6 w-6 text-accent-blue" />
+            Today's Plan
+          </h1>
+          <p className="plan-date text-text-secondary">
             {today.toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -62,66 +98,192 @@ function DailyPlanner({ onEditTask }) {
             })}
           </p>
         </div>
+
+        {/* Stats */}
+        <div className="flex gap-3">
+          <div className="bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-center">
+            <div className="text-2xl font-bold text-accent-blue">
+              {todaysTasks.length}
+            </div>
+            <div className="text-xs text-text-muted uppercase tracking-wider">
+              To Do
+            </div>
+          </div>
+          <div className="bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-center">
+            <div className="text-2xl font-bold text-emerald-400">
+              {completedToday.length}
+            </div>
+            <div className="text-xs text-text-muted uppercase tracking-wider">
+              Done
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="card">
-          <div className="text-3xl font-bold text-primary-600">
-            {sortedTasks.length}
-          </div>
-          <div className="text-sm text-gray-500">Tasks to do</div>
-        </div>
-        <div className="card">
-          <div className="text-3xl font-bold text-green-600">
-            {completedToday.length}
-          </div>
-          <div className="text-sm text-gray-500">Completed today</div>
-        </div>
+      {/* Member Columns */}
+      <div className={`grid gap-6 ${members.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 max-w-xl'}`}>
+        {members.map((member) => {
+          const memberTasks = getTasksByMember(member.id);
+          const memberCompleted = getCompletedByMember(member.id);
+          const memberScore = getMemberScore(member.id);
+
+          return (
+            <div
+              key={member.id}
+              className="plan-column"
+              style={{ borderTopColor: member.color, borderTopWidth: '3px' }}
+            >
+              {/* Column Header */}
+              <div className="plan-column-header">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: member.color }}
+                >
+                  {member.display_name?.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-text-primary">
+                    {member.display_name}
+                  </div>
+                  <div className="text-xs text-text-muted">
+                    {memberTasks.length} tasks • {getTimeEstimate(memberTasks)} estimated
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-bold" style={{ color: member.color }}>
+                    {memberScore}
+                  </div>
+                  <div className="text-xs text-text-muted">pts today</div>
+                </div>
+              </div>
+
+              {/* Task List */}
+              <div className="space-y-3 flex-1">
+                {memberTasks.length === 0 ? (
+                  <div className="text-center py-8 text-text-muted">
+                    <CheckCircle2 className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <div className="text-sm">No tasks scheduled</div>
+                  </div>
+                ) : (
+                  memberTasks.map((task) => (
+                    <PlannerTaskItem
+                      key={task.id}
+                      task={task}
+                      memberColor={member.color}
+                      onEdit={() => onEditTask(task)}
+                      onComplete={() => completeTask(task.id, profile?.id, profile?.organization_id)}
+                    />
+                  ))
+                )}
+
+                {/* Completed Section */}
+                {memberCompleted.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-dark-border">
+                    <div className="text-xs text-text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                      Completed ({memberCompleted.length})
+                    </div>
+                    <div className="space-y-2 opacity-60">
+                      {memberCompleted.map((task) => (
+                        <PlannerTaskItem
+                          key={task.id}
+                          task={task}
+                          memberColor={member.color}
+                          onEdit={() => onEditTask(task)}
+                          completed
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Task list */}
-      <div className="space-y-4">
-        <h3 className="font-medium text-gray-700">To Do</h3>
-        
-        {sortedTasks.length === 0 ? (
-          <div className="card text-center py-12">
-            <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900">All done!</h4>
-            <p className="text-gray-500 mt-1">
-              No tasks scheduled for today. Great job!
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {sortedTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onEdit={() => onEditTask(task)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Completed section */}
-        {completedToday.length > 0 && (
-          <>
-            <h3 className="font-medium text-gray-700 mt-8 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              Completed Today
-            </h3>
-            <div className="space-y-3 opacity-60">
-              {completedToday.map((task) => (
-                <TaskCard
+      {/* Unassigned Tasks */}
+      {todaysTasks.filter((t) => !t.assignee_id).length > 0 && (
+        <div className="bg-dark-card border border-dark-border rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
+            Unassigned Tasks
+          </h3>
+          <div className="space-y-2">
+            {todaysTasks
+              .filter((t) => !t.assignee_id)
+              .map((task) => (
+                <PlannerTaskItem
                   key={task.id}
                   task={task}
+                  memberColor="#6b6b75"
                   onEdit={() => onEditTask(task)}
                 />
               ))}
-            </div>
-          </>
-        )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Task Item Component
+function PlannerTaskItem({ task, memberColor, onEdit, onComplete, completed = false }) {
+  const effort = EFFORT_SIZES[task.effort] || EFFORT_SIZES.m;
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-3 bg-dark-hover rounded-xl transition-all duration-200 hover:translate-x-1 cursor-pointer ${
+        completed ? 'opacity-60' : ''
+      }`}
+      onClick={onEdit}
+    >
+      {/* Checkbox */}
+      {!completed && onComplete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onComplete();
+          }}
+          className="w-5 h-5 rounded border-2 border-dark-border hover:border-emerald-400 flex items-center justify-center transition-colors"
+        >
+          <CheckCircle2 className="h-3 w-3 text-transparent hover:text-emerald-400" />
+        </button>
+      )}
+
+      {completed && (
+        <div className="w-5 h-5 rounded bg-emerald-500 flex items-center justify-center">
+          <CheckCircle2 className="h-3 w-3 text-white" />
+        </div>
+      )}
+
+      {/* Task Icon/Dot */}
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
+        style={{ backgroundColor: completed ? '#6b6b75' : memberColor }}
+      >
+        {task.icon || task.title?.charAt(0).toUpperCase()}
+      </div>
+
+      {/* Task Details */}
+      <div className="flex-1 min-w-0">
+        <div
+          className={`text-sm font-medium text-text-primary truncate ${
+            completed ? 'line-through text-text-muted' : ''
+          }`}
+        >
+          {task.title}
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs bg-dark-card px-2 py-0.5 rounded text-text-muted">
+            {effort.label}
+          </span>
+          {task.due_date && (
+            <span className="text-xs text-text-muted flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {new Date(task.due_date).toLocaleDateString()}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

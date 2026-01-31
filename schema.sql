@@ -90,19 +90,31 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scores ENABLE ROW LEVEL SECURITY;
 
--- Organizations policies
+-- ===========================================
+-- HELPER FUNCTION: Get current user's organization
+-- Uses SECURITY DEFINER to bypass RLS and avoid recursion
+-- ===========================================
+
+CREATE OR REPLACE FUNCTION get_my_organization_id()
+RETURNS UUID AS $$
+  SELECT organization_id FROM profiles WHERE id = auth.uid()
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- ===========================================
+-- ORGANIZATIONS POLICIES
+-- ===========================================
+
 -- Users can view their own organization
 CREATE POLICY "Users can view their organization"
   ON organizations FOR SELECT
-  USING (
-    id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())
-  );
+  USING (id = get_my_organization_id());
 
 -- Users can update their own organization (admin only)
 CREATE POLICY "Admins can update their organization"
   ON organizations FOR UPDATE
   USING (
-    id IN (SELECT organization_id FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    id = get_my_organization_id() AND
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
   );
 
 -- Allow inserting organizations (for signup)
@@ -110,12 +122,15 @@ CREATE POLICY "Allow organization creation"
   ON organizations FOR INSERT
   WITH CHECK (true);
 
--- Profiles policies
--- Users can view profiles in their organization
+-- ===========================================
+-- PROFILES POLICIES
+-- ===========================================
+
+-- Users can view their own profile or profiles in their organization
 CREATE POLICY "Users can view profiles in their organization"
   ON profiles FOR SELECT
   USING (
-    organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())
+    id = auth.uid() OR organization_id = get_my_organization_id()
   );
 
 -- Allow inserting profiles (for signup and member addition)
@@ -132,52 +147,49 @@ CREATE POLICY "Users can update their own profile"
 CREATE POLICY "Admins can update profiles in their organization"
   ON profiles FOR UPDATE
   USING (
-    organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    id = auth.uid() OR (
+      organization_id = get_my_organization_id() AND
+      EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+    )
   );
 
--- Tasks policies
+-- ===========================================
+-- TASKS POLICIES
+-- ===========================================
+
 -- Users can view tasks in their organization
 CREATE POLICY "Users can view tasks in their organization"
   ON tasks FOR SELECT
-  USING (
-    organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())
-  );
+  USING (organization_id = get_my_organization_id());
 
 -- Users can create tasks in their organization
 CREATE POLICY "Users can create tasks in their organization"
   ON tasks FOR INSERT
-  WITH CHECK (
-    organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())
-  );
+  WITH CHECK (organization_id = get_my_organization_id());
 
 -- Users can update tasks in their organization
 CREATE POLICY "Users can update tasks in their organization"
   ON tasks FOR UPDATE
-  USING (
-    organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())
-  );
+  USING (organization_id = get_my_organization_id());
 
 -- Users can delete tasks in their organization
 CREATE POLICY "Users can delete tasks in their organization"
   ON tasks FOR DELETE
-  USING (
-    organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())
-  );
+  USING (organization_id = get_my_organization_id());
 
--- Scores policies
+-- ===========================================
+-- SCORES POLICIES
+-- ===========================================
+
 -- Users can view scores in their organization
 CREATE POLICY "Users can view scores in their organization"
   ON scores FOR SELECT
-  USING (
-    organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())
-  );
+  USING (organization_id = get_my_organization_id());
 
 -- Users can insert/update their own scores
 CREATE POLICY "Users can create scores"
   ON scores FOR INSERT
-  WITH CHECK (
-    organization_id IN (SELECT organization_id FROM profiles WHERE id = auth.uid())
-  );
+  WITH CHECK (organization_id = get_my_organization_id());
 
 CREATE POLICY "Users can update their scores"
   ON scores FOR UPDATE
