@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
-import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS } from '../../lib/constants';
-import { AlertCircle, Calendar, RefreshCw } from 'lucide-react';
+import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS, ALL_TASK_ICONS, RECURRENCE_PRESETS } from '../../lib/constants';
+import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 function TaskForm({ task, onClose }) {
   const { profile, organization } = useAuthStore();
@@ -19,9 +19,14 @@ function TaskForm({ task, onClose }) {
     due_date: '',
     is_recurring: false,
     recurrence_rule: '',
+    icon: null,
+    first_step: '',
+    completion_criteria: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [showRecurrence, setShowRecurrence] = useState(false);
+  const [recurrencePreset, setRecurrencePreset] = useState('never');
 
   useEffect(() => {
     if (task) {
@@ -34,7 +39,18 @@ function TaskForm({ task, onClose }) {
         due_date: task.due_date ? task.due_date.split('T')[0] : '',
         is_recurring: task.is_recurring || false,
         recurrence_rule: task.recurrence_rule || '',
+        icon: task.icon || null,
+        first_step: task.first_step || '',
+        completion_criteria: task.completion_criteria || '',
       });
+      // Set recurrence preset based on rule
+      if (task.recurrence_rule) {
+        setShowRecurrence(true);
+        const preset = Object.entries(RECURRENCE_PRESETS).find(
+          ([, value]) => value.rule === task.recurrence_rule
+        );
+        setRecurrencePreset(preset ? preset[0] : 'custom');
+      }
     }
   }, [task]);
 
@@ -67,6 +83,9 @@ function TaskForm({ task, onClose }) {
         important: parseInt(formData.important),
         due_date: formData.due_date || null,
         assignee_id: formData.assignee_id || null,
+        icon: formData.icon || null,
+        first_step: formData.first_step?.trim() || null,
+        completion_criteria: formData.completion_criteria?.trim() || null,
       };
 
       let result;
@@ -113,6 +132,38 @@ function TaskForm({ task, onClose }) {
           placeholder="What needs to be done?"
           autoFocus
         />
+      </div>
+
+      {/* Icon Selector */}
+      <div className="form-section">
+        <label className="label">Icon (optional)</label>
+        <div className="flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={() => setFormData((prev) => ({ ...prev, icon: null }))}
+            className={`w-9 h-9 rounded-lg border-2 text-sm font-medium transition-all ${
+              !formData.icon
+                ? 'border-text-secondary bg-dark-hover text-text-primary'
+                : 'border-dark-border bg-dark-card text-text-muted hover:bg-dark-hover'
+            }`}
+          >
+            None
+          </button>
+          {ALL_TASK_ICONS.map((icon) => (
+            <button
+              key={icon}
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, icon }))}
+              className={`w-9 h-9 rounded-lg border-2 text-lg transition-all ${
+                formData.icon === icon
+                  ? 'border-text-secondary bg-dark-hover'
+                  : 'border-dark-border bg-dark-card hover:bg-dark-hover'
+              }`}
+            >
+              {icon}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Assignee - Button Style */}
@@ -221,17 +272,91 @@ function TaskForm({ task, onClose }) {
             <RefreshCw className="h-3 w-3" />
             Recurring
           </label>
-          <div className="toggle-switch mt-2">
-            <input
-              type="checkbox"
-              id="is_recurring"
-              name="is_recurring"
-              checked={formData.is_recurring}
-              onChange={handleChange}
-            />
-            <span className="toggle-slider" onClick={() => setFormData(prev => ({ ...prev, is_recurring: !prev.is_recurring }))}></span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowRecurrence(!showRecurrence)}
+            className="flex items-center gap-2 px-3 py-2 mt-1 bg-dark-card border border-dark-border rounded-lg text-sm text-text-secondary hover:bg-dark-hover transition-all"
+          >
+            {showRecurrence ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {recurrencePreset === 'never' ? 'No repeat' : RECURRENCE_PRESETS[recurrencePreset]?.label}
+          </button>
         </div>
+      </div>
+
+      {/* Recurrence Options */}
+      {showRecurrence && (
+        <div className="form-section bg-dark-card/50 rounded-xl p-4 border border-dark-border">
+          <label className="label">Repeat Pattern</label>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(RECURRENCE_PRESETS).map(([key, value]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setRecurrencePreset(key);
+                  if (key === 'never') {
+                    setFormData((prev) => ({ ...prev, is_recurring: false, recurrence_rule: '' }));
+                  } else if (key !== 'custom') {
+                    setFormData((prev) => ({ ...prev, is_recurring: true, recurrence_rule: value.rule }));
+                  } else {
+                    setFormData((prev) => ({ ...prev, is_recurring: true }));
+                  }
+                }}
+                className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                  recurrencePreset === key
+                    ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
+                    : 'border-dark-border bg-dark-card text-text-muted hover:bg-dark-hover'
+                }`}
+              >
+                {value.label}
+              </button>
+            ))}
+          </div>
+          {recurrencePreset === 'custom' && (
+            <div className="mt-3">
+              <input
+                type="text"
+                name="recurrence_rule"
+                value={formData.recurrence_rule}
+                onChange={handleChange}
+                className="input text-sm"
+                placeholder="RRULE (e.g., FREQ=WEEKLY;BYDAY=TU)"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* First Step */}
+      <div className="form-section">
+        <label htmlFor="first_step" className="label">
+          What is a small step you can do to start?
+        </label>
+        <textarea
+          id="first_step"
+          name="first_step"
+          value={formData.first_step}
+          onChange={handleChange}
+          className="input min-h-[70px] resize-y"
+          placeholder="Enter a small first step to get started..."
+          rows={2}
+        />
+      </div>
+
+      {/* Completion Criteria */}
+      <div className="form-section">
+        <label htmlFor="completion_criteria" className="label">
+          What should be accomplished for this to be complete?
+        </label>
+        <textarea
+          id="completion_criteria"
+          name="completion_criteria"
+          value={formData.completion_criteria}
+          onChange={handleChange}
+          className="input min-h-[70px] resize-y"
+          placeholder="Describe what needs to be accomplished..."
+          rows={2}
+        />
       </div>
 
       {/* Actions */}

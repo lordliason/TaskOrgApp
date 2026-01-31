@@ -58,3 +58,33 @@ export const POINTS_BY_EFFORT = {
   l: 35,
   xl: 50,
 };
+
+// Task icons organized by category
+export const TASK_ICONS = {
+  shopping: ['🛒', '🏪', '🏥'],
+  home: ['🏠', '🧹', '🧽', '🧼', '🛁', '🗑️', '🧺'],
+  garden: ['🌱', '🪴'],
+  creative: ['🎨', '🖌️', '📝', '✏️', '📖', '📚', '🎵', '🎹'],
+  work: ['💼', '📞', '✉️', '💻'],
+  finance: ['💰', '💳', '🏦'],
+  transport: ['🚗', '🚲', '✈️'],
+  food: ['🍽️', '🥘', '☕'],
+  health: ['💪', '🏃', '🧘'],
+  family: ['🐕', '🐱', '👨‍👩‍👧‍👦'],
+  maintenance: ['🔧', '🛠️', '💡', '🔌'],
+  planning: ['📅', '⏰', '🎯'],
+  celebrations: ['🎁', '🎉', '🎂'],
+};
+
+// Flat array of all icons for easy iteration
+export const ALL_TASK_ICONS = Object.values(TASK_ICONS).flat();
+
+// Recurrence presets
+export const RECURRENCE_PRESETS = {
+  never: { label: 'Never', rule: '' },
+  daily: { label: 'Daily', rule: 'FREQ=DAILY' },
+  weekly: { label: 'Weekly', rule: 'FREQ=WEEKLY' },
+  monthly: { label: 'Monthly', rule: 'FREQ=MONTHLY' },
+  weekdays: { label: 'Every Weekday', rule: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR' },
+  custom: { label: 'Custom', rule: '' },
+};

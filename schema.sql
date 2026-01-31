@@ -51,6 +51,9 @@ CREATE TABLE tasks (
   due_date TIMESTAMPTZ,
   is_recurring BOOLEAN DEFAULT FALSE,
   recurrence_rule TEXT,
+  icon TEXT DEFAULT NULL,
+  first_step TEXT DEFAULT NULL,
+  completion_criteria TEXT DEFAULT NULL,
   completed_at TIMESTAMPTZ,
   completed_by UUID REFERENCES profiles(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -234,3 +237,10 @@ CREATE TRIGGER enforce_member_limit
   BEFORE INSERT ON profiles
   FOR EACH ROW
   EXECUTE FUNCTION check_organization_member_limit();
+
+-- ===========================================
+-- MIGRATION: Add new task columns (run if upgrading existing database)
+-- ===========================================
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT NULL;
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS first_step TEXT DEFAULT NULL;
+-- ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completion_criteria TEXT DEFAULT NULL;

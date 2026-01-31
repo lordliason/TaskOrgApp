@@ -53,6 +53,7 @@ function TaskCard({ task, onEdit, compact = false }) {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
+              {task.icon && <span className="text-base">{task.icon}</span>}
               <span
                 className={`font-medium text-sm ${
                   isCompleted ? 'line-through text-text-muted' : 'text-text-primary'
@@ -134,13 +135,16 @@ function TaskCard({ task, onEdit, compact = false }) {
         {/* Content */}
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h4
-              className={`font-medium ${
-                isCompleted ? 'line-through text-text-muted' : 'text-text-primary'
-              }`}
-            >
-              {task.title}
-            </h4>
+            <div className="flex items-center gap-2">
+              {task.icon && <span className="text-xl">{task.icon}</span>}
+              <h4
+                className={`font-medium ${
+                  isCompleted ? 'line-through text-text-muted' : 'text-text-primary'
+                }`}
+              >
+                {task.title}
+              </h4>
+            </div>
 
             <div className="flex items-center gap-2">
               <button
@@ -187,6 +191,26 @@ function TaskCard({ task, onEdit, compact = false }) {
               </span>
             )}
           </div>
+
+          {/* First Step */}
+          {task.first_step && (
+            <div className="mt-3 p-2 bg-dark-hover/50 rounded-lg">
+              <div className="text-xs text-text-muted font-semibold uppercase tracking-wider mb-1">
+                First Step
+              </div>
+              <div className="text-sm text-text-secondary">{task.first_step}</div>
+            </div>
+          )}
+
+          {/* Completion Criteria */}
+          {task.completion_criteria && (
+            <div className="mt-2 p-2 bg-dark-hover/50 rounded-lg">
+              <div className="text-xs text-text-muted font-semibold uppercase tracking-wider mb-1">
+                Done When
+              </div>
+              <div className="text-sm text-text-secondary">{task.completion_criteria}</div>
+            </div>
+          )}
         </div>
       </div>
     </div>
