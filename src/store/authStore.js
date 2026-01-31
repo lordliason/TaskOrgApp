@@ -1,0 +1,159 @@
+import { create } from 'zustand';
+import { supabase } from '../lib/supabase';
+
+export const useAuthStore = create((set, get) => ({
+  user: null,
+  profile: null,
+  organization: null,
+  isLoading: true,
+  error: null,
+
+  initialize: async () => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // Get current session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) throw sessionError;
+
+      if (session?.user) {
+        await get().fetchUserData(session.user.id);
+      } else {
+        set({ user: null, profile: null, organization: null });
+      }
+    } catch (error) {
+      console.error('Auth initialization error:', error);
+      set({ error: error.message });
+    } finally {
+      set({ isLoading: false });
+    }
+
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await get().fetchUserData(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        set({ user: null, profile: null, organization: null });
+      }
+    });
+  },
+
+  fetchUserData: async (userId) => {
+    try {
+      // Fetch profile with organization
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*, organizations(*)')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+
+      set({
+        user: { id: userId },
+        profile: {
+          id: profile.id,
+          email: profile.email,
+          displayName: profile.display_name,
+          phone: profile.phone,
+          role: profile.role,
+          color: profile.color,
+          organizationId: profile.organization_id,
+        },
+        organization: profile.organizations ? {
+          id: profile.organizations.id,
+          name: profile.organizations.name,
+          settings: profile.organizations.settings,
+        } : null,
+      });
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      set({ error: error.message });
+    }
+  },
+
+  login: async (email, password) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      set({ error: error.message });
+      return { success: false, error: error.message };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  signup: async ({ email, password, displayName, phone, color, organizationName }) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      // 1. Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) throw authError;
+
+      const userId = authData.user.id;
+
+      // 2. Create organization
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .insert({
+          name: organizationName,
+          settings: {},
+        })
+        .select()
+        .single();
+
+      if (orgError) throw orgError;
+
+      // 3. Create admin profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          organization_id: orgData.id,
+          email,
+          display_name: displayName,
+          phone,
+          role: 'admin',
+          color,
+        });
+
+      if (profileError) throw profileError;
+
+      return { success: true };
+    } catch (error) {
+      set({ error: error.message });
+      return { success: false, error: error.message };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  logout: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      await supabase.auth.signOut();
+      set({ user: null, profile: null, organization: null });
+    } catch (error) {
+      set({ error: error.message });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  clearError: () => set({ error: null }),
+}));
