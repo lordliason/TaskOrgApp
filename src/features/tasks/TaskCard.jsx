@@ -1,7 +1,7 @@
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS } from '../../lib/constants';
-import { Check, Clock, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
+import { Check, Clock, AlertTriangle, Pencil, Trash2, MapPin } from 'lucide-react';
 
 function TaskCard({ task, onEdit, compact = false }) {
   const { profile, organization } = useAuthStore();
@@ -81,6 +81,14 @@ function TaskCard({ task, onEdit, compact = false }) {
                 <span className="text-xs text-text-muted flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {new Date(task.due_date).toLocaleDateString()}
+                </span>
+              )}
+
+              {/* Location if exists */}
+              {task.location && (
+                <span className="text-xs text-text-muted flex items-center gap-1 truncate max-w-[120px]" title={task.location}>
+                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{task.location}</span>
                 </span>
               )}
             </div>
@@ -189,6 +197,27 @@ function TaskCard({ task, onEdit, compact = false }) {
                 <Clock className="h-3.5 w-3.5" />
                 {new Date(task.due_date).toLocaleDateString()}
               </span>
+            )}
+
+            {/* Location */}
+            {task.location && (
+              task.location_lat && task.location_lng ? (
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${task.location_lat}&mlon=${task.location_lng}#map=17/${task.location_lat}/${task.location_lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-accent-blue hover:underline flex items-center gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {task.location}
+                </a>
+              ) : (
+                <span className="text-sm text-text-muted flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {task.location}
+                </span>
+              )
             )}
           </div>
 
