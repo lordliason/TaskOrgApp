@@ -15,7 +15,7 @@ export const useTaskStore = create((set, get) => ({
 
       const { data, error } = await supabase
         .from('tasks')
-        .select('*, assignee:profiles(id, display_name, color)')
+        .select('*, assignee:profiles!assignee_id(id, display_name, color)')
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false });
 
@@ -82,7 +82,7 @@ export const useTaskStore = create((set, get) => ({
       const { data, error } = await supabase
         .from('tasks')
         .insert(task)
-        .select('*, assignee:profiles(id, display_name, color)')
+        .select('*, assignee:profiles!assignee_id(id, display_name, color)')
         .single();
 
       if (error) throw error;
@@ -104,7 +104,7 @@ export const useTaskStore = create((set, get) => ({
         .from('tasks')
         .update(updates)
         .eq('id', taskId)
-        .select('*, assignee:profiles(id, display_name, color)')
+        .select('*, assignee:profiles!assignee_id(id, display_name, color)')
         .single();
 
       if (error) throw error;

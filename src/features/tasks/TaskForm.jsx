@@ -141,7 +141,7 @@ function TaskForm({ task, onClose }) {
                 '--btn-accent-bg': `${member.color}1a`,
               }}
             >
-              {member.display_name}
+              {member.display_name.split(' ')[0]}
             </button>
           ))}
         </div>
