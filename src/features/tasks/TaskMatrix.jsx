@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
@@ -10,6 +10,8 @@ function TaskMatrix({ onEditTask }) {
   const [tooltip, setTooltip] = useState({ visible: false, task: null, x: 0, y: 0 });
   const [filter, setFilter] = useState('all'); // 'all' or member id
   const [activeTask, setActiveTask] = useState(null);
+  const [dragPosition, setDragPosition] = useState(null);
+  const matrixRef = useRef(null);
 
   // Configure drag sensor with activation constraint to distinguish from clicks
   const sensors = useSensors(
@@ -34,18 +36,72 @@ function TaskMatrix({ onEditTask }) {
     setTooltip({ visible: false, task: null, x: 0, y: 0 });
   };
 
+  const handleDragMove = (event) => {
+    // Track drag position for visual feedback
+    if (matrixRef.current && event.delta) {
+      const rect = matrixRef.current.getBoundingClientRect();
+      const x = event.activatorEvent?.clientX + event.delta.x;
+      const y = event.activatorEvent?.clientY + event.delta.y;
+
+      if (x && y) {
+        setDragPosition({ x, y, rect });
+      }
+    }
+  };
+
   const handleDragEnd = async (event) => {
     const { active, over } = event;
     setActiveTask(null);
+    setDragPosition(null);
 
-    if (over && active.id !== over.id) {
-      const quadrantId = over.id;
-      const values = quadrantValues[quadrantId];
-      
-      if (values) {
+    // Calculate position-based urgency and importance
+    if (over && matrixRef.current) {
+      const rect = matrixRef.current.getBoundingClientRect();
+      const x = event.activatorEvent?.clientX + (event.delta?.x || 0);
+      const y = event.activatorEvent?.clientY + (event.delta?.y || 0);
+
+      if (x && y) {
+        // The matrix has a 40px left column for labels, so we need to account for that
+        // The actual quadrant area is divided into 2 columns
+        const labelWidth = 40; // pixels
+        const quadrantAreaWidth = rect.width - labelWidth;
+        const quadrantAreaLeft = rect.left + labelWidth;
+
+        // Calculate relative position within the quadrant area (0 to 1)
+        const relativeX = Math.max(0, Math.min(1, (x - quadrantAreaLeft) / quadrantAreaWidth));
+        const relativeY = Math.max(0, Math.min(1, (y - rect.top) / rect.height));
+
+        // Map to urgency (1-5): Left = High (5), Right = Low (1)
+        // We divide the width into 5 zones, but we have 2 columns (urgent vs not urgent)
+        // Left half (0-0.5) maps to urgent 3-5, right half (0.5-1.0) maps to urgent 1-3
+        let urgent;
+        if (relativeX < 0.5) {
+          // Left column: urgent 3-5 (more urgent)
+          const posInColumn = relativeX * 2; // normalize to 0-1 within left column
+          urgent = Math.max(3, Math.min(5, Math.round(5 - posInColumn * 2)));
+        } else {
+          // Right column: urgent 1-3 (less urgent)
+          const posInColumn = (relativeX - 0.5) * 2; // normalize to 0-1 within right column
+          urgent = Math.max(1, Math.min(3, Math.round(3 - posInColumn * 2)));
+        }
+
+        // Map to importance (1-5): Top = High (5), Bottom = Low (1)
+        // We divide the height into 5 zones across 2 rows
+        // Top row (0-0.5) maps to important 3-5, bottom row (0.5-1.0) maps to important 1-3
+        let important;
+        if (relativeY < 0.5) {
+          // Top row: important 3-5 (more important)
+          const posInRow = relativeY * 2; // normalize to 0-1 within top row
+          important = Math.max(3, Math.min(5, Math.round(5 - posInRow * 2)));
+        } else {
+          // Bottom row: important 1-3 (less important)
+          const posInRow = (relativeY - 0.5) * 2; // normalize to 0-1 within bottom row
+          important = Math.max(1, Math.min(3, Math.round(3 - posInRow * 2)));
+        }
+
         await updateTask(active.id, {
-          urgent: values.urgent,
-          important: values.important,
+          urgent,
+          important,
         });
       }
     }
@@ -160,6 +216,7 @@ function TaskMatrix({ onEditTask }) {
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
@@ -204,6 +261,7 @@ function TaskMatrix({ onEditTask }) {
           </div>
 
           {/* Matrix body */}
+          <DroppableMatrix matrixRef={matrixRef}>
           <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[500px]">
             {/* Left axis labels */}
             <div className="row-span-2 flex flex-col">
@@ -277,6 +335,7 @@ function TaskMatrix({ onEditTask }) {
               ))}
             </DroppableQuadrant>
           </div>
+          </DroppableMatrix>
         </div>
 
         {/* Legend */}
@@ -336,14 +395,86 @@ function TaskMatrix({ onEditTask }) {
   );
 }
 
-// Droppable Quadrant Component
-function DroppableQuadrant({ id, quadrant, children }) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+// Droppable Matrix Component - makes entire matrix droppable
+function DroppableMatrix({ matrixRef, children }) {
+  const { setNodeRef, isOver } = useDroppable({ id: 'matrix' });
 
   return (
     <div
-      ref={setNodeRef}
-      className={`quadrant ${quadrant.class} ${isOver ? 'ring-2 ring-accent-blue ring-inset' : ''}`}
+      ref={(node) => {
+        setNodeRef(node);
+        if (matrixRef) {
+          matrixRef.current = node;
+        }
+      }}
+      className="relative"
+      style={{ position: 'relative' }}
+    >
+      {/* Visual grid overlay for 5x5 levels */}
+      {/* Position grid only over quadrant area (excluding 40px label column) */}
+      <div
+        className="absolute top-0 bottom-0 pointer-events-none"
+        style={{
+          left: '40px', // Account for label column
+          right: 0,
+          zIndex: 1
+        }}
+      >
+        {/* Vertical lines - 3 lines dividing each column into 3 sub-zones (for levels 3-5 and 1-3) */}
+        {/* Left column (urgent): divide into 3 zones for levels 5, 4, 3 */}
+        {[1/6, 2/6, 3/6].map((ratio, i) => (
+          <div
+            key={`v-left-${i}`}
+            className="absolute top-0 bottom-0 border-l border-dark-border opacity-20"
+            style={{ left: `${ratio * 100}%` }}
+          />
+        ))}
+        {/* Right column (not urgent): divide into 3 zones for levels 3, 2, 1 */}
+        {[4/6, 5/6].map((ratio, i) => (
+          <div
+            key={`v-right-${i}`}
+            className="absolute top-0 bottom-0 border-l border-dark-border opacity-20"
+            style={{ left: `${ratio * 100}%` }}
+          />
+        ))}
+        {/* Horizontal lines - 3 lines dividing each row into 3 sub-zones */}
+        {/* Top row (important): divide into 3 zones for levels 5, 4, 3 */}
+        {[1/6, 2/6, 3/6].map((ratio, i) => (
+          <div
+            key={`h-top-${i}`}
+            className="absolute left-0 right-0 border-t border-dark-border opacity-20"
+            style={{ top: `${ratio * 100}%` }}
+          />
+        ))}
+        {/* Bottom row (not important): divide into 3 zones for levels 3, 2, 1 */}
+        {[4/6, 5/6].map((ratio, i) => (
+          <div
+            key={`h-bottom-${i}`}
+            className="absolute left-0 right-0 border-t border-dark-border opacity-20"
+            style={{ top: `${ratio * 100}%` }}
+          />
+        ))}
+        {/* Main dividing lines (stronger opacity) */}
+        <div
+          className="absolute top-0 bottom-0 border-l border-dark-border opacity-40"
+          style={{ left: '50%' }} // Divides urgent vs not urgent
+        />
+        <div
+          className="absolute left-0 right-0 border-t border-dark-border opacity-40"
+          style={{ top: '50%' }} // Divides important vs not important
+        />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// Droppable Quadrant Component
+function DroppableQuadrant({ id, quadrant, children }) {
+  // No longer using useDroppable here since the entire matrix is droppable
+  return (
+    <div
+      className={`quadrant ${quadrant.class}`}
       style={{ transition: 'box-shadow 0.2s ease' }}
     >
       <span className="quadrant-label">{quadrant.title}</span>
