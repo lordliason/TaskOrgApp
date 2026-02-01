@@ -378,6 +378,7 @@ function DailyPlanner({ onEditTask }) {
                   task={task}
                   memberColor="#6b6b75"
                   onEdit={() => onEditTask(task)}
+                  onComplete={() => completeTask(task.id, profile?.id, profile?.organization_id)}
                 />
               ))}
           </div>
