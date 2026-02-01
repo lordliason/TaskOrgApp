@@ -24,7 +24,8 @@ describe('Login', () => {
         <Login />
       </MemoryRouter>
     );
-    expect(screen.getByText('Welcome back')).toBeInTheDocument();
+    expect(screen.getByText('Task Matrix')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to your account to continue')).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
