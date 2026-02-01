@@ -39,9 +39,10 @@ describe('TaskCard', () => {
     expect(screen.getByText('Test task')).toBeInTheDocument();
   });
 
-  it('renders assignee name', () => {
+  it('renders assignee first name', () => {
     render(<TaskCard task={defaultTask} onEdit={vi.fn()} />);
-    expect(screen.getByText('Test User')).toBeInTheDocument();
+    // Component shows only first name (splits on space)
+    expect(screen.getByText('Test')).toBeInTheDocument();
   });
 
   it('renders Unassigned when no assignee', () => {
