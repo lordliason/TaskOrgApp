@@ -6,6 +6,7 @@ import TaskMatrix from './TaskMatrix';
 import DailyPlanner from './DailyPlanner';
 import TaskForm from './TaskForm';
 import Leaderboard from '../gamification/Leaderboard';
+import ResetDayButton from './ResetDayButton';
 import Modal from '../../components/Modal';
 import { Plus, LayoutGrid, Calendar, Trophy, List } from 'lucide-react';
 
@@ -108,6 +109,9 @@ function Dashboard() {
             ))}
           </div>
         )}
+
+        {/* Reset Day Button */}
+        <ResetDayButton />
 
         {/* New Task Button */}
         <button

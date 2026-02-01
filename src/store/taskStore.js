@@ -252,6 +252,45 @@ export const useTaskStore = create((set, get) => ({
     }
   },
 
+  // Delete all tasks for an organization
+  deleteAllTasks: async (organizationId) => {
+    try {
+      set({ error: null });
+
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('organization_id', organizationId);
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      set({ error: error.message });
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Delete only completed tasks for an organization
+  deleteCompletedTasks: async (organizationId) => {
+    try {
+      set({ error: null });
+
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('organization_id', organizationId)
+        .eq('status', 'done');
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      set({ error: error.message });
+      return { success: false, error: error.message };
+    }
+  },
+
   // Get tasks filtered by quadrant
   getTasksByQuadrant: (quadrant) => {
     const tasks = get().tasks.filter((t) => t.status !== 'done');
