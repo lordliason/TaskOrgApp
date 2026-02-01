@@ -1,13 +1,20 @@
+import { useState } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
 import { EFFORT_SIZES } from '../../lib/constants';
-import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock } from 'lucide-react';
+import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock, Sparkles, Wand2 } from 'lucide-react';
+import Modal from '../../components/Modal';
+import AIPlannerModal from './AIPlannerModal';
 
 function DailyPlanner({ onEditTask }) {
-  const { tasks, isLoading, completeTask } = useTaskStore();
+  const { tasks, isLoading, completeTask, updateTask } = useTaskStore();
   const { members, scores } = useOrganizationStore();
   const { profile } = useAuthStore();
+
+  const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
+  const [isPlanning, setIsPlanning] = useState(false);
+  const [planResult, setPlanResult] = useState(null);
 
   // Get today's date
   const today = new Date();
@@ -36,9 +43,8 @@ function DailyPlanner({ onEditTask }) {
 
   // Group tasks by member
   const getTasksByMember = (memberId) => {
-    return todaysTasks
-      .filter((t) => t.assignee_id === memberId)
-      .sort((a, b) => b.important - a.important);
+    const memberTasks = todaysTasks.filter((t) => t.assignee_id === memberId);
+    return sortTasksByPlan(memberTasks);
   };
 
   const getCompletedByMember = (memberId) => {
@@ -65,6 +71,105 @@ function DailyPlanner({ onEditTask }) {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
+  // Basic AI Planning - quick automatic planning
+  const handleBasicAIPlan = async () => {
+    if (todaysTasks.length === 0) {
+      alert('No tasks to plan for today');
+      return;
+    }
+
+    setIsPlanning(true);
+    setPlanResult(null);
+
+    try {
+      const response = await fetch('/api/plan-day', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: todaysTasks }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate plan');
+      }
+
+      const result = await response.json();
+      setPlanResult(result);
+
+      // Show success message
+      alert(`✨ AI Plan Created!\n\n${result.summary}`);
+    } catch (error) {
+      console.error('AI Planning error:', error);
+      alert('Failed to create AI plan. Please try again.');
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
+  // Advanced AI Planning - with user context
+  const handleAdvancedAIPlan = async (userContext) => {
+    if (todaysTasks.length === 0) {
+      alert('No tasks to plan for today');
+      return;
+    }
+
+    setIsPlanning(true);
+    setPlanResult(null);
+
+    try {
+      const response = await fetch('/api/plan-day-advanced', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tasks: todaysTasks,
+          userContext,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate personalized plan');
+      }
+
+      const result = await response.json();
+      setPlanResult(result);
+
+      // Show success message
+      alert(`✨ Personalized Plan Created!\n\n${result.summary}\n\n${result.encouragement || ''}`);
+    } catch (error) {
+      console.error('Advanced AI Planning error:', error);
+      alert('Failed to create personalized plan. Please try again.');
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
+  // Get task order based on AI plan
+  const getTaskOrder = (taskId) => {
+    if (!planResult || !planResult.scheduledTasks) return null;
+    const scheduledTask = planResult.scheduledTasks.find((st) => st.id === taskId);
+    return scheduledTask ? scheduledTask.orderIndex : null;
+  };
+
+  // Sort tasks by AI plan if available
+  const sortTasksByPlan = (taskList) => {
+    if (!planResult || !planResult.scheduledTasks) {
+      return taskList;
+    }
+
+    return [...taskList].sort((a, b) => {
+      const orderA = getTaskOrder(a.id);
+      const orderB = getTaskOrder(b.id);
+
+      if (orderA !== null && orderB !== null) {
+        return orderA - orderB;
+      }
+      if (orderA !== null) return -1;
+      if (orderB !== null) return 1;
+
+      // Fallback to importance
+      return b.important - a.important;
+    });
+  };
+
   // Time blocks
   const timeBlocks = [
     { id: 'morning', label: 'Morning', icon: Sun, color: '#fcd34d' },
@@ -83,41 +188,97 @@ function DailyPlanner({ onEditTask }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="plan-header flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="plan-header-left">
-          <h1 className="plan-title font-serif text-2xl text-text-primary flex items-center gap-3">
-            <Calendar className="h-6 w-6 text-accent-blue" />
-            Today&apos;s Plan
-          </h1>
-          <p className="plan-date text-text-secondary">
-            {today.toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
+      <div className="plan-header flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="plan-header-left">
+            <h1 className="plan-title font-serif text-2xl text-text-primary flex items-center gap-3">
+              <Calendar className="h-6 w-6 text-accent-blue" />
+              Today&apos;s Plan
+            </h1>
+            <p className="plan-date text-text-secondary">
+              {today.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+          </div>
+
+          {/* Stats */}
+          <div className="flex gap-3">
+            <div className="bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-center">
+              <div className="text-2xl font-bold text-accent-blue">
+                {todaysTasks.length}
+              </div>
+              <div className="text-xs text-text-muted uppercase tracking-wider">
+                To Do
+              </div>
+            </div>
+            <div className="bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-center">
+              <div className="text-2xl font-bold text-emerald-400">
+                {completedToday.length}
+              </div>
+              <div className="text-xs text-text-muted uppercase tracking-wider">
+                Done
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className="flex gap-3">
-          <div className="bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-center">
-            <div className="text-2xl font-bold text-accent-blue">
-              {todaysTasks.length}
-            </div>
-            <div className="text-xs text-text-muted uppercase tracking-wider">
-              To Do
+        {/* AI Planning Buttons */}
+        {todaysTasks.length > 0 && (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={handleBasicAIPlan}
+              disabled={isPlanning}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPlanning ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Planning...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-5 w-5" />
+                  <span className="font-medium">AI Plan My Day</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setIsAdvancedModalOpen(true)}
+              disabled={isPlanning}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Wand2 className="h-5 w-5" />
+              <span className="font-medium">Personalized Plan</span>
+            </button>
+          </div>
+        )}
+
+        {/* AI Plan Summary */}
+        {planResult && (
+          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <Sparkles className="h-5 w-5 text-accent-blue flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-text-primary mb-1">AI Plan Active</h3>
+                <p className="text-sm text-text-secondary">{planResult.summary}</p>
+                {planResult.encouragement && (
+                  <p className="text-sm text-accent-blue mt-2 italic">{planResult.encouragement}</p>
+                )}
+              </div>
+              <button
+                onClick={() => setPlanResult(null)}
+                className="text-text-muted hover:text-text-primary transition-colors"
+                title="Clear plan"
+              >
+                ✕
+              </button>
             </div>
           </div>
-          <div className="bg-dark-card border border-dark-border rounded-xl px-4 py-3 text-center">
-            <div className="text-2xl font-bold text-emerald-400">
-              {completedToday.length}
-            </div>
-            <div className="text-xs text-text-muted uppercase tracking-wider">
-              Done
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Member Columns */}
@@ -222,6 +383,19 @@ function DailyPlanner({ onEditTask }) {
           </div>
         </div>
       )}
+
+      {/* Advanced AI Planner Modal */}
+      <Modal
+        isOpen={isAdvancedModalOpen}
+        onClose={() => setIsAdvancedModalOpen(false)}
+        title="Personalized Day Planner"
+        size="lg"
+      >
+        <AIPlannerModal
+          onClose={() => setIsAdvancedModalOpen(false)}
+          onPlan={handleAdvancedAIPlan}
+        />
+      </Modal>
     </div>
   );
 }

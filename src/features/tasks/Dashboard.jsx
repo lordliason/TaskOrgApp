@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import TaskMatrix from './TaskMatrix';
+import TaskList from './TaskList';
 import DailyPlanner from './DailyPlanner';
 import TaskForm from './TaskForm';
 import Leaderboard from '../gamification/Leaderboard';
@@ -49,6 +50,7 @@ function Dashboard() {
 
   const views = [
     { id: 'matrix', label: 'Matrix', icon: LayoutGrid },
+    { id: 'task-list', label: 'Task List', icon: List },
     { id: 'planner', label: "Today's Plan", icon: Calendar },
     { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   ];
@@ -127,11 +129,15 @@ function Dashboard() {
       {activeView === 'matrix' && (
         <TaskMatrix onEditTask={handleEditTask} />
       )}
-      
+
+      {activeView === 'task-list' && (
+        <TaskList onEditTask={handleEditTask} />
+      )}
+
       {activeView === 'planner' && (
         <DailyPlanner onEditTask={handleEditTask} />
       )}
-      
+
       {activeView === 'leaderboard' && (
         <Leaderboard />
       )}
