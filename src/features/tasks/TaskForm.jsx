@@ -582,37 +582,37 @@ function TaskForm({ task, onClose }) {
       </div>
 
       {/* Actions */}
-      <div className="flex justify-between gap-3 pt-4 border-t border-dark-border">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4 border-t border-dark-border">
         {task && (
           <button
             type="button"
             onClick={handleDelete}
-            className="btn btn-secondary text-red-400 hover:text-red-300 hover:border-red-400/30"
+            className="btn btn-secondary text-red-400 hover:text-red-300 hover:border-red-400/30 flex items-center justify-center gap-2"
             disabled={isSubmitting}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            <Trash2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Delete</span>
           </button>
         )}
-        <div className="flex gap-3 ml-auto">
+        <div className="flex gap-3 sm:ml-auto">
           <button
             type="button"
             onClick={onClose}
-            className="btn btn-secondary"
+            className="btn btn-secondary flex-1 sm:flex-none"
             disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="btn btn-primary"
+            className="btn btn-primary flex-1 sm:flex-none flex items-center justify-center gap-2"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <div className="flex items-center gap-2">
+              <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Saving...
-              </div>
+                <span>Saving...</span>
+              </>
             ) : task ? (
               'Update Task'
             ) : (
