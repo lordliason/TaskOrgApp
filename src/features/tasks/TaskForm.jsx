@@ -3,11 +3,11 @@ import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS, ALL_TASK_ICONS, RECURRENCE_PRESETS } from '../../lib/constants';
-import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X } from 'lucide-react';
+import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2 } from 'lucide-react';
 
 function TaskForm({ task, onClose }) {
   const { profile, organization } = useAuthStore();
-  const { createTask, updateTask } = useTaskStore();
+  const { createTask, updateTask, deleteTask } = useTaskStore();
   const { members } = useOrganizationStore();
 
   const [formData, setFormData] = useState({
@@ -154,6 +154,13 @@ function TaskForm({ task, onClose }) {
       location_lat: null,
       location_lng: null,
     }));
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      await deleteTask(task.id);
+      onClose();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -517,31 +524,44 @@ function TaskForm({ task, onClose }) {
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-dark-border">
-        <button
-          type="button"
-          onClick={onClose}
-          className="btn btn-secondary"
-          disabled={isSubmitting}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Saving...
-            </div>
-          ) : task ? (
-            'Update Task'
-          ) : (
-            'Add Task'
-          )}
-        </button>
+      <div className="flex justify-between gap-3 pt-4 border-t border-dark-border">
+        {task && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="btn btn-secondary text-red-400 hover:text-red-300 hover:border-red-400/30"
+            disabled={isSubmitting}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </button>
+        )}
+        <div className="flex gap-3 ml-auto">
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-secondary"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Saving...
+              </div>
+            ) : task ? (
+              'Update Task'
+            ) : (
+              'Add Task'
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );
