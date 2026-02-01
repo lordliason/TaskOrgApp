@@ -16,6 +16,20 @@ registerSW({
   },
 });
 
+// Listen for messages from the service worker (e.g., notification clicks)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'NOTIFICATION_CLICK') {
+      console.log('Notification clicked:', event.data);
+      // Handle navigation based on notification type
+      // The app can use this to navigate to a specific task or view
+      window.dispatchEvent(
+        new CustomEvent('notification-click', { detail: event.data })
+      );
+    }
+  });
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
