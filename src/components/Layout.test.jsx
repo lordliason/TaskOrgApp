@@ -32,8 +32,9 @@ describe('Layout', () => {
         <Layout />
       </MemoryRouter>
     );
-    expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
+    // Settings link has title="Settings"
+    expect(screen.getByTitle('Settings')).toBeInTheDocument();
+    expect(screen.getByTitle('Logout')).toBeInTheDocument();
   });
 
   it('renders fallback app name when organization is null', () => {
@@ -47,6 +48,6 @@ describe('Layout', () => {
         <Layout />
       </MemoryRouter>
     );
-    expect(screen.getByText('TaskOrgApp')).toBeInTheDocument();
+    expect(screen.getByText('Task Matrix')).toBeInTheDocument();
   });
 });
