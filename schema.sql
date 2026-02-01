@@ -225,17 +225,16 @@ BEGIN
   FROM profiles
   WHERE organization_id = NEW.organization_id;
 
-  -- Allow if this is the first member (admin creating org)
-  -- or if there's only 1 existing member (adding second member)
-  IF member_count >= 2 THEN
-    RAISE EXCEPTION 'Organization can have maximum 2 members';
+  -- Allow if under the member limit
+  IF member_count >= 3 THEN
+    RAISE EXCEPTION 'Organization can have maximum 3 members';
   END IF;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to enforce 2-member limit
+-- Create trigger to enforce 3-member limit
 CREATE TRIGGER enforce_member_limit
   BEFORE INSERT ON profiles
   FOR EACH ROW

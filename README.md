@@ -1,6 +1,6 @@
 # TaskOrgApp
 
-A real-time shared task organizer using the Eisenhower Matrix. Built for small teams (up to 2 members) to manage and prioritize tasks together.
+A real-time shared task organizer using the Eisenhower Matrix. Built for small teams (up to 3 members) to manage and prioritize tasks together.
 
 ## Features
 
@@ -109,7 +109,7 @@ src/
 
 ### Key Constraints
 
-- Maximum 2 members per organization
+- Maximum 3 members per organization
 - Tasks belong to an organization
 - Scores track daily completion points
 

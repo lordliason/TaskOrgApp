@@ -29,15 +29,15 @@ export const useOrganizationStore = create((set, get) => ({
     }
   },
 
-  // Add a new member (max 2 users per organization)
+  // Add a new member (max 3 users per organization)
   addMember: async ({ email, password, displayName, phone, color, organizationId }) => {
     try {
       set({ isLoading: true, error: null });
 
-      // Check if organization already has 2 members
+      // Check if organization already has 3 members
       const { members } = get();
-      if (members.length >= 2) {
-        throw new Error('Organization already has the maximum of 2 members');
+      if (members.length >= 3) {
+        throw new Error('Organization already has the maximum of 3 members');
       }
 
       // Create auth user

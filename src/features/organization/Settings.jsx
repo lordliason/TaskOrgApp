@@ -30,7 +30,7 @@ function Settings() {
   }, [organization?.id]);
 
   const isAdmin = profile?.role === 'admin';
-  const canAddMember = isAdmin && members.length < 2;
+  const canAddMember = isAdmin && members.length < 3;
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -53,7 +53,7 @@ function Settings() {
           </div>
           <div>
             <label className="text-sm text-text-muted">Members</label>
-            <p className="font-medium text-text-primary">{members.length} / 2</p>
+            <p className="font-medium text-text-primary">{members.length} / 3</p>
           </div>
         </div>
       </div>
