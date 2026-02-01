@@ -184,12 +184,12 @@ function TaskForm({ task, onClose }) {
 
       setFormData((prev) => ({
         ...prev,
-        effort: suggestions.effort || prev.effort,
-        urgent: suggestions.urgent || prev.urgent,
-        important: suggestions.important || prev.important,
-        icon: suggestions.icon || prev.icon,
-        first_step: suggestions.first_step || prev.first_step,
-        completion_criteria: suggestions.completion_criteria || prev.completion_criteria,
+        effort: suggestions.effort ?? prev.effort,
+        urgent: Number(suggestions.urgent) || prev.urgent,
+        important: Number(suggestions.important) || prev.important,
+        icon: suggestions.icon ?? prev.icon,
+        first_step: suggestions.first_step ?? prev.first_step,
+        completion_criteria: suggestions.completion_criteria ?? prev.completion_criteria,
       }));
     } catch (err) {
       setError(err.message || 'Failed to autofill task');
@@ -221,8 +221,8 @@ function TaskForm({ task, onClose }) {
         ...formData,
         title: formData.title.trim(),
         organization_id: organization.id,
-        urgent: parseInt(formData.urgent),
-        important: parseInt(formData.important),
+        urgent: Number(formData.urgent) || 3,
+        important: Number(formData.important) || 3,
         due_date: formData.due_date || null,
         assignee_id: formData.assignee_id || null,
         icon: formData.icon || null,

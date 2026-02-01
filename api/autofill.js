@@ -91,10 +91,12 @@ Respond ONLY with a valid JSON object containing these fields. Do not include an
 
     // Validate and sanitize the response
     const validEfforts = ['xs', 's', 'm', 'l', 'xl'];
+    const urgentValue = Number(taskDetails.urgent);
+    const importantValue = Number(taskDetails.important);
     const validatedDetails = {
       effort: validEfforts.includes(taskDetails.effort) ? taskDetails.effort : 'm',
-      urgent: Math.min(5, Math.max(1, parseInt(taskDetails.urgent) || 3)),
-      important: Math.min(5, Math.max(1, parseInt(taskDetails.important) || 3)),
+      urgent: Number.isFinite(urgentValue) ? Math.min(5, Math.max(1, Math.round(urgentValue))) : 3,
+      important: Number.isFinite(importantValue) ? Math.min(5, Math.max(1, Math.round(importantValue))) : 3,
       icon: typeof taskDetails.icon === 'string' ? taskDetails.icon : null,
       first_step: typeof taskDetails.first_step === 'string' ? taskDetails.first_step.slice(0, 500) : '',
       completion_criteria: typeof taskDetails.completion_criteria === 'string' ? taskDetails.completion_criteria.slice(0, 500) : '',
