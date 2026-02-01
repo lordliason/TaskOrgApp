@@ -2,11 +2,13 @@ import { useState, useRef } from 'react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
+import { useAuthStore } from '../../store/authStore';
 import { EFFORT_SIZES } from '../../lib/constants';
 
 function TaskMatrix({ onEditTask }) {
   const { tasks, isLoading, completeTask, uncompleteTask, updateTask } = useTaskStore();
   const { members } = useOrganizationStore();
+  const { profile } = useAuthStore();
   const [tooltip, setTooltip] = useState({ visible: false, task: null, x: 0, y: 0 });
   const [filter, setFilter] = useState('all'); // 'all' or member id
   const [activeTask, setActiveTask] = useState(null);
@@ -160,7 +162,7 @@ function TaskMatrix({ onEditTask }) {
     if (task.status === 'done') {
       await uncompleteTask(task.id);
     } else {
-      await completeTask(task.id);
+      await completeTask(task.id, profile?.id, profile?.organization_id);
     }
   };
 
