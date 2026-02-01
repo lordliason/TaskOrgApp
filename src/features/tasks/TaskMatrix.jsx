@@ -98,10 +98,13 @@ function TaskMatrix({ onEditTask }) {
 
   // Calculate task position as percentage based on urgent/important (1-5 scale)
   const getTaskPosition = (task) => {
-    // urgent 5 = left (0%), urgent 1 = right (100%)
-    // important 5 = top (0%), important 1 = bottom (100%)
-    const xPercent = ((5 - task.urgent) / 4) * 100;
-    const yPercent = ((5 - task.important) / 4) * 100;
+    // urgent 5 = left, urgent 1 = right
+    // important 5 = top, important 1 = bottom
+    // Add margins: map to 8%-92% instead of 0%-100% to prevent tasks from touching borders
+    const margin = 8; // 8% margin on each side
+    const range = 100 - (2 * margin); // 84% usable range
+    const xPercent = margin + ((5 - task.urgent) / 4) * range;
+    const yPercent = margin + ((5 - task.important) / 4) * range;
     return { x: xPercent, y: yPercent };
   };
 
