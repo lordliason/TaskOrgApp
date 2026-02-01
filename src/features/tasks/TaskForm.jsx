@@ -3,7 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS, ALL_TASK_ICONS, RECURRENCE_PRESETS } from '../../lib/constants';
-import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2 } from 'lucide-react';
+import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2, Sparkles } from 'lucide-react';
 
 function TaskForm({ task, onClose }) {
   const { profile, organization } = useAuthStore();
@@ -31,6 +31,7 @@ function TaskForm({ task, onClose }) {
   const [showRecurrence, setShowRecurrence] = useState(false);
   const [recurrencePreset, setRecurrencePreset] = useState('never');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isAutofilling, setIsAutofilling] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -156,6 +157,47 @@ function TaskForm({ task, onClose }) {
     }));
   };
 
+  const handleAutofill = async () => {
+    if (!formData.title.trim()) {
+      setError('Enter a task name first to use AI autofill');
+      return;
+    }
+
+    setIsAutofilling(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/autofill', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: formData.title.trim() }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to autofill task');
+      }
+
+      const suggestions = await response.json();
+
+      setFormData((prev) => ({
+        ...prev,
+        effort: suggestions.effort || prev.effort,
+        urgent: suggestions.urgent || prev.urgent,
+        important: suggestions.important || prev.important,
+        icon: suggestions.icon || prev.icon,
+        first_step: suggestions.first_step || prev.first_step,
+        completion_criteria: suggestions.completion_criteria || prev.completion_criteria,
+      }));
+    } catch (err) {
+      setError(err.message || 'Failed to autofill task');
+    } finally {
+      setIsAutofilling(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       await deleteTask(task.id);
@@ -224,17 +266,33 @@ function TaskForm({ task, onClose }) {
         <label htmlFor="title" className="label">
           Task Name
         </label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          required
-          value={formData.title}
-          onChange={handleChange}
-          className="input"
-          placeholder="What needs to be done?"
-          autoFocus
-        />
+        <div className="flex gap-2">
+          <input
+            id="title"
+            name="title"
+            type="text"
+            required
+            value={formData.title}
+            onChange={handleChange}
+            className="input flex-1"
+            placeholder="What needs to be done?"
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={handleAutofill}
+            disabled={isAutofilling || !formData.title.trim()}
+            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-lg text-sm text-purple-300 hover:from-purple-500/30 hover:to-blue-500/30 hover:border-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            title="AI Autofill - Fill in task details based on the name"
+          >
+            {isAutofilling ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-400"></div>
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">AI Fill</span>
+          </button>
+        </div>
       </div>
 
       {/* Icon Selector */}
@@ -264,6 +322,24 @@ function TaskForm({ task, onClose }) {
               }`}
             >
               {icon}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Effort Size */}
+      <div className="form-section">
+        <label className="label">Effort</label>
+        <div className="flex gap-1">
+          {Object.entries(EFFORT_SIZES).map(([key, value]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, effort: key }))}
+              className={`size-btn ${formData.effort === key ? 'active' : ''}`}
+              title={value.description}
+            >
+              {value.label}
             </button>
           ))}
         </div>
