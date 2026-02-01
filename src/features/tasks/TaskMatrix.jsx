@@ -22,14 +22,6 @@ function TaskMatrix({ onEditTask }) {
     })
   );
 
-  // Quadrant mappings for drag & drop
-  const quadrantValues = {
-    'do-first': { urgent: 5, important: 5 },
-    'schedule': { urgent: 1, important: 5 },
-    'delegate': { urgent: 5, important: 1 },
-    'eliminate': { urgent: 1, important: 1 },
-  };
-
   const handleDragStart = (event) => {
     const task = tasks.find((t) => t.id === event.active.id);
     setActiveTask(task);
@@ -50,54 +42,43 @@ function TaskMatrix({ onEditTask }) {
   };
 
   const handleDragEnd = async (event) => {
-    const { active, over } = event;
+    const { active } = event;
     setActiveTask(null);
     setDragPosition(null);
 
     // Calculate position-based urgency and importance
-    if (over && matrixRef.current) {
+    // Don't require 'over' - calculate from raw coordinates
+    if (matrixRef.current) {
       const rect = matrixRef.current.getBoundingClientRect();
       const x = event.activatorEvent?.clientX + (event.delta?.x || 0);
       const y = event.activatorEvent?.clientY + (event.delta?.y || 0);
 
       if (x && y) {
         // The matrix has a 40px left column for labels, so we need to account for that
-        // The actual quadrant area is divided into 2 columns
         const labelWidth = 40; // pixels
         const quadrantAreaWidth = rect.width - labelWidth;
         const quadrantAreaLeft = rect.left + labelWidth;
+
+        // Check if drop is within matrix bounds
+        const isWithinX = x >= quadrantAreaLeft && x <= rect.right;
+        const isWithinY = y >= rect.top && y <= rect.bottom;
+
+        if (!isWithinX || !isWithinY) {
+          // Dropped outside matrix, don't update
+          return;
+        }
 
         // Calculate relative position within the quadrant area (0 to 1)
         const relativeX = Math.max(0, Math.min(1, (x - quadrantAreaLeft) / quadrantAreaWidth));
         const relativeY = Math.max(0, Math.min(1, (y - rect.top) / rect.height));
 
         // Map to urgency (1-5): Left = High (5), Right = Low (1)
-        // We divide the width into 5 zones, but we have 2 columns (urgent vs not urgent)
-        // Left half (0-0.5) maps to urgent 3-5, right half (0.5-1.0) maps to urgent 1-3
-        let urgent;
-        if (relativeX < 0.5) {
-          // Left column: urgent 3-5 (more urgent)
-          const posInColumn = relativeX * 2; // normalize to 0-1 within left column
-          urgent = Math.max(3, Math.min(5, Math.round(5 - posInColumn * 2)));
-        } else {
-          // Right column: urgent 1-3 (less urgent)
-          const posInColumn = (relativeX - 0.5) * 2; // normalize to 0-1 within right column
-          urgent = Math.max(1, Math.min(3, Math.round(3 - posInColumn * 2)));
-        }
+        // Map across entire width: 0 = urgent 5, 1 = urgent 1
+        const urgent = Math.max(1, Math.min(5, Math.round(5 - relativeX * 4)));
 
         // Map to importance (1-5): Top = High (5), Bottom = Low (1)
-        // We divide the height into 5 zones across 2 rows
-        // Top row (0-0.5) maps to important 3-5, bottom row (0.5-1.0) maps to important 1-3
-        let important;
-        if (relativeY < 0.5) {
-          // Top row: important 3-5 (more important)
-          const posInRow = relativeY * 2; // normalize to 0-1 within top row
-          important = Math.max(3, Math.min(5, Math.round(5 - posInRow * 2)));
-        } else {
-          // Bottom row: important 1-3 (less important)
-          const posInRow = (relativeY - 0.5) * 2; // normalize to 0-1 within bottom row
-          important = Math.max(1, Math.min(3, Math.round(3 - posInRow * 2)));
-        }
+        // Map across entire height: 0 = important 5, 1 = important 1
+        const important = Math.max(1, Math.min(5, Math.round(5 - relativeY * 4)));
 
         await updateTask(active.id, {
           urgent,
@@ -115,44 +96,32 @@ function TaskMatrix({ onEditTask }) {
     ? activeTasks 
     : activeTasks.filter((t) => t.assignee_id === filter);
 
-  // Categorize tasks into quadrants and sort by urgency and importance
-  const getQuadrantTasks = (urgentHigh, importantHigh) => {
-    return filteredTasks
-      .filter((t) => {
-        const isUrgentHigh = t.urgent >= 3;
-        const isImportantHigh = t.important >= 3;
-        return isUrgentHigh === urgentHigh && isImportantHigh === importantHigh;
-      })
-      .sort((a, b) => {
-        // Sort by urgency first (descending - higher urgency first)
-        if (b.urgent !== a.urgent) {
-          return b.urgent - a.urgent;
-        }
-        // Then by importance (descending - higher importance first)
-        return b.important - a.important;
-      });
+  // Calculate task position as percentage based on urgent/important (1-5 scale)
+  const getTaskPosition = (task) => {
+    // urgent 5 = left (0%), urgent 1 = right (100%)
+    // important 5 = top (0%), important 1 = bottom (100%)
+    const xPercent = ((5 - task.urgent) / 4) * 100;
+    const yPercent = ((5 - task.important) / 4) * 100;
+    return { x: xPercent, y: yPercent };
   };
 
+  // Quadrant definitions for labels only
   const quadrants = {
     'do-first': {
       title: 'Do First',
       class: 'quadrant-do',
-      tasks: getQuadrantTasks(true, true),
     },
     'schedule': {
       title: 'Schedule',
       class: 'quadrant-schedule',
-      tasks: getQuadrantTasks(false, true),
     },
     'delegate': {
       title: 'Delegate',
       class: 'quadrant-delegate',
-      tasks: getQuadrantTasks(true, false),
     },
     'eliminate': {
       title: 'Eliminate',
       class: 'quadrant-eliminate',
-      tasks: getQuadrantTasks(false, false),
     },
   };
 
@@ -278,51 +247,22 @@ function TaskMatrix({ onEditTask }) {
             </div>
 
             {/* Quadrants - Row 1 */}
-            <DroppableQuadrant id="do-first" quadrant={quadrants['do-first']}>
-              {quadrants['do-first'].tasks.map((task) => (
-                <DraggableTaskDot
-                  key={task.id}
-                  task={task}
-                  sizeClass={sizeClasses[task.effort] || 'm'}
-                  color={getAssigneeColor(task.assignee_id)}
-                  onHover={handleDotHover}
-                  onLeave={handleDotLeave}
-                  onClick={handleDotClick}
-                />
-              ))}
-            </DroppableQuadrant>
-
-            <DroppableQuadrant id="schedule" quadrant={quadrants['schedule']}>
-              {quadrants['schedule'].tasks.map((task) => (
-                <DraggableTaskDot
-                  key={task.id}
-                  task={task}
-                  sizeClass={sizeClasses[task.effort] || 'm'}
-                  color={getAssigneeColor(task.assignee_id)}
-                  onHover={handleDotHover}
-                  onLeave={handleDotLeave}
-                  onClick={handleDotClick}
-                />
-              ))}
-            </DroppableQuadrant>
+            <QuadrantBackground id="do-first" quadrant={quadrants['do-first']} />
+            <QuadrantBackground id="schedule" quadrant={quadrants['schedule']} />
 
             {/* Quadrants - Row 2 */}
-            <DroppableQuadrant id="delegate" quadrant={quadrants['delegate']}>
-              {quadrants['delegate'].tasks.map((task) => (
-                <DraggableTaskDot
-                  key={task.id}
-                  task={task}
-                  sizeClass={sizeClasses[task.effort] || 'm'}
-                  color={getAssigneeColor(task.assignee_id)}
-                  onHover={handleDotHover}
-                  onLeave={handleDotLeave}
-                  onClick={handleDotClick}
-                />
-              ))}
-            </DroppableQuadrant>
+            <QuadrantBackground id="delegate" quadrant={quadrants['delegate']} />
+            <QuadrantBackground id="eliminate" quadrant={quadrants['eliminate']} />
+          </div>
 
-            <DroppableQuadrant id="eliminate" quadrant={quadrants['eliminate']}>
-              {quadrants['eliminate'].tasks.map((task) => (
+          {/* Task dots overlay - positioned absolutely based on X,Y values */}
+          <div
+            className="absolute top-0 bottom-0 pointer-events-none"
+            style={{ left: '40px', right: 0 }}
+          >
+            {filteredTasks.map((task) => {
+              const pos = getTaskPosition(task);
+              return (
                 <DraggableTaskDot
                   key={task.id}
                   task={task}
@@ -331,9 +271,10 @@ function TaskMatrix({ onEditTask }) {
                   onHover={handleDotHover}
                   onLeave={handleDotLeave}
                   onClick={handleDotClick}
+                  position={pos}
                 />
-              ))}
-            </DroppableQuadrant>
+              );
+            })}
           </div>
           </DroppableMatrix>
         </div>
@@ -410,7 +351,7 @@ function DroppableMatrix({ matrixRef, children }) {
       className="relative"
       style={{ position: 'relative' }}
     >
-      {/* Visual grid overlay for 5x5 levels */}
+      {/* Visual grid overlay for 5 levels (1-5 scale) */}
       {/* Position grid only over quadrant area (excluding 40px label column) */}
       <div
         className="absolute top-0 bottom-0 pointer-events-none"
@@ -420,73 +361,42 @@ function DroppableMatrix({ matrixRef, children }) {
           zIndex: 1
         }}
       >
-        {/* Vertical lines - 3 lines dividing each column into 3 sub-zones (for levels 3-5 and 1-3) */}
-        {/* Left column (urgent): divide into 3 zones for levels 5, 4, 3 */}
-        {[1/6, 2/6, 3/6].map((ratio, i) => (
+        {/* Vertical lines at 25%, 50%, 75% - 50% is quadrant boundary (stronger) */}
+        {[25, 50, 75].map((pct) => (
           <div
-            key={`v-left-${i}`}
-            className="absolute top-0 bottom-0 border-l border-dark-border opacity-20"
-            style={{ left: `${ratio * 100}%` }}
+            key={`v-${pct}`}
+            className={`absolute top-0 bottom-0 border-l border-dark-border ${pct === 50 ? 'opacity-50' : 'opacity-20'}`}
+            style={{ left: `${pct}%` }}
           />
         ))}
-        {/* Right column (not urgent): divide into 3 zones for levels 3, 2, 1 */}
-        {[4/6, 5/6].map((ratio, i) => (
+        {/* Horizontal lines at 25%, 50%, 75% - 50% is quadrant boundary (stronger) */}
+        {[25, 50, 75].map((pct) => (
           <div
-            key={`v-right-${i}`}
-            className="absolute top-0 bottom-0 border-l border-dark-border opacity-20"
-            style={{ left: `${ratio * 100}%` }}
+            key={`h-${pct}`}
+            className={`absolute left-0 right-0 border-t border-dark-border ${pct === 50 ? 'opacity-50' : 'opacity-20'}`}
+            style={{ top: `${pct}%` }}
           />
         ))}
-        {/* Horizontal lines - 3 lines dividing each row into 3 sub-zones */}
-        {/* Top row (important): divide into 3 zones for levels 5, 4, 3 */}
-        {[1/6, 2/6, 3/6].map((ratio, i) => (
-          <div
-            key={`h-top-${i}`}
-            className="absolute left-0 right-0 border-t border-dark-border opacity-20"
-            style={{ top: `${ratio * 100}%` }}
-          />
-        ))}
-        {/* Bottom row (not important): divide into 3 zones for levels 3, 2, 1 */}
-        {[4/6, 5/6].map((ratio, i) => (
-          <div
-            key={`h-bottom-${i}`}
-            className="absolute left-0 right-0 border-t border-dark-border opacity-20"
-            style={{ top: `${ratio * 100}%` }}
-          />
-        ))}
-        {/* Main dividing lines (stronger opacity) */}
-        <div
-          className="absolute top-0 bottom-0 border-l border-dark-border opacity-40"
-          style={{ left: '50%' }} // Divides urgent vs not urgent
-        />
-        <div
-          className="absolute left-0 right-0 border-t border-dark-border opacity-40"
-          style={{ top: '50%' }} // Divides important vs not important
-        />
       </div>
       {children}
     </div>
   );
 }
 
-// Droppable Quadrant Component
-function DroppableQuadrant({ id, quadrant, children }) {
-  // No longer using useDroppable here since the entire matrix is droppable
+// Quadrant Background Component (just for visual background and label)
+function QuadrantBackground({ id, quadrant }) {
   return (
     <div
       className={`quadrant ${quadrant.class}`}
       style={{ transition: 'box-shadow 0.2s ease' }}
     >
       <span className="quadrant-label">{quadrant.title}</span>
-      <div className="flex flex-wrap gap-2 pt-8 content-start">
-        {children}
-      </div>
     </div>
   );
 }
 
 // Draggable Task Dot Component
-function DraggableTaskDot({ task, sizeClass, color, onHover, onLeave, onClick }) {
+function DraggableTaskDot({ task, sizeClass, color, onHover, onLeave, onClick, position }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
   });
@@ -500,10 +410,16 @@ function DraggableTaskDot({ task, sizeClass, color, onHover, onLeave, onClick })
       {...listeners}
       {...attributes}
       className={`task-dot ${sizeClass} ${isCompleted ? 'completed' : ''} ${isDragging ? 'opacity-50' : ''}`}
-      style={{ 
+      style={{
         backgroundColor: isCompleted ? undefined : color,
         cursor: isDragging ? 'grabbing' : 'grab',
         touchAction: 'none',
+        position: 'absolute',
+        left: `${position.x}%`,
+        top: `${position.y}%`,
+        transform: 'translate(-50%, -50%)',
+        pointerEvents: 'auto',
+        zIndex: isDragging ? 100 : 10,
       }}
       onMouseEnter={(e) => !isDragging && onHover(task, e)}
       onMouseLeave={onLeave}

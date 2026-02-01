@@ -95,7 +95,16 @@ export const useTaskStore = create((set, get) => ({
 
       if (error) throw error;
 
-      // Optimistic update handled by subscription
+      // Optimistic update - add task to state immediately
+      set((state) => {
+        // Check if task already exists (from subscription)
+        const exists = state.tasks.some((t) => t.id === data.id);
+        if (exists) {
+          return { tasks: state.tasks.map((t) => (t.id === data.id ? data : t)) };
+        }
+        return { tasks: [data, ...state.tasks] };
+      });
+
       return { success: true, data };
     } catch (error) {
       set({ error: error.message });
@@ -108,6 +117,11 @@ export const useTaskStore = create((set, get) => ({
     try {
       set({ error: null });
 
+      // Optimistic update - update task in state immediately
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t)),
+      }));
+
       const { data, error } = await supabase
         .from('tasks')
         .update(updates)
@@ -115,7 +129,19 @@ export const useTaskStore = create((set, get) => ({
         .select('*, assignee:profiles!assignee_id(id, display_name, color)')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Revert optimistic update on error - refetch tasks
+        const orgId = get().tasks[0]?.organization_id;
+        if (orgId) {
+          get().fetchTasks(orgId);
+        }
+        throw error;
+      }
+
+      // Update with full server data (includes relations)
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === taskId ? data : t)),
+      }));
 
       return { success: true, data };
     } catch (error) {
