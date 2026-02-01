@@ -301,24 +301,6 @@ function TaskForm({ task, onClose }) {
         </div>
       </div>
 
-      {/* Effort Size */}
-      <div className="form-section">
-        <label className="label">Size (Effort)</label>
-        <div className="flex gap-1">
-          {Object.entries(EFFORT_SIZES).map(([key, value]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setFormData((prev) => ({ ...prev, effort: key }))}
-              className={`size-btn ${formData.effort === key ? 'active' : ''}`}
-            >
-              <div>{value.label}</div>
-              <div className="text-[0.6rem] opacity-70 mt-0.5">{value.description}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Urgency */}
       <div className="form-section">
         <label className="label">Urgency</label>
