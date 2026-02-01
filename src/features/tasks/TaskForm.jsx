@@ -3,7 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS, ALL_TASK_ICONS, RECURRENCE_PRESETS } from '../../lib/constants';
-import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X } from 'lucide-react';
 
 function TaskForm({ task, onClose }) {
   const { profile, organization } = useAuthStore();
@@ -22,11 +22,15 @@ function TaskForm({ task, onClose }) {
     icon: null,
     first_step: '',
     completion_criteria: '',
+    location: '',
+    location_lat: null,
+    location_lng: null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showRecurrence, setShowRecurrence] = useState(false);
   const [recurrencePreset, setRecurrencePreset] = useState('never');
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -42,6 +46,9 @@ function TaskForm({ task, onClose }) {
         icon: task.icon || null,
         first_step: task.first_step || '',
         completion_criteria: task.completion_criteria || '',
+        location: task.location || '',
+        location_lat: task.location_lat || null,
+        location_lng: task.location_lng || null,
       });
       // Set recurrence preset based on rule
       if (task.recurrence_rule) {
@@ -61,6 +68,92 @@ function TaskForm({ task, onClose }) {
       [name]: type === 'checkbox' ? checked : value,
     }));
     setError('');
+  };
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setIsGettingLocation(true);
+    setError('');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        // Try to get a human-readable address using reverse geocoding
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en' } }
+          );
+          const data = await response.json();
+
+          // Build a concise location name
+          let locationName = '';
+          if (data.address) {
+            const addr = data.address;
+            const parts = [];
+            if (addr.shop || addr.amenity || addr.building) {
+              parts.push(addr.shop || addr.amenity || addr.building);
+            }
+            if (addr.road) {
+              parts.push(addr.road);
+            }
+            if (addr.city || addr.town || addr.village) {
+              parts.push(addr.city || addr.town || addr.village);
+            }
+            locationName = parts.join(', ') || data.display_name?.split(',').slice(0, 3).join(',');
+          } else {
+            locationName = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          }
+
+          setFormData((prev) => ({
+            ...prev,
+            location: locationName,
+            location_lat: latitude,
+            location_lng: longitude,
+          }));
+        } catch {
+          // If reverse geocoding fails, just use coordinates
+          setFormData((prev) => ({
+            ...prev,
+            location: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+            location_lat: latitude,
+            location_lng: longitude,
+          }));
+        }
+        setIsGettingLocation(false);
+      },
+      (err) => {
+        setIsGettingLocation(false);
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            setError('Location permission denied. Please enable location access.');
+            break;
+          case err.POSITION_UNAVAILABLE:
+            setError('Location information unavailable.');
+            break;
+          case err.TIMEOUT:
+            setError('Location request timed out.');
+            break;
+          default:
+            setError('Unable to get location.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  const clearLocation = () => {
+    setFormData((prev) => ({
+      ...prev,
+      location: '',
+      location_lat: null,
+      location_lng: null,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -86,6 +179,9 @@ function TaskForm({ task, onClose }) {
         icon: formData.icon || null,
         first_step: formData.first_step?.trim() || null,
         completion_criteria: formData.completion_criteria?.trim() || null,
+        location: formData.location?.trim() || null,
+        location_lat: formData.location_lat || null,
+        location_lng: formData.location_lng || null,
       };
 
       let result;
@@ -326,6 +422,67 @@ function TaskForm({ task, onClose }) {
           )}
         </div>
       )}
+
+      {/* Location */}
+      <div className="form-section">
+        <label className="label flex items-center gap-2">
+          <MapPin className="h-3 w-3" />
+          Location (optional)
+        </label>
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={(e) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  location: e.target.value,
+                  // Clear coordinates if manually editing (they'll be out of sync)
+                  location_lat: null,
+                  location_lng: null,
+                }));
+              }}
+              className="input pr-8"
+              placeholder="Enter location or use current"
+            />
+            {formData.location && (
+              <button
+                type="button"
+                onClick={clearLocation}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-text-muted hover:text-text-primary rounded"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={getCurrentLocation}
+            disabled={isGettingLocation}
+            className="flex items-center gap-2 px-3 py-2 bg-dark-card border border-dark-border rounded-lg text-sm text-text-secondary hover:bg-dark-hover transition-all disabled:opacity-50"
+          >
+            {isGettingLocation ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+            ) : (
+              <Navigation className="h-4 w-4" />
+            )}
+            <span className="hidden sm:inline">Current</span>
+          </button>
+        </div>
+        {formData.location_lat && formData.location_lng && (
+          <a
+            href={`https://www.openstreetmap.org/?mlat=${formData.location_lat}&mlon=${formData.location_lng}#map=17/${formData.location_lat}/${formData.location_lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-2 text-xs text-accent-blue hover:underline"
+          >
+            <MapPin className="h-3 w-3" />
+            View on map
+          </a>
+        )}
+      </div>
 
       {/* First Step */}
       <div className="form-section">
