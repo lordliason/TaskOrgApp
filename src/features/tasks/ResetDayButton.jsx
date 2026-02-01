@@ -53,11 +53,11 @@ function ResetDayButton() {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="flex items-center gap-2 px-4 py-2 bg-dark-card border border-dark-border rounded-lg hover:border-dark-hover transition-all text-text-primary"
+        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-dark-card border border-dark-border rounded-xl hover:bg-dark-hover transition-all text-text-secondary hover:text-text-primary"
         title="Reset Day"
       >
         <RefreshCw className="h-4 w-4" />
-        <span className="text-sm font-medium">Reset Day</span>
+        <span className="hidden sm:inline text-sm font-medium">Reset</span>
       </button>
 
       {/* Modal */}

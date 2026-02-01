@@ -36,25 +36,34 @@
 @layer components {
   /* Buttons */
   .btn {
-    @apply px-4 py-2 rounded-xl font-medium transition-all duration-200 focus:outline-none;
+    @apply px-4 py-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent-blue/30;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none;
   }
-  
+
   .btn-primary {
     background: linear-gradient(135deg, #4a9eff, #a78bfa);
     @apply text-white;
   }
-  
-  .btn-primary:hover {
+
+  .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(74, 158, 255, 0.3);
   }
-  
+
   .btn-secondary {
-    @apply bg-dark-card text-text-primary border border-dark-border hover:bg-dark-hover;
+    @apply bg-dark-card text-text-primary border border-dark-border;
   }
-  
+
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-dark-hover;
+  }
+
   .btn-danger {
-    @apply bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600/30;
+    @apply bg-red-600/20 text-red-400 border border-red-500/30;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    @apply bg-red-600/30;
   }
   
   /* Inputs */
@@ -89,8 +98,9 @@
   }
 
   .top-nav-btn {
-    @apply px-4 py-2 rounded-lg bg-transparent text-text-muted text-sm font-medium;
+    @apply px-3 sm:px-4 py-2 rounded-lg bg-transparent text-text-muted text-sm font-medium;
     @apply transition-all duration-200 whitespace-nowrap;
+    @apply flex items-center justify-center min-w-[40px] sm:min-w-0;
   }
 
   .top-nav-btn:hover {

@@ -70,7 +70,7 @@ function Dashboard() {
   return (
     <div className="space-y-6">
       {/* View Tabs - Old style navigation */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
         {views.map((view) => {
           const Icon = view.icon;
           return (
@@ -79,14 +79,14 @@ function Dashboard() {
               onClick={() => setActiveView(view.id)}
               className={`top-nav-btn ${activeView === view.id ? 'active' : ''}`}
             >
-              <Icon className="h-4 w-4 inline-block mr-2" />
-              {view.label}
+              <Icon className="h-4 w-4 inline-block sm:mr-2" />
+              <span className="hidden sm:inline">{view.label}</span>
             </button>
           );
         })}
 
         {/* Spacer */}
-        <div className="flex-1" />
+        <div className="flex-1 min-w-0" />
 
         {/* Score display */}
         {memberScores.length > 0 && (

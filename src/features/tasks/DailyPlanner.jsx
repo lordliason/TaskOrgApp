@@ -87,7 +87,7 @@ function DailyPlanner({ onEditTask }) {
         <div className="plan-header-left">
           <h1 className="plan-title font-serif text-2xl text-text-primary flex items-center gap-3">
             <Calendar className="h-6 w-6 text-accent-blue" />
-            Today's Plan
+            Today&apos;s Plan
           </h1>
           <p className="plan-date text-text-secondary">
             {today.toLocaleDateString('en-US', {

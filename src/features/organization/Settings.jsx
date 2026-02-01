@@ -71,7 +71,7 @@ function Settings() {
               className="btn btn-primary flex items-center gap-2"
             >
               <UserPlus className="h-4 w-4" />
-              Add Member
+              <span className="hidden sm:inline">Add Member</span>
             </button>
           )}
         </div>
@@ -305,21 +305,28 @@ function AddMemberModal({ isOpen, onClose, organizationId, onSuccess }) {
           onChange={(color) => setFormData((prev) => ({ ...prev, color }))}
         />
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-dark-border">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-dark-border">
           <button
             type="button"
             onClick={onClose}
-            className="btn btn-secondary"
+            className="btn btn-secondary order-2 sm:order-1"
             disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="btn btn-primary"
+            className="btn btn-primary order-1 sm:order-2 flex items-center justify-center gap-2"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Adding...' : 'Add Member'}
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Adding...</span>
+              </>
+            ) : (
+              'Add Member'
+            )}
           </button>
         </div>
       </form>
@@ -420,21 +427,28 @@ function EditMemberModal({ isOpen, onClose, member, onSuccess }) {
           onChange={(color) => setFormData((prev) => ({ ...prev, color }))}
         />
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-dark-border">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-dark-border">
           <button
             type="button"
             onClick={onClose}
-            className="btn btn-secondary"
+            className="btn btn-secondary order-2 sm:order-1"
             disabled={isSubmitting}
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="btn btn-primary"
+            className="btn btn-primary order-1 sm:order-2 flex items-center justify-center gap-2"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Saving...</span>
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </button>
         </div>
       </form>
