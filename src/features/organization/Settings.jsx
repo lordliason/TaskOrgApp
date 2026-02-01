@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import ColorPicker from '../../components/ColorPicker';
@@ -12,9 +13,11 @@ import {
   Building2,
   AlertCircle,
   Check,
+  Home,
 } from 'lucide-react';
 
 function Settings() {
+  const navigate = useNavigate();
   const { profile, organization } = useAuthStore();
   const { members, fetchMembers, addMember, updateMember, isLoading } = useOrganizationStore();
 
@@ -36,6 +39,13 @@ function Settings() {
     <div className="space-y-8 max-w-4xl">
       {/* Header */}
       <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate('/')}
+          className="p-2 hover:bg-dark-hover rounded-lg transition-colors"
+          title="Back to Home"
+        >
+          <Home className="h-5 w-5 text-text-muted hover:text-text-primary" />
+        </button>
         <SettingsIcon className="h-6 w-6 text-text-muted" />
         <h2 className="text-xl font-semibold text-text-primary">Settings</h2>
       </div>
