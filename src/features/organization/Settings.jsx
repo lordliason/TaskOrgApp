@@ -3,6 +3,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import ColorPicker from '../../components/ColorPicker';
 import Modal from '../../components/Modal';
+import NotificationSettings from '../notifications/NotificationSettings';
 import {
   Settings as SettingsIcon,
   Users,
@@ -141,6 +142,9 @@ function Settings() {
           </p>
         )}
       </div>
+
+      {/* Notification Settings */}
+      <NotificationSettings />
 
       {/* Add Member Modal */}
       <AddMemberModal
