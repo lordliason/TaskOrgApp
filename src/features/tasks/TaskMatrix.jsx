@@ -282,20 +282,6 @@ function TaskMatrix({ onEditTask }) {
           </DroppableMatrix>
         </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-4 border-t border-dark-border">
-          <span className="text-xs text-text-muted uppercase tracking-wider font-semibold">Size:</span>
-          {Object.entries(EFFORT_SIZES).map(([key, value]) => (
-            <div key={key} className="flex items-center gap-2">
-              <div
-                className={`task-dot ${key} bg-text-muted`}
-                style={{ animation: 'none' }}
-              />
-              <span className="text-xs text-text-secondary">{value.label}</span>
-            </div>
-          ))}
-        </div>
-
         {/* Tooltip */}
         {tooltip.visible && tooltip.task && !activeTask && (
           <div
