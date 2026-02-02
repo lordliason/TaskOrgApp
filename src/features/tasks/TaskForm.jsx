@@ -3,11 +3,11 @@ import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS, ALL_TASK_ICONS, RECURRENCE_PRESETS } from '../../lib/constants';
-import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2, Sparkles } from 'lucide-react';
+import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2, Sparkles, CheckCircle, Circle } from 'lucide-react';
 
 function TaskForm({ task, onClose }) {
   const { profile, organization } = useAuthStore();
-  const { createTask, updateTask, deleteTask } = useTaskStore();
+  const { createTask, updateTask, deleteTask, completeTask, uncompleteTask } = useTaskStore();
   const { members } = useOrganizationStore();
 
   const [formData, setFormData] = useState({
@@ -204,6 +204,19 @@ function TaskForm({ task, onClose }) {
       onClose();
     }
   };
+
+  const handleToggleComplete = async () => {
+    if (!task) return;
+
+    if (task.status === 'done') {
+      await uncompleteTask(task.id);
+    } else {
+      await completeTask(task.id, profile?.id, profile?.organization_id);
+    }
+    onClose();
+  };
+
+  const isCompleted = task?.status === 'done';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -580,6 +593,31 @@ function TaskForm({ task, onClose }) {
           rows={2}
         />
       </div>
+
+      {/* Mark Complete Button - Prominent for existing tasks */}
+      {task && (
+        <button
+          type="button"
+          onClick={handleToggleComplete}
+          className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+            isCompleted
+              ? 'bg-emerald-500/20 border-2 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30'
+              : 'bg-emerald-500 text-white hover:bg-emerald-600'
+          }`}
+        >
+          {isCompleted ? (
+            <>
+              <CheckCircle className="h-5 w-5" />
+              Mark as Incomplete
+            </>
+          ) : (
+            <>
+              <Circle className="h-5 w-5" />
+              Mark Complete
+            </>
+          )}
+        </button>
+      )}
 
       {/* Actions */}
       <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4 border-t border-dark-border">

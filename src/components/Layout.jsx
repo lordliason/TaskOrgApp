@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Settings, LogOut, Users } from 'lucide-react';
 import InstallBanner from './InstallBanner';
@@ -16,10 +16,10 @@ function Layout() {
     <div className="min-h-screen bg-dark-main">
       {/* Top Navigation Bar */}
       <header className="top-nav">
-        {/* Logo */}
-        <div className="logo-gradient text-2xl mr-4">
+        {/* Logo - clickable to go home */}
+        <Link to="/" className="logo-gradient text-2xl mr-4 hover:opacity-80 transition-opacity">
           {organization?.name || 'Task Matrix'}
-        </div>
+        </Link>
 
         {/* Spacer */}
         <div className="flex-1" />
