@@ -159,17 +159,38 @@ export const useTaskStore = create((set, get) => ({
       const task = get().tasks.find((t) => t.id === taskId);
       if (!task) throw new Error('Task not found');
 
+      const completedAt = new Date().toISOString();
+
+      // Optimistic update - update task in state immediately
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'done', completed_at: completedAt, completed_by: userId }
+            : t
+        ),
+      }));
+
       // Update task status
       const { error: taskError } = await supabase
         .from('tasks')
         .update({
           status: 'done',
-          completed_at: new Date().toISOString(),
+          completed_at: completedAt,
           completed_by: userId,
         })
         .eq('id', taskId);
 
-      if (taskError) throw taskError;
+      if (taskError) {
+        // Revert optimistic update on error
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? { ...t, status: 'todo', completed_at: null, completed_by: null }
+              : t
+          ),
+        }));
+        throw taskError;
+      }
 
       // Calculate points
       const points = POINTS_BY_EFFORT[task.effort] || 10;
@@ -215,6 +236,21 @@ export const useTaskStore = create((set, get) => ({
     try {
       set({ error: null });
 
+      // Store original values for potential revert
+      const task = get().tasks.find((t) => t.id === taskId);
+      const originalStatus = task?.status;
+      const originalCompletedAt = task?.completed_at;
+      const originalCompletedBy = task?.completed_by;
+
+      // Optimistic update - update task in state immediately
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, status: 'todo', completed_at: null, completed_by: null }
+            : t
+        ),
+      }));
+
       const { error } = await supabase
         .from('tasks')
         .update({
@@ -224,7 +260,17 @@ export const useTaskStore = create((set, get) => ({
         })
         .eq('id', taskId);
 
-      if (error) throw error;
+      if (error) {
+        // Revert optimistic update on error
+        set((state) => ({
+          tasks: state.tasks.map((t) =>
+            t.id === taskId
+              ? { ...t, status: originalStatus, completed_at: originalCompletedAt, completed_by: originalCompletedBy }
+              : t
+          ),
+        }));
+        throw error;
+      }
 
       return { success: true };
     } catch (error) {

@@ -3,7 +3,7 @@ import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
 import { EFFORT_SIZES } from '../../lib/constants';
-import { List, Users, User, CheckCircle2, Clock } from 'lucide-react';
+import { List, Users, User, CheckCircle2, Clock, Check } from 'lucide-react';
 
 function TaskList({ onEditTask }) {
   const { tasks, isLoading, completeTask } = useTaskStore();
@@ -293,9 +293,9 @@ function TaskListItem({ task, members, onEdit, onComplete, compact = false }) {
           e.stopPropagation();
           onComplete();
         }}
-        className="w-5 h-5 rounded border-2 border-dark-border hover:border-emerald-400 flex items-center justify-center transition-colors flex-shrink-0"
+        className="w-6 h-6 rounded-full border-2 border-dark-border hover:border-emerald-400 hover:bg-emerald-400/10 flex items-center justify-center transition-all flex-shrink-0 group/checkbox"
       >
-        <CheckCircle2 className="h-3 w-3 text-transparent hover:text-emerald-400" />
+        <Check className="h-3.5 w-3.5 text-transparent group-hover/checkbox:text-emerald-400 transition-colors" />
       </button>
 
       {/* Priority Indicators */}
@@ -333,12 +333,17 @@ function TaskListItem({ task, members, onEdit, onComplete, compact = false }) {
         </div>
       </div>
 
-      {/* Hover action indicator */}
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-text-muted">
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </div>
+      {/* Mark Complete button (shown on hover) */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onComplete();
+        }}
+        className="opacity-0 group-hover:opacity-100 transition-all px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap"
+      >
+        <Check className="h-3 w-3" />
+        Complete
+      </button>
     </div>
   );
 }
