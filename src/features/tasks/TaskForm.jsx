@@ -234,6 +234,7 @@ function TaskForm({ task, onClose }) {
         ...formData,
         title: formData.title.trim(),
         organization_id: organization.id,
+        status: task?.status || 'todo',
         urgent: parseInt(formData.urgent),
         important: parseInt(formData.important),
         due_date: formData.due_date || null,
