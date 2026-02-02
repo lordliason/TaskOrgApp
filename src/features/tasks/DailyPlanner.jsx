@@ -3,7 +3,7 @@ import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
 import { EFFORT_SIZES } from '../../lib/constants';
-import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock, Sparkles, Wand2 } from 'lucide-react';
+import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock, Sparkles, Wand2, Check } from 'lucide-react';
 import Modal from '../../components/Modal';
 import AIPlannerModal from './AIPlannerModal';
 
@@ -407,7 +407,7 @@ function PlannerTaskItem({ task, memberColor, onEdit, onComplete, completed = fa
 
   return (
     <div
-      className={`flex items-center gap-3 p-3 bg-dark-hover rounded-xl transition-all duration-200 hover:translate-x-1 cursor-pointer ${
+      className={`flex items-center gap-3 p-3 bg-dark-hover rounded-xl transition-all duration-200 hover:translate-x-1 cursor-pointer group ${
         completed ? 'opacity-60' : ''
       }`}
       onClick={onEdit}
@@ -419,15 +419,15 @@ function PlannerTaskItem({ task, memberColor, onEdit, onComplete, completed = fa
             e.stopPropagation();
             onComplete();
           }}
-          className="w-5 h-5 rounded border-2 border-dark-border hover:border-emerald-400 flex items-center justify-center transition-colors"
+          className="w-6 h-6 rounded-full border-2 border-dark-border hover:border-emerald-400 hover:bg-emerald-400/10 flex items-center justify-center transition-all flex-shrink-0 group/checkbox"
         >
-          <CheckCircle2 className="h-3 w-3 text-transparent hover:text-emerald-400" />
+          <Check className="h-3.5 w-3.5 text-transparent group-hover/checkbox:text-emerald-400 transition-colors" />
         </button>
       )}
 
       {completed && (
-        <div className="w-5 h-5 rounded bg-emerald-500 flex items-center justify-center">
-          <CheckCircle2 className="h-3 w-3 text-white" />
+        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+          <Check className="h-3.5 w-3.5 text-white" />
         </div>
       )}
 
@@ -460,6 +460,20 @@ function PlannerTaskItem({ task, memberColor, onEdit, onComplete, completed = fa
           )}
         </div>
       </div>
+
+      {/* Mark Complete button (shown on hover) */}
+      {!completed && onComplete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onComplete();
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-all px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap"
+        >
+          <Check className="h-3 w-3" />
+          Complete
+        </button>
+      )}
     </div>
   );
 }
