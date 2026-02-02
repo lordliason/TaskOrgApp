@@ -38,7 +38,13 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }) {
       />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div
+        className="flex min-h-full items-center justify-center p-4"
+        style={{
+          paddingTop: 'max(1rem, env(safe-area-inset-top))',
+          paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
+        }}
+      >
         <div
           className={`relative bg-dark-main border border-dark-border rounded-2xl shadow-2xl w-full ${sizeClasses[size]} transform transition-all`}
           onClick={(e) => e.stopPropagation()}
