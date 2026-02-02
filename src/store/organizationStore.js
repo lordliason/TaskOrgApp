@@ -135,6 +135,38 @@ export const useOrganizationStore = create((set, get) => ({
     }
   },
 
+  // Reset today's scores for the organization
+  resetTodayScores: async (organizationId) => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const today = new Date().toISOString().split('T')[0];
+
+      const { error } = await supabase
+        .from('scores')
+        .delete()
+        .eq('organization_id', organizationId)
+        .eq('date', today);
+
+      if (error) throw error;
+
+      // Remove today's scores from local state
+      set((state) => ({
+        scores: state.scores.filter(
+          (s) => !(s.organization_id === organizationId && s.date === today)
+        ),
+      }));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error resetting today scores:', error);
+      set({ error: error.message });
+      return { success: false, error: error.message };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   // Get aggregated scores per user
   getLeaderboard: () => {
     const { scores, members } = get();
