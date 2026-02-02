@@ -33,10 +33,17 @@ const InstallPWA = () => {
       <div className="min-h-screen flex items-center justify-center bg-dark-main px-4">
         <div className="max-w-md w-full bg-dark-card border border-dark-border rounded-2xl p-8 text-center">
           <div className="mb-6">
-            <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-accent-blue to-accent-purple rounded-3xl flex items-center justify-center shadow-lg">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
+            <div className="w-24 h-24 mx-auto mb-4 rounded-3xl flex items-center justify-center shadow-lg overflow-hidden relative">
+              <img
+                src="/icon.png"
+                alt="Task Matrix"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-accent-green/20 to-accent-green/30 flex items-center justify-center">
+                <svg className="w-12 h-12 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
             </div>
             <h1 className="text-2xl font-bold text-text-primary mb-2">Already Installed!</h1>
             <p className="text-text-secondary">
@@ -59,11 +66,11 @@ const InstallPWA = () => {
     <div className="min-h-screen flex items-center justify-center bg-dark-main px-4">
       <div className="max-w-md w-full bg-dark-card border border-dark-border rounded-2xl p-8">
         <div className="text-center mb-8">
-          <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-accent-blue to-accent-purple rounded-3xl flex items-center justify-center shadow-lg">
+          <div className="w-24 h-24 mx-auto mb-4 rounded-3xl flex items-center justify-center shadow-lg overflow-hidden">
             <img
-              src="/icon.svg"
+              src="/icon.png"
               alt="Task Matrix"
-              className="w-16 h-16"
+              className="w-full h-full object-cover"
             />
           </div>
           <h1 className="text-2xl font-bold text-text-primary mb-2">Install Task Matrix</h1>
