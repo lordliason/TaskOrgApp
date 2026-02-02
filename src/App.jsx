@@ -11,6 +11,9 @@ import Signup from './features/auth/Signup';
 import Dashboard from './features/tasks/Dashboard';
 import Settings from './features/organization/Settings';
 
+// PWA pages
+import InstallPWA from './features/pwa/InstallPWA';
+
 // Components
 import ProtectedRoute from './features/auth/ProtectedRoute';
 import Layout from './components/Layout';
@@ -64,6 +67,7 @@ function App() {
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/install" element={<InstallPWA />} />
 
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>

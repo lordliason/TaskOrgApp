@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Settings, LogOut, Users } from 'lucide-react';
+import InstallBanner from './InstallBanner';
 
 function Layout() {
   const { profile, organization, logout } = useAuthStore();
@@ -63,6 +64,11 @@ function Layout() {
           </button>
         </div>
       </header>
+
+      {/* Install Banner */}
+      <div className="pt-16">
+        <InstallBanner />
+      </div>
 
       {/* Main content - offset for fixed header */}
       <main className="pt-16 min-h-screen">
