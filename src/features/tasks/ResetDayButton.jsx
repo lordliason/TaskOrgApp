@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
-import { RefreshCw, Trash2, X } from 'lucide-react';
+import { useOrganizationStore } from '../../store/organizationStore';
+import { RefreshCw, Trash2, X, Trophy } from 'lucide-react';
 
 function ResetDayButton() {
   const { organization } = useAuthStore();
   const { deleteAllTasks, deleteCompletedTasks } = useTaskStore();
+  const { resetTodayScores } = useOrganizationStore();
   const [showModal, setShowModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -44,6 +46,26 @@ function ResetDayButton() {
       setShowModal(false);
     } catch (error) {
       console.error('Error deleting completed tasks:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleResetPoints = async () => {
+    if (!organization?.id) return;
+
+    const confirmed = window.confirm(
+      "Are you sure you want to reset today's points to 0 for all members? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      await resetTodayScores(organization.id);
+      setShowModal(false);
+    } catch (error) {
+      console.error('Error resetting points:', error);
     } finally {
       setIsDeleting(false);
     }
@@ -97,6 +119,24 @@ function ResetDayButton() {
                   </div>
                   <div className="text-xs text-text-muted">
                     Remove only tasks marked as done
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={handleResetPoints}
+                disabled={isDeleting}
+                className="w-full flex items-center gap-3 p-4 bg-dark-hover/50 border border-dark-border rounded-lg hover:border-yellow-500/50 hover:bg-yellow-500/10 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center group-hover:bg-yellow-500/30">
+                  <Trophy className="h-5 w-5 text-yellow-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-text-primary text-sm">
+                    Reset Today&apos;s Points
+                  </div>
+                  <div className="text-xs text-text-muted">
+                    Set all members&apos; points to 0 for today
                   </div>
                 </div>
               </button>

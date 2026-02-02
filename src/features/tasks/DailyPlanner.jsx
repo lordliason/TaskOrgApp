@@ -3,12 +3,12 @@ import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
 import { EFFORT_SIZES } from '../../lib/constants';
-import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock, Sparkles, Wand2, Check } from 'lucide-react';
+import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock, Sparkles, Wand2, Check, Undo2 } from 'lucide-react';
 import Modal from '../../components/Modal';
 import AIPlannerModal from './AIPlannerModal';
 
 function DailyPlanner({ onEditTask }) {
-  const { tasks, isLoading, completeTask, updateTask } = useTaskStore();
+  const { tasks, isLoading, completeTask, uncompleteTask, updateTask } = useTaskStore();
   const { members, scores } = useOrganizationStore();
   const { profile, organization } = useAuthStore();
 
@@ -344,13 +344,14 @@ function DailyPlanner({ onEditTask }) {
                       <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                       Completed ({memberCompleted.length})
                     </div>
-                    <div className="space-y-2 opacity-60">
+                    <div className="space-y-2">
                       {memberCompleted.map((task) => (
                         <PlannerTaskItem
                           key={task.id}
                           task={task}
                           memberColor={member.color}
                           onEdit={() => onEditTask(task)}
+                          onUncomplete={() => uncompleteTask(task.id)}
                           completed
                         />
                       ))}
@@ -402,7 +403,7 @@ function DailyPlanner({ onEditTask }) {
 }
 
 // Task Item Component
-function PlannerTaskItem({ task, memberColor, onEdit, onComplete, completed = false }) {
+function PlannerTaskItem({ task, memberColor, onEdit, onComplete, onUncomplete, completed = false }) {
   const effort = EFFORT_SIZES[task.effort] || EFFORT_SIZES.m;
 
   return (
@@ -426,9 +427,17 @@ function PlannerTaskItem({ task, memberColor, onEdit, onComplete, completed = fa
       )}
 
       {completed && (
-        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-          <Check className="h-3.5 w-3.5 text-white" />
-        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onUncomplete) onUncomplete();
+          }}
+          className="w-6 h-6 rounded-full bg-emerald-500 hover:bg-orange-500 flex items-center justify-center transition-all flex-shrink-0 group/undo"
+          title="Undo complete"
+        >
+          <Check className="h-3.5 w-3.5 text-white group-hover/undo:hidden" />
+          <Undo2 className="h-3.5 w-3.5 text-white hidden group-hover/undo:block" />
+        </button>
       )}
 
       {/* Task Icon/Dot */}
@@ -472,6 +481,20 @@ function PlannerTaskItem({ task, memberColor, onEdit, onComplete, completed = fa
         >
           <Check className="h-3 w-3" />
           Complete
+        </button>
+      )}
+
+      {/* Undo Complete button (shown on hover for completed tasks) */}
+      {completed && onUncomplete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onUncomplete();
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-all px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap"
+        >
+          <Undo2 className="h-3 w-3" />
+          Undo
         </button>
       )}
     </div>
