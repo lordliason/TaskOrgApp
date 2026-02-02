@@ -211,7 +211,7 @@ function TaskForm({ task, onClose }) {
     if (task.status === 'done') {
       await uncompleteTask(task.id);
     } else {
-      await completeTask(task.id, profile?.id, profile?.organization_id);
+      await completeTask(task.id, profile?.id, organization?.id);
     }
     onClose();
   };
