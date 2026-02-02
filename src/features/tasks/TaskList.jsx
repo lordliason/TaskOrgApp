@@ -8,7 +8,7 @@ import { List, Users, User, CheckCircle2, Clock, Check } from 'lucide-react';
 function TaskList({ onEditTask }) {
   const { tasks, isLoading, completeTask } = useTaskStore();
   const { members } = useOrganizationStore();
-  const { profile } = useAuthStore();
+  const { profile, organization } = useAuthStore();
 
   // Filter mode: 'all', 'by-user', 'combined'
   const [filterMode, setFilterMode] = useState('all');
@@ -121,7 +121,7 @@ function TaskList({ onEditTask }) {
                   task={task}
                   members={members}
                   onEdit={() => onEditTask(task)}
-                  onComplete={() => completeTask(task.id, profile?.id, profile?.organization_id)}
+                  onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
                 />
               ))
             )}
@@ -172,7 +172,7 @@ function TaskList({ onEditTask }) {
                         task={task}
                         members={members}
                         onEdit={() => onEditTask(task)}
-                        onComplete={() => completeTask(task.id, profile?.id, profile?.organization_id)}
+                        onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
                         compact
                       />
                     ))
@@ -203,7 +203,7 @@ function TaskList({ onEditTask }) {
                     task={task}
                     members={members}
                     onEdit={() => onEditTask(task)}
-                    onComplete={() => completeTask(task.id, profile?.id, profile?.organization_id)}
+                    onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
                     compact
                   />
                 ))}
@@ -229,7 +229,7 @@ function TaskList({ onEditTask }) {
                   task={task}
                   members={members}
                   onEdit={() => onEditTask(task)}
-                  onComplete={() => completeTask(task.id, profile?.id, profile?.organization_id)}
+                  onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
                 />
               ))
             )}

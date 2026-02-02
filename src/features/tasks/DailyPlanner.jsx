@@ -10,7 +10,7 @@ import AIPlannerModal from './AIPlannerModal';
 function DailyPlanner({ onEditTask }) {
   const { tasks, isLoading, completeTask, updateTask } = useTaskStore();
   const { members, scores } = useOrganizationStore();
-  const { profile } = useAuthStore();
+  const { profile, organization } = useAuthStore();
 
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
   const [isPlanning, setIsPlanning] = useState(false);
@@ -332,7 +332,7 @@ function DailyPlanner({ onEditTask }) {
                       task={task}
                       memberColor={member.color}
                       onEdit={() => onEditTask(task)}
-                      onComplete={() => completeTask(task.id, profile?.id, profile?.organization_id)}
+                      onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
                     />
                   ))
                 )}
@@ -378,7 +378,7 @@ function DailyPlanner({ onEditTask }) {
                   task={task}
                   memberColor="#6b6b75"
                   onEdit={() => onEditTask(task)}
-                  onComplete={() => completeTask(task.id, profile?.id, profile?.organization_id)}
+                  onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
                 />
               ))}
           </div>
