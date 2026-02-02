@@ -65,13 +65,13 @@ function Layout() {
         </div>
       </header>
 
-      {/* Install Banner */}
-      <div className="pt-16">
+      {/* Install Banner - offset for fixed header with safe area */}
+      <div className="pt-16" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
         <InstallBanner />
       </div>
 
-      {/* Main content - offset for fixed header */}
-      <main className="pt-16 min-h-screen">
+      {/* Main content - offset for fixed header with safe area */}
+      <main className="min-h-screen" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Outlet />
         </div>
