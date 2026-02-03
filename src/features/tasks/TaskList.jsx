@@ -2,22 +2,30 @@ import { useState, useMemo, useCallback, memo } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
+import { useOnboardingStore } from '../../store/onboardingStore';
 import { EFFORT_SIZES } from '../../lib/constants';
 import { List, Users, User, CheckCircle2, Clock, Check } from 'lucide-react';
 import { TaskListSkeleton } from '../../components/Skeleton';
 import ErrorState from '../../components/ErrorState';
 
 function TaskList({ onEditTask }) {
-  const { tasks, isLoading, error, fetchTasks } = useTaskStore();
+  const { tasks, isLoading, error, fetchTasks, completeTask } = useTaskStore();
   const { members } = useOrganizationStore();
   const { profile, organization } = useAuthStore();
+  const { triggerFirstTaskCelebration } = useOnboardingStore();
 
   // Filter mode: 'all', 'by-user', 'combined'
   const [filterMode, setFilterMode] = useState('all');
   const [isRetrying, setIsRetrying] = useState(false);
 
-  // Memoized complete task function
-  const { completeTask } = useTaskStore();
+  // Handle task completion with celebration
+  const handleCompleteTask = useCallback(async (taskId) => {
+    const result = await completeTask(taskId, profile?.id, organization?.id);
+    if (result.success) {
+      triggerFirstTaskCelebration();
+    }
+    return result;
+  }, [completeTask, profile?.id, organization?.id, triggerFirstTaskCelebration]);
 
   // Retry handler
   const handleRetry = useCallback(async () => {
@@ -169,7 +177,7 @@ function TaskList({ onEditTask }) {
                   task={task}
                   members={members}
                   onEdit={() => onEditTask(task)}
-                  onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
+                  onComplete={() => handleCompleteTask(task.id)}
                 />
               ))
             )}
@@ -220,7 +228,7 @@ function TaskList({ onEditTask }) {
                         task={task}
                         members={members}
                         onEdit={() => onEditTask(task)}
-                        onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
+                        onComplete={() => handleCompleteTask(task.id)}
                         compact
                       />
                     ))
@@ -251,7 +259,7 @@ function TaskList({ onEditTask }) {
                     task={task}
                     members={members}
                     onEdit={() => onEditTask(task)}
-                    onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
+                    onComplete={() => handleCompleteTask(task.id)}
                     compact
                   />
                 ))}
@@ -277,7 +285,7 @@ function TaskList({ onEditTask }) {
                   task={task}
                   members={members}
                   onEdit={() => onEditTask(task)}
-                  onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
+                  onComplete={() => handleCompleteTask(task.id)}
                 />
               ))
             )}

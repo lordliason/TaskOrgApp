@@ -2,6 +2,7 @@ import { useState, useCallback, memo } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
+import { useOnboardingStore } from '../../store/onboardingStore';
 import { EFFORT_SIZES } from '../../lib/constants';
 import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock, Sparkles, Wand2, Check, Undo2 } from 'lucide-react';
 import Modal from '../../components/Modal';
@@ -14,6 +15,7 @@ function DailyPlanner({ onEditTask }) {
   const { tasks, isLoading, error, fetchTasks, completeTask, uncompleteTask, updateTask } = useTaskStore();
   const { members, scores } = useOrganizationStore();
   const { profile, organization } = useAuthStore();
+  const { triggerFirstTaskCelebration } = useOnboardingStore();
   const toast = useToast();
 
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
@@ -28,6 +30,15 @@ function DailyPlanner({ onEditTask }) {
     await fetchTasks(organization.id);
     setIsRetrying(false);
   }, [organization?.id, fetchTasks]);
+
+  // Handle task completion with celebration
+  const handleCompleteTask = useCallback(async (taskId) => {
+    const result = await completeTask(taskId, profile?.id, organization?.id);
+    if (result.success) {
+      triggerFirstTaskCelebration();
+    }
+    return result;
+  }, [completeTask, profile?.id, organization?.id, triggerFirstTaskCelebration]);
 
   // Get today's date
   const today = new Date();
@@ -358,7 +369,7 @@ function DailyPlanner({ onEditTask }) {
                       task={task}
                       memberColor={member.color}
                       onEdit={() => onEditTask(task)}
-                      onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
+                      onComplete={() => handleCompleteTask(task.id)}
                     />
                   ))
                 )}
@@ -405,7 +416,7 @@ function DailyPlanner({ onEditTask }) {
                   task={task}
                   memberColor="#6b6b75"
                   onEdit={() => onEditTask(task)}
-                  onComplete={() => completeTask(task.id, profile?.id, organization?.id)}
+                  onComplete={() => handleCompleteTask(task.id)}
                 />
               ))}
           </div>
