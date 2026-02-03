@@ -88,3 +88,88 @@ export const RECURRENCE_PRESETS = {
   weekdays: { label: 'Every Weekday', rule: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR' },
   custom: { label: 'Custom', rule: '' },
 };
+
+// ===========================================
+// GAMIFICATION CONSTANTS
+// ===========================================
+
+// Streak bonus multipliers (percentage bonus on base points)
+export const STREAK_BONUSES = {
+  3: { bonus: 0.10, label: '+10%', icon: '🔥' },
+  7: { bonus: 0.25, label: '+25%', icon: '🔥' },
+  14: { bonus: 0.35, label: '+35%', icon: '💫' },
+  30: { bonus: 0.50, label: '+50%', icon: '⚡' },
+};
+
+// Get streak bonus for a given streak length
+export const getStreakBonus = (streakDays) => {
+  if (streakDays >= 30) return STREAK_BONUSES[30];
+  if (streakDays >= 14) return STREAK_BONUSES[14];
+  if (streakDays >= 7) return STREAK_BONUSES[7];
+  if (streakDays >= 3) return STREAK_BONUSES[3];
+  return { bonus: 0, label: '', icon: '' };
+};
+
+// Team combo multipliers
+export const COMBO_MULTIPLIERS = {
+  2: { multiplier: 1.5, label: '1.5x', description: 'Duo Combo!' },
+  3: { multiplier: 2.0, label: '2x', description: 'Team Combo!' },
+};
+
+// Combo detection window in minutes
+export const COMBO_WINDOW_MINUTES = 30;
+
+// Weekly challenge templates
+export const CHALLENGE_TEMPLATES = [
+  {
+    type: 'total_tasks',
+    title: 'Task Blitz',
+    description: 'Complete {target} tasks as a team this week',
+    baseTarget: 20,
+    rewardPoints: 100,
+  },
+  {
+    type: 'xl_tasks',
+    title: 'Heavy Lifting',
+    description: 'Complete {target} XL tasks as a team',
+    baseTarget: 5,
+    rewardPoints: 150,
+  },
+  {
+    type: 'do_first_tasks',
+    title: 'Priority Push',
+    description: 'Complete {target} urgent & important tasks',
+    baseTarget: 15,
+    rewardPoints: 120,
+  },
+  {
+    type: 'streak_days',
+    title: 'Streak Squad',
+    description: 'Everyone maintains a streak for {target} days',
+    baseTarget: 5,
+    rewardPoints: 200,
+  },
+  {
+    type: 'zero_overdue',
+    title: 'On Time Team',
+    description: 'End the week with zero overdue tasks',
+    baseTarget: 1,
+    rewardPoints: 175,
+  },
+  {
+    type: 'combo_count',
+    title: 'Combo Masters',
+    description: 'Trigger {target} team combos this week',
+    baseTarget: 10,
+    rewardPoints: 125,
+  },
+];
+
+// Badge categories with colors
+export const BADGE_CATEGORIES = {
+  streak: { label: 'Streaks', color: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.15)' },
+  matrix: { label: 'Matrix Mastery', color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)' },
+  effort: { label: 'Effort', color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.15)' },
+  team: { label: 'Team', color: '#8B5CF6', bgColor: 'rgba(139, 92, 246, 0.15)' },
+  special: { label: 'Special', color: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.15)' },
+};

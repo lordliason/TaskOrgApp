@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { POINTS_BY_EFFORT } from '../lib/constants';
+import { useGamificationStore } from './gamificationStore';
 
 export const useTaskStore = create((set, get) => ({
   tasks: [],
@@ -192,8 +193,26 @@ export const useTaskStore = create((set, get) => ({
         throw taskError;
       }
 
-      // Calculate points
-      const points = POINTS_BY_EFFORT[task.effort] || 10;
+      // Calculate base points
+      const basePoints = POINTS_BY_EFFORT[task.effort] || 10;
+
+      // Get gamification store for bonus calculations
+      const gamificationStore = useGamificationStore.getState();
+
+      // Update streak and get current streak days
+      const streakData = await gamificationStore.updateStreak(userId, organizationId);
+      const streakDays = streakData?.current_streak || 0;
+
+      // Check for combo and get multiplier
+      const { comboMultiplier, bonusPoints: comboBonusPoints } =
+        await gamificationStore.checkAndTriggerCombo(userId, organizationId, taskId, basePoints);
+
+      // Calculate final points with bonuses
+      const { finalPoints, streakBonus } = gamificationStore.calculateFinalPoints(
+        basePoints,
+        streakDays,
+        comboMultiplier
+      );
 
       // Update or create score record
       const today = new Date().toISOString().split('T')[0];
@@ -210,7 +229,7 @@ export const useTaskStore = create((set, get) => ({
         await supabase
           .from('scores')
           .update({
-            points: existingScore.points + points,
+            points: existingScore.points + finalPoints,
             tasks_completed: existingScore.tasks_completed + 1,
           })
           .eq('id', existingScore.id);
@@ -219,12 +238,34 @@ export const useTaskStore = create((set, get) => ({
           user_id: userId,
           organization_id: organizationId,
           date: today,
-          points,
+          points: finalPoints,
           tasks_completed: 1,
         });
       }
 
-      return { success: true };
+      // Update user stats and check for badges
+      await gamificationStore.updateStatsOnTaskComplete(userId, organizationId, task);
+
+      // Update challenge progress
+      await gamificationStore.updateChallengeProgress(organizationId, 'task_complete');
+
+      // Check for specific challenge types
+      if (task.effort === 'xl') {
+        await gamificationStore.updateChallengeProgress(organizationId, 'xl_complete');
+      }
+      if (task.urgent >= 3 && task.important >= 3) {
+        await gamificationStore.updateChallengeProgress(organizationId, 'do_first_complete');
+      }
+
+      return {
+        success: true,
+        points: {
+          base: basePoints,
+          streak: streakBonus,
+          combo: comboBonusPoints,
+          total: finalPoints,
+        }
+      };
     } catch (error) {
       set({ error: error.message });
       return { success: false, error: error.message };
