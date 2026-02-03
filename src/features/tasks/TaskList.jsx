@@ -1,17 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
 import { EFFORT_SIZES } from '../../lib/constants';
 import { List, Users, User, CheckCircle2, Clock, Check } from 'lucide-react';
+import { TaskListSkeleton } from '../../components/Skeleton';
+import ErrorState from '../../components/ErrorState';
 
 function TaskList({ onEditTask }) {
-  const { tasks, isLoading, completeTask } = useTaskStore();
+  const { tasks, isLoading, error, fetchTasks } = useTaskStore();
   const { members } = useOrganizationStore();
   const { profile, organization } = useAuthStore();
 
   // Filter mode: 'all', 'by-user', 'combined'
   const [filterMode, setFilterMode] = useState('all');
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Memoized complete task function
+  const { completeTask } = useTaskStore();
+
+  // Retry handler
+  const handleRetry = useCallback(async () => {
+    if (!organization?.id) return;
+    setIsRetrying(true);
+    await fetchTasks(organization.id);
+    setIsRetrying(false);
+  }, [organization?.id, fetchTasks]);
 
   // Filter out completed tasks
   const activeTasks = tasks.filter((task) => task.status !== 'done');
@@ -44,16 +58,50 @@ function TaskList({ onEditTask }) {
     return sortTasks(activeTasks);
   };
 
-  if (isLoading) {
+  // Show skeleton loading state
+  if (isLoading && tasks.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-blue"></div>
+      <div className="space-y-6 view-transition-enter">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h1 className="font-serif text-2xl text-text-primary flex items-center gap-3">
+              <List className="h-6 w-6 text-accent-blue" />
+              Task List
+            </h1>
+            <p className="text-text-secondary mt-1">
+              All active tasks organized by priority
+            </p>
+          </div>
+        </div>
+        <div className="bg-dark-card border border-dark-border rounded-xl p-6">
+          <TaskListSkeleton count={5} />
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state with retry
+  if (error && tasks.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="font-serif text-2xl text-text-primary flex items-center gap-3">
+            <List className="h-6 w-6 text-accent-blue" />
+            Task List
+          </h1>
+        </div>
+        <ErrorState
+          title="Failed to load tasks"
+          message={error}
+          onRetry={handleRetry}
+          isRetrying={isRetrying}
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 view-transition-enter">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
@@ -260,12 +308,13 @@ function TaskList({ onEditTask }) {
   );
 }
 
-// Task Item Component
-function TaskListItem({ task, members, onEdit, onComplete, compact = false }) {
+// Task Item Component - Memoized for performance
+const TaskListItem = memo(function TaskListItem({ task, members, onEdit, onComplete, compact = false }) {
   const effort = EFFORT_SIZES[task.effort] || EFFORT_SIZES.m;
   const assignee = members.find((m) => m.id === task.assignee_id);
   const assigneeColor = assignee?.color || '#6b6b75';
   const assigneeName = assignee?.display_name?.split(' ')[0] || 'Unassigned';
+  const [isCompleting, setIsCompleting] = useState(false);
 
   // Get urgency and importance colors
   const getUrgencyColor = (urgent) => {
@@ -280,22 +329,37 @@ function TaskListItem({ task, members, onEdit, onComplete, compact = false }) {
     return 'bg-gray-500';
   };
 
+  // Handle complete with loading state
+  const handleComplete = useCallback(async (e) => {
+    e.stopPropagation();
+    if (isCompleting) return;
+    setIsCompleting(true);
+    await onComplete();
+    setIsCompleting(false);
+  }, [onComplete, isCompleting]);
+
   return (
     <div
-      className={`flex items-center gap-3 p-3 bg-dark-hover rounded-xl transition-all duration-200 hover:translate-x-1 cursor-pointer group ${
+      className={`flex items-center gap-3 p-3 bg-dark-hover rounded-xl transition-all duration-200 hover:translate-x-1 cursor-pointer group touch-feedback list-item-enter ${
         compact ? 'text-sm' : ''
       }`}
       onClick={onEdit}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onEdit()}
     >
-      {/* Checkbox */}
+      {/* Checkbox - Larger touch target */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onComplete();
-        }}
-        className="w-6 h-6 rounded-full border-2 border-dark-border hover:border-emerald-400 hover:bg-emerald-400/10 flex items-center justify-center transition-all flex-shrink-0 group/checkbox"
+        onClick={handleComplete}
+        disabled={isCompleting}
+        className="w-8 h-8 rounded-full border-2 border-dark-border hover:border-emerald-400 hover:bg-emerald-400/10 flex items-center justify-center transition-all flex-shrink-0 group/checkbox focus-ring touch-feedback disabled:opacity-50"
+        aria-label={`Complete task: ${task.title}`}
       >
-        <Check className="h-3.5 w-3.5 text-transparent group-hover/checkbox:text-emerald-400 transition-colors" />
+        {isCompleting ? (
+          <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Check className="h-4 w-4 text-transparent group-hover/checkbox:text-emerald-400 transition-colors" />
+        )}
       </button>
 
       {/* Priority Indicators */}
@@ -335,17 +399,19 @@ function TaskListItem({ task, members, onEdit, onComplete, compact = false }) {
 
       {/* Mark Complete button (shown on hover) */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onComplete();
-        }}
-        className="opacity-0 group-hover:opacity-100 transition-all px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap"
+        onClick={handleComplete}
+        disabled={isCompleting}
+        className="opacity-0 group-hover:opacity-100 transition-all px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap touch-feedback disabled:opacity-50"
       >
-        <Check className="h-3 w-3" />
-        Complete
+        {isCompleting ? (
+          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Check className="h-3 w-3" />
+        )}
+        {isCompleting ? 'Completing...' : 'Complete'}
       </button>
     </div>
   );
-}
+});
 
 export default TaskList;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
@@ -6,15 +6,28 @@ import { EFFORT_SIZES } from '../../lib/constants';
 import { Calendar, CheckCircle2, Sun, Sunset, Moon, Clock, Sparkles, Wand2, Check, Undo2 } from 'lucide-react';
 import Modal from '../../components/Modal';
 import AIPlannerModal from './AIPlannerModal';
+import { DailyPlannerSkeleton } from '../../components/Skeleton';
+import ErrorState from '../../components/ErrorState';
+import { useToast } from '../../components/Toast';
 
 function DailyPlanner({ onEditTask }) {
-  const { tasks, isLoading, completeTask, uncompleteTask, updateTask } = useTaskStore();
+  const { tasks, isLoading, error, fetchTasks, completeTask, uncompleteTask, updateTask } = useTaskStore();
   const { members, scores } = useOrganizationStore();
   const { profile, organization } = useAuthStore();
+  const toast = useToast();
 
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false);
   const [isPlanning, setIsPlanning] = useState(false);
   const [planResult, setPlanResult] = useState(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Retry handler
+  const handleRetry = useCallback(async () => {
+    if (!organization?.id) return;
+    setIsRetrying(true);
+    await fetchTasks(organization.id);
+    setIsRetrying(false);
+  }, [organization?.id, fetchTasks]);
 
   // Get today's date
   const today = new Date();
@@ -74,7 +87,7 @@ function DailyPlanner({ onEditTask }) {
   // Basic AI Planning - quick automatic planning
   const handleBasicAIPlan = async () => {
     if (todaysTasks.length === 0) {
-      alert('No tasks to plan for today');
+      toast.warning('No tasks to plan for today');
       return;
     }
 
@@ -96,10 +109,10 @@ function DailyPlanner({ onEditTask }) {
       setPlanResult(result);
 
       // Show success message
-      alert(`✨ AI Plan Created!\n\n${result.summary}`);
+      toast.success(result.summary, { title: 'AI Plan Created!' });
     } catch (error) {
       console.error('AI Planning error:', error);
-      alert('Failed to create AI plan. Please try again.');
+      toast.error('Failed to create AI plan. Please try again.');
     } finally {
       setIsPlanning(false);
     }
@@ -108,7 +121,7 @@ function DailyPlanner({ onEditTask }) {
   // Advanced AI Planning - with user context
   const handleAdvancedAIPlan = async (userContext) => {
     if (todaysTasks.length === 0) {
-      alert('No tasks to plan for today');
+      toast.warning('No tasks to plan for today');
       return;
     }
 
@@ -133,10 +146,10 @@ function DailyPlanner({ onEditTask }) {
       setPlanResult(result);
 
       // Show success message
-      alert(`✨ Personalized Plan Created!\n\n${result.summary}\n\n${result.encouragement || ''}`);
+      toast.success(result.summary, { title: 'Personalized Plan Created!' });
     } catch (error) {
       console.error('Advanced AI Planning error:', error);
-      alert('Failed to create personalized plan. Please try again.');
+      toast.error('Failed to create personalized plan. Please try again.');
     } finally {
       setIsPlanning(false);
     }
@@ -177,16 +190,29 @@ function DailyPlanner({ onEditTask }) {
     { id: 'evening', label: 'Evening', icon: Moon, color: '#a78bfa' },
   ];
 
-  if (isLoading) {
+  // Show skeleton loading state
+  if (isLoading && tasks.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-blue"></div>
+      <div className="view-transition-enter">
+        <DailyPlannerSkeleton />
       </div>
     );
   }
 
+  // Show error state with retry
+  if (error && tasks.length === 0) {
+    return (
+      <ErrorState
+        title="Failed to load tasks"
+        message={error}
+        onRetry={handleRetry}
+        isRetrying={isRetrying}
+      />
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 view-transition-enter">
       {/* Header */}
       <div className="plan-header flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -402,41 +428,71 @@ function DailyPlanner({ onEditTask }) {
   );
 }
 
-// Task Item Component
-function PlannerTaskItem({ task, memberColor, onEdit, onComplete, onUncomplete, completed = false }) {
+// Task Item Component - Memoized for performance
+const PlannerTaskItem = memo(function PlannerTaskItem({ task, memberColor, onEdit, onComplete, onUncomplete, completed = false }) {
   const effort = EFFORT_SIZES[task.effort] || EFFORT_SIZES.m;
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  // Handle complete with loading state
+  const handleComplete = useCallback(async (e) => {
+    e.stopPropagation();
+    if (isCompleting || !onComplete) return;
+    setIsCompleting(true);
+    await onComplete();
+    setIsCompleting(false);
+  }, [onComplete, isCompleting]);
+
+  // Handle uncomplete with loading state
+  const handleUncomplete = useCallback(async (e) => {
+    e.stopPropagation();
+    if (isCompleting || !onUncomplete) return;
+    setIsCompleting(true);
+    await onUncomplete();
+    setIsCompleting(false);
+  }, [onUncomplete, isCompleting]);
 
   return (
     <div
-      className={`flex items-center gap-3 p-3 bg-dark-hover rounded-xl transition-all duration-200 hover:translate-x-1 cursor-pointer group ${
+      className={`flex items-center gap-3 p-3 bg-dark-hover rounded-xl transition-all duration-200 hover:translate-x-1 cursor-pointer group touch-feedback list-item-enter ${
         completed ? 'opacity-60' : ''
       }`}
       onClick={onEdit}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onEdit()}
     >
-      {/* Checkbox */}
+      {/* Checkbox - Larger touch target */}
       {!completed && onComplete && (
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onComplete();
-          }}
-          className="w-6 h-6 rounded-full border-2 border-dark-border hover:border-emerald-400 hover:bg-emerald-400/10 flex items-center justify-center transition-all flex-shrink-0 group/checkbox"
+          onClick={handleComplete}
+          disabled={isCompleting}
+          className="w-8 h-8 rounded-full border-2 border-dark-border hover:border-emerald-400 hover:bg-emerald-400/10 flex items-center justify-center transition-all flex-shrink-0 group/checkbox focus-ring touch-feedback disabled:opacity-50"
+          aria-label={`Complete task: ${task.title}`}
         >
-          <Check className="h-3.5 w-3.5 text-transparent group-hover/checkbox:text-emerald-400 transition-colors" />
+          {isCompleting ? (
+            <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Check className="h-4 w-4 text-transparent group-hover/checkbox:text-emerald-400 transition-colors" />
+          )}
         </button>
       )}
 
       {completed && (
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onUncomplete) onUncomplete();
-          }}
-          className="w-6 h-6 rounded-full bg-emerald-500 hover:bg-orange-500 flex items-center justify-center transition-all flex-shrink-0 group/undo"
+          onClick={handleUncomplete}
+          disabled={isCompleting}
+          className="w-8 h-8 rounded-full bg-emerald-500 hover:bg-orange-500 flex items-center justify-center transition-all flex-shrink-0 group/undo focus-ring touch-feedback disabled:opacity-50"
           title="Undo complete"
+          aria-label={`Undo complete: ${task.title}`}
         >
-          <Check className="h-3.5 w-3.5 text-white group-hover/undo:hidden" />
-          <Undo2 className="h-3.5 w-3.5 text-white hidden group-hover/undo:block" />
+          {isCompleting ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              <Check className="h-4 w-4 text-white group-hover/undo:hidden" />
+              <Undo2 className="h-4 w-4 text-white hidden group-hover/undo:block" />
+            </>
+          )}
         </button>
       )}
 
@@ -473,32 +529,36 @@ function PlannerTaskItem({ task, memberColor, onEdit, onComplete, onUncomplete, 
       {/* Mark Complete button (shown on hover) */}
       {!completed && onComplete && (
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onComplete();
-          }}
-          className="opacity-0 group-hover:opacity-100 transition-all px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap"
+          onClick={handleComplete}
+          disabled={isCompleting}
+          className="opacity-0 group-hover:opacity-100 transition-all px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap touch-feedback disabled:opacity-50"
         >
-          <Check className="h-3 w-3" />
-          Complete
+          {isCompleting ? (
+            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Check className="h-3 w-3" />
+          )}
+          {isCompleting ? 'Completing...' : 'Complete'}
         </button>
       )}
 
       {/* Undo Complete button (shown on hover for completed tasks) */}
       {completed && onUncomplete && (
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onUncomplete();
-          }}
-          className="opacity-0 group-hover:opacity-100 transition-all px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap"
+          onClick={handleUncomplete}
+          disabled={isCompleting}
+          className="opacity-0 group-hover:opacity-100 transition-all px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 whitespace-nowrap touch-feedback disabled:opacity-50"
         >
-          <Undo2 className="h-3 w-3" />
-          Undo
+          {isCompleting ? (
+            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Undo2 className="h-3 w-3" />
+          )}
+          {isCompleting ? 'Undoing...' : 'Undo'}
         </button>
       )}
     </div>
   );
-}
+});
 
 export default DailyPlanner;

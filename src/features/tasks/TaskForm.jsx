@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS, ALL_TASK_ICONS, RECURRENCE_PRESETS } from '../../lib/constants';
 import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2, Sparkles, CheckCircle, Circle } from 'lucide-react';
+import { useToast } from '../../components/Toast';
 
 function TaskForm({ task, onClose }) {
   const { profile, organization } = useAuthStore();
   const { createTask, updateTask, deleteTask, completeTask, uncompleteTask } = useTaskStore();
   const { members } = useOrganizationStore();
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -200,7 +202,12 @@ function TaskForm({ task, onClose }) {
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
-      await deleteTask(task.id);
+      const result = await deleteTask(task.id);
+      if (result.success) {
+        toast.success('Task deleted');
+      } else {
+        toast.error('Failed to delete task');
+      }
       onClose();
     }
   };
@@ -209,9 +216,15 @@ function TaskForm({ task, onClose }) {
     if (!task) return;
 
     if (task.status === 'done') {
-      await uncompleteTask(task.id);
+      const result = await uncompleteTask(task.id);
+      if (result.success) {
+        toast.info('Task marked as incomplete');
+      }
     } else {
-      await completeTask(task.id, profile?.id, organization?.id);
+      const result = await completeTask(task.id, profile?.id, organization?.id);
+      if (result.success) {
+        toast.success('Task completed!');
+      }
     }
     onClose();
   };
@@ -255,6 +268,7 @@ function TaskForm({ task, onClose }) {
       }
 
       if (result.success) {
+        toast.success(task ? 'Task updated successfully' : 'Task created successfully');
         onClose();
       } else {
         setError(result.error || 'Failed to save task');

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
@@ -15,10 +15,11 @@ function Dashboard() {
   const { profile, organization } = useAuthStore();
   const { tasks, fetchTasks, subscribeToTasks, unsubscribe } = useTaskStore();
   const { members, scores, fetchMembers, fetchScores } = useOrganizationStore();
-  
+
   const [activeView, setActiveView] = useState('matrix');
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [viewKey, setViewKey] = useState(0); // Key to trigger view transition
 
   useEffect(() => {
     if (organization?.id) {
@@ -33,20 +34,29 @@ function Dashboard() {
     };
   }, [organization?.id]);
 
-  const handleNewTask = () => {
+  // Memoized handlers
+  const handleNewTask = useCallback(() => {
     setEditingTask(null);
     setIsTaskFormOpen(true);
-  };
+  }, []);
 
-  const handleEditTask = (task) => {
+  const handleEditTask = useCallback((task) => {
     setEditingTask(task);
     setIsTaskFormOpen(true);
-  };
+  }, []);
 
-  const handleCloseForm = () => {
+  const handleCloseForm = useCallback(() => {
     setIsTaskFormOpen(false);
     setEditingTask(null);
-  };
+  }, []);
+
+  // Handle view change with transition
+  const handleViewChange = useCallback((newView) => {
+    if (newView !== activeView) {
+      setActiveView(newView);
+      setViewKey((prev) => prev + 1); // Trigger re-animation
+    }
+  }, [activeView]);
 
   const views = [
     { id: 'matrix', label: 'Matrix', icon: LayoutGrid },
@@ -55,19 +65,21 @@ function Dashboard() {
     { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   ];
 
-  // Calculate today's scores for the header
-  const todayStr = new Date().toISOString().split('T')[0];
-  const memberScores = members.map((member) => {
-    const todayScore = scores.find(
-      (s) => s.user_id === member.id && s.date === todayStr
-    );
-    return {
-      id: member.id,
-      displayName: member.display_name,
-      color: member.color,
-      points: todayScore?.points || 0,
-    };
-  });
+  // Memoized member scores calculation
+  const memberScores = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return members.map((member) => {
+      const todayScore = scores.find(
+        (s) => s.user_id === member.id && s.date === todayStr
+      );
+      return {
+        id: member.id,
+        displayName: member.display_name,
+        color: member.color,
+        points: todayScore?.points || 0,
+      };
+    });
+  }, [members, scores]);
 
   return (
     <div className="space-y-6">
@@ -78,8 +90,8 @@ function Dashboard() {
           return (
             <button
               key={view.id}
-              onClick={() => setActiveView(view.id)}
-              className={`top-nav-btn ${activeView === view.id ? 'active' : ''}`}
+              onClick={() => handleViewChange(view.id)}
+              className={`top-nav-btn touch-feedback focus-ring ${activeView === view.id ? 'active' : ''}`}
             >
               <Icon className="h-4 w-4 inline-block sm:mr-2" />
               <span className="hidden sm:inline">{view.label}</span>
@@ -118,29 +130,31 @@ function Dashboard() {
         {/* New Task Button */}
         <button
           onClick={handleNewTask}
-          className="btn btn-primary flex items-center gap-2"
+          className="btn btn-primary flex items-center gap-2 touch-feedback focus-ring"
         >
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">New Task</span>
         </button>
       </div>
 
-      {/* Main content based on active view */}
-      {activeView === 'matrix' && (
-        <TaskMatrix onEditTask={handleEditTask} />
-      )}
+      {/* Main content based on active view - with view transitions */}
+      <div key={viewKey} className="view-transition-enter">
+        {activeView === 'matrix' && (
+          <TaskMatrix onEditTask={handleEditTask} />
+        )}
 
-      {activeView === 'task-list' && (
-        <TaskList onEditTask={handleEditTask} />
-      )}
+        {activeView === 'task-list' && (
+          <TaskList onEditTask={handleEditTask} />
+        )}
 
-      {activeView === 'planner' && (
-        <DailyPlanner onEditTask={handleEditTask} />
-      )}
+        {activeView === 'planner' && (
+          <DailyPlanner onEditTask={handleEditTask} />
+        )}
 
-      {activeView === 'leaderboard' && (
-        <Leaderboard />
-      )}
+        {activeView === 'leaderboard' && (
+          <Leaderboard />
+        )}
+      </div>
 
       {/* Task Form Modal */}
       <Modal
