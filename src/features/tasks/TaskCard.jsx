@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS } from '../../lib/constants';
@@ -6,14 +7,23 @@ import { Check, Clock, AlertTriangle, Pencil, Trash2, MapPin } from 'lucide-reac
 function TaskCard({ task, onEdit, compact = false }) {
   const { profile, organization } = useAuthStore();
   const { completeTask, uncompleteTask, deleteTask } = useTaskStore();
+  const [isCompleting, setIsCompleting] = useState(false);
 
-  const handleToggleComplete = async () => {
-    if (task.status === 'done') {
-      await uncompleteTask(task.id);
-    } else {
-      await completeTask(task.id, profile.id, organization.id);
+  const handleToggleComplete = useCallback(async (e) => {
+    if (e) e.stopPropagation();
+    if (isCompleting) return;
+
+    setIsCompleting(true);
+    try {
+      if (task.status === 'done') {
+        await uncompleteTask(task.id);
+      } else {
+        await completeTask(task.id, profile.id, organization.id);
+      }
+    } finally {
+      setIsCompleting(false);
     }
-  };
+  }, [task.id, task.status, isCompleting, completeTask, uncompleteTask, profile?.id, organization?.id]);
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this task?')) {
@@ -37,17 +47,19 @@ function TaskCard({ task, onEdit, compact = false }) {
         <div className="flex items-start gap-3">
           {/* Checkbox */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleComplete();
-            }}
-            className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+            onClick={handleToggleComplete}
+            disabled={isCompleting}
+            className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors disabled:opacity-50 ${
               isCompleted
                 ? 'bg-emerald-500 border-emerald-500 text-white'
                 : 'border-dark-border hover:border-emerald-400'
             }`}
           >
-            {isCompleted && <Check className="h-3 w-3" />}
+            {isCompleting ? (
+              <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              isCompleted && <Check className="h-3 w-3" />
+            )}
           </button>
 
           {/* Content */}
@@ -131,13 +143,18 @@ function TaskCard({ task, onEdit, compact = false }) {
         {/* Checkbox */}
         <button
           onClick={handleToggleComplete}
-          className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+          disabled={isCompleting}
+          className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors disabled:opacity-50 ${
             isCompleted
               ? 'bg-emerald-500 border-emerald-500 text-white'
               : 'border-dark-border hover:border-emerald-400'
           }`}
         >
-          {isCompleted && <Check className="h-4 w-4" />}
+          {isCompleting ? (
+            <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            isCompleted && <Check className="h-4 w-4" />
+          )}
         </button>
 
         {/* Content */}
