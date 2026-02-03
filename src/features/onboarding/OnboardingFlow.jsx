@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useOnboardingStore, ONBOARDING_STEPS } from '../../store/onboardingStore';
 import { useAuthStore } from '../../store/authStore';
-import { LayoutGrid, Calendar, Trophy, ChevronRight, Sparkles } from 'lucide-react';
+import { useNotificationStore } from '../../store/notificationStore';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
+import { LayoutGrid, Calendar, Trophy, ChevronRight, Sparkles, Bell, BellRing, Download, Smartphone, Share, Plus, Check } from 'lucide-react';
 
 function OnboardingFlow() {
   const { currentStep, nextStep, skipOnboarding } = useOnboardingStore();
@@ -63,6 +65,14 @@ function OnboardingFlow() {
         {currentStep === ONBOARDING_STEPS.QUICK_TOUR && (
           <QuickTourStep onNext={handleNext} onSkip={handleSkip} />
         )}
+
+        {currentStep === ONBOARDING_STEPS.NOTIFICATIONS && (
+          <NotificationsStep onNext={handleNext} onSkip={handleSkip} />
+        )}
+
+        {currentStep === ONBOARDING_STEPS.ADD_TO_HOME && (
+          <AddToHomeStep onNext={handleNext} onSkip={handleSkip} />
+        )}
       </div>
     </div>
   );
@@ -119,8 +129,10 @@ function WelcomeStep({ displayName, orgName, onNext, onSkip }) {
 
       {/* Progress indicator */}
       <div className="flex justify-center gap-2 mt-8">
-        <div className="w-8 h-1 rounded-full bg-purple-500/80" />
-        <div className="w-8 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-purple-500/80" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
       </div>
     </div>
   );
@@ -235,8 +247,326 @@ function QuickTourStep({ onNext, onSkip }) {
 
       {/* Progress indicator */}
       <div className="flex justify-center gap-2 mt-8">
-        <div className="w-8 h-1 rounded-full bg-dark-hover" />
-        <div className="w-8 h-1 rounded-full bg-purple-500/80" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-emerald-500/80" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+      </div>
+    </div>
+  );
+}
+
+function NotificationsStep({ onNext, onSkip }) {
+  const [isEnabling, setIsEnabling] = useState(false);
+  const [permissionResult, setPermissionResult] = useState(null);
+  const { initializeNotifications, requestPermission, isSupported, permissionStatus } = useNotificationStore();
+
+  useEffect(() => {
+    initializeNotifications();
+  }, [initializeNotifications]);
+
+  const handleEnableNotifications = async () => {
+    setIsEnabling(true);
+    const result = await requestPermission();
+    setPermissionResult(result);
+    setIsEnabling(false);
+
+    // Auto-advance after successful permission
+    if (result.success || result.permission === 'granted') {
+      setTimeout(() => onNext(), 1000);
+    }
+  };
+
+  const alreadyGranted = permissionStatus === 'granted';
+  const wasDenied = permissionResult?.permission === 'denied' || permissionStatus === 'denied';
+
+  return (
+    <div className="card text-center">
+      {/* Gradient orb */}
+      <div
+        className="absolute -top-20 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full opacity-30 blur-3xl pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(251, 146, 60, 0.6), rgba(239, 68, 68, 0.4))',
+        }}
+      />
+
+      <div className="relative">
+        <div className="mb-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+            {alreadyGranted || permissionResult?.success ? (
+              <BellRing className="w-8 h-8 text-orange-400" />
+            ) : (
+              <Bell className="w-8 h-8 text-orange-400" />
+            )}
+          </div>
+        </div>
+
+        <h2 className="text-xl font-semibold text-text-primary mb-2">
+          {alreadyGranted || permissionResult?.success ? 'Notifications enabled!' : 'Stay in the loop'}
+        </h2>
+
+        <p className="text-text-secondary mb-6 leading-relaxed">
+          {alreadyGranted || permissionResult?.success ? (
+            "You'll get reminders for due tasks, daily summaries, and team updates."
+          ) : wasDenied ? (
+            <>
+              Notifications were blocked. You can enable them later in your browser settings.
+            </>
+          ) : !isSupported ? (
+            "Your browser doesn't support push notifications. You can still use the app!"
+          ) : (
+            <>
+              Get notified about <span className="text-text-primary">due dates</span>,{' '}
+              <span className="text-text-primary">daily summaries</span>, and{' '}
+              <span className="text-text-primary">team updates</span>.
+            </>
+          )}
+        </p>
+
+        {/* Benefits list */}
+        {!alreadyGranted && !permissionResult?.success && !wasDenied && isSupported && (
+          <div className="space-y-3 mb-8 text-left">
+            {[
+              { text: 'Due date reminders 24 hours ahead', icon: '⏰' },
+              { text: 'Daily task summary each morning', icon: '📋' },
+              { text: 'Alerts for urgent assignments', icon: '🔔' },
+            ].map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 p-3 rounded-xl bg-dark-hover/50"
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span className="text-sm text-text-secondary">{item.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          {alreadyGranted || permissionResult?.success ? (
+            <button
+              onClick={onNext}
+              className="btn btn-primary w-full flex items-center justify-center gap-2"
+            >
+              Continue
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : wasDenied || !isSupported ? (
+            <button
+              onClick={onNext}
+              className="btn btn-primary w-full flex items-center justify-center gap-2"
+            >
+              Continue anyway
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={handleEnableNotifications}
+                disabled={isEnabling}
+                className="btn btn-primary w-full flex items-center justify-center gap-2"
+              >
+                {isEnabling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Enabling...
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-4 h-4" />
+                    Enable notifications
+                  </>
+                )}
+              </button>
+              <button
+                onClick={onSkip}
+                className="text-text-muted text-sm hover:text-text-secondary transition-colors py-2"
+              >
+                Maybe later
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="flex justify-center gap-2 mt-8">
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-orange-500/80" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+      </div>
+    </div>
+  );
+}
+
+function AddToHomeStep({ onNext, onSkip }) {
+  const { isInstallable, isInstalled, promptInstall } = usePWAInstall();
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [installResult, setInstallResult] = useState(null);
+
+  // Detect iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  const handleInstall = async () => {
+    setIsInstalling(true);
+    const result = await promptInstall();
+    setInstallResult(result);
+    setIsInstalling(false);
+
+    if (result.success) {
+      setTimeout(() => onNext(), 1500);
+    }
+  };
+
+  const showSuccess = isInstalled || installResult?.success;
+
+  return (
+    <div className="card text-center">
+      {/* Gradient orb */}
+      <div
+        className="absolute -top-20 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full opacity-30 blur-3xl pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.6), rgba(147, 51, 234, 0.4))',
+        }}
+      />
+
+      <div className="relative">
+        <div className="mb-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+            {showSuccess ? (
+              <Check className="w-8 h-8 text-green-400" />
+            ) : (
+              <Smartphone className="w-8 h-8 text-blue-400" />
+            )}
+          </div>
+        </div>
+
+        <h2 className="text-xl font-semibold text-text-primary mb-2">
+          {showSuccess ? 'Added to home screen!' : 'Add to home screen'}
+        </h2>
+
+        <p className="text-text-secondary mb-6 leading-relaxed">
+          {showSuccess ? (
+            "Task Matrix is now just one tap away on your home screen."
+          ) : (
+            "Get fast access like a native app. Works offline too!"
+          )}
+        </p>
+
+        {/* Benefits */}
+        {!showSuccess && !isIOS && (
+          <div className="space-y-3 mb-8 text-left">
+            {[
+              { text: 'Launch instantly from home screen', icon: <Download className="w-4 h-4 text-blue-400" /> },
+              { text: 'Works offline', icon: <Smartphone className="w-4 h-4 text-purple-400" /> },
+              { text: 'Full screen experience', icon: <LayoutGrid className="w-4 h-4 text-emerald-400" /> },
+            ].map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 p-3 rounded-xl bg-dark-hover/50"
+              >
+                {item.icon}
+                <span className="text-sm text-text-secondary">{item.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* iOS Instructions */}
+        {isIOS && !showSuccess && (
+          <div className="mb-8 text-left">
+            <p className="text-sm text-text-muted mb-4">To add to your home screen:</p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-hover/50">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <Share className="w-4 h-4 text-blue-400" />
+                </div>
+                <span className="text-sm text-text-secondary">
+                  Tap the <span className="text-text-primary">Share</span> button in Safari
+                </span>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-hover/50">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                  <Plus className="w-4 h-4 text-purple-400" />
+                </div>
+                <span className="text-sm text-text-secondary">
+                  Select <span className="text-text-primary">"Add to Home Screen"</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-dark-hover/50">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                </div>
+                <span className="text-sm text-text-secondary">
+                  Tap <span className="text-text-primary">"Add"</span> to confirm
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          {showSuccess ? (
+            <button
+              onClick={onNext}
+              className="btn btn-primary w-full flex items-center justify-center gap-2"
+            >
+              Get started
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : isIOS ? (
+            <button
+              onClick={onNext}
+              className="btn btn-primary w-full flex items-center justify-center gap-2"
+            >
+              I've added it
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : isInstallable ? (
+            <>
+              <button
+                onClick={handleInstall}
+                disabled={isInstalling}
+                className="btn btn-primary w-full flex items-center justify-center gap-2"
+              >
+                {isInstalling ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Installing...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Add to home screen
+                  </>
+                )}
+              </button>
+              <button
+                onClick={onSkip}
+                className="text-text-muted text-sm hover:text-text-secondary transition-colors py-2"
+              >
+                Skip for now
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onNext}
+              className="btn btn-primary w-full flex items-center justify-center gap-2"
+            >
+              Continue
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Progress indicator */}
+      <div className="flex justify-center gap-2 mt-8">
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-dark-hover" />
+        <div className="w-6 h-1 rounded-full bg-blue-500/80" />
       </div>
     </div>
   );

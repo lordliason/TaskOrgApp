@@ -4,6 +4,8 @@ import { persist } from 'zustand/middleware';
 const ONBOARDING_STEPS = {
   WELCOME: 'welcome',
   QUICK_TOUR: 'quick_tour',
+  NOTIFICATIONS: 'notifications',
+  ADD_TO_HOME: 'add_to_home',
   COMPLETED: 'completed',
 };
 
@@ -32,6 +34,10 @@ export const useOnboardingStore = create(
         if (currentStep === ONBOARDING_STEPS.WELCOME) {
           set({ currentStep: ONBOARDING_STEPS.QUICK_TOUR });
         } else if (currentStep === ONBOARDING_STEPS.QUICK_TOUR) {
+          set({ currentStep: ONBOARDING_STEPS.NOTIFICATIONS });
+        } else if (currentStep === ONBOARDING_STEPS.NOTIFICATIONS) {
+          set({ currentStep: ONBOARDING_STEPS.ADD_TO_HOME });
+        } else if (currentStep === ONBOARDING_STEPS.ADD_TO_HOME) {
           set({
             currentStep: ONBOARDING_STEPS.COMPLETED,
             hasCompletedOnboarding: true
