@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, memo } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
+import { useOnboardingStore } from '../../store/onboardingStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS, ALL_TASK_ICONS, RECURRENCE_PRESETS } from '../../lib/constants';
 import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2, Sparkles, CheckCircle, Circle } from 'lucide-react';
 import { useToast } from '../../components/Toast';
@@ -10,6 +11,7 @@ function TaskForm({ task, onClose }) {
   const { profile, organization } = useAuthStore();
   const { createTask, updateTask, deleteTask, completeTask, uncompleteTask } = useTaskStore();
   const { members } = useOrganizationStore();
+  const { markFirstTaskCreated, triggerFirstTaskCelebration } = useOnboardingStore();
   const toast = useToast();
 
   const [formData, setFormData] = useState({
@@ -224,6 +226,8 @@ function TaskForm({ task, onClose }) {
       const result = await completeTask(task.id, profile?.id, organization?.id);
       if (result.success) {
         toast.success('Task completed!');
+        // Trigger celebration for first task completion
+        triggerFirstTaskCelebration();
       }
     }
     onClose();
@@ -265,6 +269,10 @@ function TaskForm({ task, onClose }) {
         result = await updateTask(task.id, taskData);
       } else {
         result = await createTask(taskData);
+        // Mark first task as created for onboarding tracking
+        if (result.success) {
+          markFirstTaskCreated();
+        }
       }
 
       if (result.success) {

@@ -1,10 +1,13 @@
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useOnboardingStore } from '../store/onboardingStore';
 import { Settings, LogOut, Users } from 'lucide-react';
 import InstallBanner from './InstallBanner';
+import { OnboardingFlow, Celebration } from '../features/onboarding';
 
 function Layout() {
   const { profile, organization, logout } = useAuthStore();
+  const { hasCompletedOnboarding } = useOnboardingStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -76,6 +79,12 @@ function Layout() {
           <Outlet />
         </div>
       </main>
+
+      {/* Onboarding flow for new users */}
+      {!hasCompletedOnboarding && <OnboardingFlow />}
+
+      {/* Celebration for first task completion */}
+      <Celebration />
     </div>
   );
 }

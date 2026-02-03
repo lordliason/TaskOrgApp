@@ -3,6 +3,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, use
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
+import { useOnboardingStore } from '../../store/onboardingStore';
 import { EFFORT_SIZES } from '../../lib/constants';
 import { TaskMatrixSkeleton } from '../../components/Skeleton';
 import ErrorState from '../../components/ErrorState';
@@ -11,6 +12,7 @@ function TaskMatrix({ onEditTask }) {
   const { tasks, isLoading, error, fetchTasks, completeTask, uncompleteTask, updateTask } = useTaskStore();
   const { members } = useOrganizationStore();
   const { profile, organization } = useAuthStore();
+  const { triggerFirstTaskCelebration } = useOnboardingStore();
   const [isRetrying, setIsRetrying] = useState(false);
 
   // Retry handler
@@ -173,7 +175,10 @@ function TaskMatrix({ onEditTask }) {
     if (task.status === 'done') {
       await uncompleteTask(task.id);
     } else {
-      await completeTask(task.id, profile?.id, organization?.id);
+      const result = await completeTask(task.id, profile?.id, organization?.id);
+      if (result.success) {
+        triggerFirstTaskCelebration();
+      }
     }
   };
 
