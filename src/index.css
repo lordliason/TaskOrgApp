@@ -329,6 +329,207 @@
   }
 
   /* ========================================
+     SKELETON LOADING ANIMATION
+     ======================================== */
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.04) 50%,
+      transparent 100%
+    );
+    animation: shimmer 1.5s ease-in-out infinite;
+    transform: translateX(-100%);
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* ========================================
+     TOAST NOTIFICATIONS
+     ======================================== */
+  .toast-enter {
+    animation: toastEnter 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+    position: relative;
+  }
+
+  @keyframes toastEnter {
+    0% {
+      opacity: 0;
+      transform: translateX(100%) scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  .toast-progress {
+    animation: toastProgress linear forwards;
+  }
+
+  @keyframes toastProgress {
+    0% { width: 100%; }
+    100% { width: 0%; }
+  }
+
+  /* ========================================
+     MODAL ANIMATIONS
+     ======================================== */
+  .modal-backdrop-enter {
+    animation: backdropFadeIn 0.2s ease-out forwards;
+  }
+
+  .modal-backdrop-exit {
+    animation: backdropFadeOut 0.15s ease-in forwards;
+  }
+
+  @keyframes backdropFadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes backdropFadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .modal-content-enter {
+    animation: modalSlideIn 0.25s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+  }
+
+  .modal-content-exit {
+    animation: modalSlideOut 0.15s ease-in forwards;
+  }
+
+  @keyframes modalSlideIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes modalSlideOut {
+    0% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+  }
+
+  /* ========================================
+     VIEW TRANSITIONS
+     ======================================== */
+  .view-transition-enter {
+    animation: viewFadeIn 0.2s ease-out forwards;
+  }
+
+  @keyframes viewFadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ========================================
+     BUTTON LOADING STATE
+     ======================================== */
+  .btn-loading {
+    position: relative;
+    pointer-events: none;
+  }
+
+  .btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: buttonSpin 0.6s linear infinite;
+  }
+
+  @keyframes buttonSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* ========================================
+     HAPTIC FEEDBACK FOR TOUCH
+     ======================================== */
+  .touch-feedback {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .touch-feedback:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+  }
+
+  /* ========================================
+     IMPROVED FOCUS STATES
+     ======================================== */
+  .focus-ring:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px rgba(26, 26, 31, 1),
+      0 0 0 4px rgba(74, 158, 255, 0.5);
+  }
+
+  /* ========================================
+     STAGGER ANIMATION DELAYS
+     ======================================== */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
+
+  /* ========================================
+     LIST ITEM ANIMATION
+     ======================================== */
+  .list-item-enter {
+    animation: listItemEnter 0.2s ease-out forwards;
+  }
+
+  @keyframes listItemEnter {
+    0% {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* ========================================
      LEADERBOARD - Glass Cards
      ======================================== */
   .leaderboard-entry {

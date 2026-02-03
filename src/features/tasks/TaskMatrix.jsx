@@ -1,14 +1,25 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, memo } from 'react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
 import { EFFORT_SIZES } from '../../lib/constants';
+import { TaskMatrixSkeleton } from '../../components/Skeleton';
+import ErrorState from '../../components/ErrorState';
 
 function TaskMatrix({ onEditTask }) {
-  const { tasks, isLoading, completeTask, uncompleteTask, updateTask } = useTaskStore();
+  const { tasks, isLoading, error, fetchTasks, completeTask, uncompleteTask, updateTask } = useTaskStore();
   const { members } = useOrganizationStore();
   const { profile, organization } = useAuthStore();
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Retry handler
+  const handleRetry = useCallback(async () => {
+    if (!organization?.id) return;
+    setIsRetrying(true);
+    await fetchTasks(organization.id);
+    setIsRetrying(false);
+  }, [organization?.id, fetchTasks]);
   const [tooltip, setTooltip] = useState({ visible: false, task: null, x: 0, y: 0 });
   const [filter, setFilter] = useState('all'); // 'all' or member id
   const [activeTask, setActiveTask] = useState(null);
@@ -178,11 +189,24 @@ function TaskMatrix({ onEditTask }) {
     return member?.display_name?.split(' ')[0] || 'Unknown';
   };
 
-  if (isLoading) {
+  // Show skeleton loading state
+  if (isLoading && tasks.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-blue"></div>
+      <div className="view-transition-enter">
+        <TaskMatrixSkeleton />
       </div>
+    );
+  }
+
+  // Show error state with retry
+  if (error && tasks.length === 0) {
+    return (
+      <ErrorState
+        title="Failed to load tasks"
+        message={error}
+        onRetry={handleRetry}
+        isRetrying={isRetrying}
+      />
     );
   }
 

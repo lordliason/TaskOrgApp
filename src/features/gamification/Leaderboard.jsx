@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { Trophy, TrendingUp, Calendar, Sparkles } from 'lucide-react';
+import { LeaderboardSkeleton } from '../../components/Skeleton';
+import ErrorState from '../../components/ErrorState';
 
 function Leaderboard() {
   const { organization } = useAuthStore();
-  const { members, scores, fetchScores, isLoading } = useOrganizationStore();
+  const { members, scores, fetchScores, isLoading, error } = useOrganizationStore();
   const [period, setPeriod] = useState('week'); // 'day', 'week', 'month', 'alltime'
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     if (organization?.id) {
@@ -14,6 +17,15 @@ function Leaderboard() {
       fetchScores(organization.id, days);
     }
   }, [organization?.id, period]);
+
+  // Retry handler
+  const handleRetry = useCallback(async () => {
+    if (!organization?.id) return;
+    setIsRetrying(true);
+    const days = period === 'day' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 365;
+    await fetchScores(organization.id, days);
+    setIsRetrying(false);
+  }, [organization?.id, period, fetchScores]);
 
   // Calculate leaderboard data based on period
   const todayStr = new Date().toISOString().split('T')[0];
@@ -55,16 +67,29 @@ function Leaderboard() {
     return 'normal';
   };
 
-  if (isLoading) {
+  // Show skeleton loading state
+  if (isLoading && scores.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-blue"></div>
+      <div className="view-transition-enter">
+        <LeaderboardSkeleton count={members.length || 3} />
       </div>
     );
   }
 
+  // Show error state with retry
+  if (error && scores.length === 0) {
+    return (
+      <ErrorState
+        title="Failed to load leaderboard"
+        message={error}
+        onRetry={handleRetry}
+        isRetrying={isRetrying}
+      />
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 view-transition-enter">
       {/* Header */}
       <div className="leaderboard-header">
         <h1 className="font-serif text-2xl text-text-primary flex items-center gap-3 mb-4">
