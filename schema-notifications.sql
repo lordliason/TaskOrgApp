@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS scheduled_notifications (
   task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
 
   -- Notification details
-  type TEXT NOT NULL CHECK (type IN ('due_date', 'daily_summary', 'urgency', 'team_assignment', 'task_completed')),
+  type TEXT NOT NULL CHECK (type IN ('due_date', 'daily_summary', 'urgency', 'team_assignment', 'task_completed', 'task_reminder')),
   title TEXT NOT NULL,
   body TEXT NOT NULL,
 

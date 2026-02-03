@@ -3,8 +3,9 @@ import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { EFFORT_SIZES, URGENCY_LEVELS, IMPORTANCE_LEVELS, ALL_TASK_ICONS, RECURRENCE_PRESETS } from '../../lib/constants';
-import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2, Sparkles, CheckCircle, Circle } from 'lucide-react';
+import { AlertCircle, Calendar, RefreshCw, ChevronDown, ChevronUp, MapPin, Navigation, X, Trash2, Sparkles, CheckCircle, Circle, Bell } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 
 function TaskForm({ task, onClose }) {
@@ -12,8 +13,10 @@ function TaskForm({ task, onClose }) {
   const { createTask, updateTask, deleteTask, completeTask, uncompleteTask } = useTaskStore();
   const { members } = useOrganizationStore();
   const { markFirstTaskCreated, triggerFirstTaskCelebration } = useOnboardingStore();
+  const { sendTaskReminder } = useNotificationStore();
   const toast = useToast();
 
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     assignee_id: null,
@@ -234,6 +237,24 @@ function TaskForm({ task, onClose }) {
   };
 
   const isCompleted = task?.status === 'done';
+
+  const handleSendReminder = async () => {
+    if (!task?.assignee_id) return;
+
+    setIsSendingReminder(true);
+    try {
+      const result = await sendTaskReminder(task, profile?.display_name || 'Someone');
+      if (result.success) {
+        toast.success('Reminder sent to ' + (task.assignee?.display_name || 'assignee'));
+      } else {
+        toast.error(result.error || 'Failed to send reminder');
+      }
+    } catch (err) {
+      toast.error('Failed to send reminder');
+    } finally {
+      setIsSendingReminder(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -637,6 +658,28 @@ function TaskForm({ task, onClose }) {
             <>
               <Circle className="h-5 w-5" />
               Mark Complete
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Remind Assignee Button - Only show for existing tasks with an assignee who is not the current user */}
+      {task && task.assignee_id && task.assignee_id !== profile?.id && (
+        <button
+          type="button"
+          onClick={handleSendReminder}
+          disabled={isSendingReminder}
+          className="w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all bg-amber-500/20 border-2 border-amber-500/50 text-amber-400 hover:bg-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSendingReminder ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-400"></div>
+              Sending...
+            </>
+          ) : (
+            <>
+              <Bell className="h-5 w-5" />
+              Remind {task.assignee?.display_name?.split(' ')[0] || 'Assignee'}
             </>
           )}
         </button>

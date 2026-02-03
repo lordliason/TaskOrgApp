@@ -190,6 +190,32 @@ export const useNotificationStore = create((set, get) => ({
     }
   },
 
+  // Send a task reminder to the assignee
+  sendTaskReminder: async (task, senderName) => {
+    try {
+      if (!task?.assignee_id || !task?.organization_id) {
+        return { success: false, error: 'Task must have an assignee' };
+      }
+
+      const { error } = await supabase.from('scheduled_notifications').insert({
+        user_id: task.assignee_id,
+        organization_id: task.organization_id,
+        task_id: task.id,
+        type: 'task_reminder',
+        title: 'Task Reminder',
+        body: `${senderName} is reminding you about: "${task.title}"`,
+        scheduled_for: new Date().toISOString(),
+      });
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error sending task reminder:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
   // Show a local notification (for when the app is open)
   showLocalNotification: async (title, body, options = {}) => {
     if (!get().isSupported || get().permissionStatus !== 'granted') {
