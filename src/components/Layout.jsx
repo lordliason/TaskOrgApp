@@ -1,9 +1,13 @@
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useOnboardingStore } from '../store/onboardingStore';
-import { Settings, LogOut, Users } from 'lucide-react';
+import { Settings, LogOut, Trophy } from 'lucide-react';
 import InstallBanner from './InstallBanner';
 import { OnboardingFlow, Celebration } from '../features/onboarding';
+import ComboNotification from '../features/gamification/ComboNotification';
+import NewBadgeNotification from '../features/gamification/NewBadgeNotification';
+import StreakDisplay from '../features/gamification/StreakDisplay';
+import ChallengeProgress from '../features/gamification/ChallengeProgress';
 
 function Layout() {
   const { profile, organization, logout } = useAuthStore();
@@ -24,6 +28,14 @@ function Layout() {
           {organization?.name || 'Task Matrix'}
         </Link>
 
+        {/* Gamification quick view - hidden on mobile */}
+        <div className="hidden md:flex items-center gap-3">
+          <StreakDisplay compact />
+          <div className="w-48">
+            <ChallengeProgress compact />
+          </div>
+        </div>
+
         {/* Spacer */}
         <div className="flex-1" />
 
@@ -41,6 +53,21 @@ function Layout() {
               {profile?.displayName?.split(' ')[0]}
             </span>
           </div>
+
+          {/* Achievements */}
+          <NavLink
+            to="/achievements"
+            className={({ isActive }) =>
+              `p-2 rounded-lg transition-all duration-200 ${
+                isActive
+                  ? 'bg-accent-blue text-white'
+                  : 'text-text-muted hover:bg-dark-hover hover:text-text-primary'
+              }`
+            }
+            title="Achievements"
+          >
+            <Trophy className="h-5 w-5" />
+          </NavLink>
 
           {/* Settings */}
           <NavLink
@@ -85,6 +112,10 @@ function Layout() {
 
       {/* Celebration for first task completion */}
       <Celebration />
+
+      {/* Gamification notifications */}
+      <ComboNotification />
+      <NewBadgeNotification />
     </div>
   );
 }

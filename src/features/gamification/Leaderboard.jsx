@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, memo } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useOrganizationStore } from '../../store/organizationStore';
-import { Trophy, TrendingUp, Calendar, Sparkles } from 'lucide-react';
+import { Trophy, TrendingUp, Calendar, Sparkles, Flame, Zap } from 'lucide-react';
 import { LeaderboardSkeleton } from '../../components/Skeleton';
 import ErrorState from '../../components/ErrorState';
+import { getStreakBonus, POINTS_BY_EFFORT } from '../../lib/constants';
 
 function Leaderboard() {
   const { organization } = useAuthStore();
@@ -169,32 +170,80 @@ function Leaderboard() {
         )}
       </div>
 
-      {/* Points Guide */}
-      <div className="bg-dark-card border border-dark-border rounded-2xl p-6">
-        <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-accent-purple" />
-          Points Guide
-        </h3>
-        <div className="grid grid-cols-5 gap-3 text-center">
-          {[
-            { size: 'XS', points: 5 },
-            { size: 'S', points: 10 },
-            { size: 'M', points: 20 },
-            { size: 'L', points: 35 },
-            { size: 'XL', points: 50 },
-          ].map((item) => (
-            <div
-              key={item.size}
-              className="bg-dark-hover border border-dark-border rounded-xl p-3 transition-all duration-200 hover:border-accent-blue"
-            >
-              <div className="font-bold text-lg text-text-primary">
-                {item.size}
+      {/* Points & Bonuses Guide */}
+      <div className="bg-dark-card border border-dark-border rounded-2xl p-6 space-y-5">
+        {/* Base Points */}
+        <div>
+          <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-accent-purple" />
+            Base Points by Effort
+          </h3>
+          <div className="grid grid-cols-5 gap-3 text-center">
+            {[
+              { size: 'XS', points: 5 },
+              { size: 'S', points: 10 },
+              { size: 'M', points: 20 },
+              { size: 'L', points: 35 },
+              { size: 'XL', points: 50 },
+            ].map((item) => (
+              <div
+                key={item.size}
+                className="bg-dark-hover border border-dark-border rounded-xl p-3 transition-all duration-200 hover:border-accent-blue"
+              >
+                <div className="font-bold text-lg text-text-primary">
+                  {item.size}
+                </div>
+                <div className="text-sm text-text-muted">
+                  {item.points} pts
+                </div>
               </div>
-              <div className="text-sm text-text-muted">
-                {item.points} pts
+            ))}
+          </div>
+        </div>
+
+        {/* Streak Bonuses */}
+        <div>
+          <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <Flame className="h-5 w-5 text-orange-400" />
+            Streak Bonuses
+          </h3>
+          <div className="grid grid-cols-4 gap-3 text-center">
+            {[
+              { days: 3, bonus: '+10%', icon: '🔥' },
+              { days: 7, bonus: '+25%', icon: '🔥' },
+              { days: 14, bonus: '+35%', icon: '💫' },
+              { days: 30, bonus: '+50%', icon: '⚡' },
+            ].map((item) => (
+              <div
+                key={item.days}
+                className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl p-3 transition-all duration-200 hover:border-orange-400/40"
+              >
+                <div className="text-lg mb-1">{item.icon}</div>
+                <div className="font-bold text-orange-400">{item.bonus}</div>
+                <div className="text-xs text-text-muted">{item.days}+ days</div>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Combo Multipliers */}
+        <div>
+          <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <Zap className="h-5 w-5 text-yellow-400" />
+            Team Combo Multipliers
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gradient-to-br from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-yellow-400">1.5x</div>
+              <div className="text-sm text-text-secondary mt-1">Duo Combo</div>
+              <div className="text-xs text-text-muted mt-1">2 teammates complete tasks within 30min</div>
             </div>
-          ))}
+            <div className="bg-gradient-to-br from-yellow-500/15 to-orange-500/15 border border-yellow-500/30 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-yellow-300">2x</div>
+              <div className="text-sm text-text-secondary mt-1">Team Combo</div>
+              <div className="text-xs text-text-muted mt-1">All 3 teammates complete tasks within 30min</div>
+            </div>
+          </div>
         </div>
       </div>
 

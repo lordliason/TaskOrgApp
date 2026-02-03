@@ -10,6 +10,7 @@ import Signup from './features/auth/Signup';
 // Protected pages
 import Dashboard from './features/tasks/Dashboard';
 import Settings from './features/organization/Settings';
+import GamificationHub from './features/gamification/GamificationHub';
 
 // PWA pages
 import InstallPWA from './features/pwa/InstallPWA';
@@ -75,6 +76,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/achievements" element={<GamificationHub />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>
