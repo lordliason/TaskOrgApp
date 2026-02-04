@@ -276,7 +276,7 @@
   .task-dot {
     @apply rounded-full cursor-grab flex items-center justify-center;
     @apply font-semibold text-white/90 select-none;
-    @apply transition-all duration-300;
+    @apply transition-all duration-200;
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
     box-shadow:
@@ -284,6 +284,21 @@
       inset 0 2px 4px rgba(255, 255, 255, 0.2),
       inset 0 -2px 4px rgba(0, 0, 0, 0.2);
     position: relative;
+    /* Invisible touch padding for small dots on mobile */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Expand touch target for all dots on touch devices */
+  @media (pointer: coarse) {
+    .task-dot::after {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      right: -8px;
+      bottom: -8px;
+      border-radius: 50%;
+    }
   }
 
   .task-dot::before {
@@ -298,25 +313,42 @@
     pointer-events: none;
   }
 
-  .task-dot:hover {
-    transform: scale(1.15) translateY(-2px);
-    z-index: 10;
-    box-shadow:
-      0 8px 24px rgba(0, 0, 0, 0.4),
-      inset 0 2px 4px rgba(255, 255, 255, 0.25),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+  /* Only apply hover transform on non-touch devices to prevent conflict with dragging */
+  @media (pointer: fine) {
+    .task-dot:hover:not(.task-dot-dragging):not(.task-dot-no-transition) {
+      transform: scale(1.15) translateY(-2px);
+      z-index: 10;
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.25),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    }
   }
 
   /* Visual feedback for touch press-and-hold before drag starts */
   @media (pointer: coarse) {
-    .task-dot:active {
-      transform: scale(1.12);
+    .task-dot:active:not(.task-dot-dragging):not(.task-dot-no-transition) {
+      transform: scale(1.08);
       box-shadow:
         0 6px 20px rgba(0, 0, 0, 0.5),
         0 0 0 3px rgba(74, 158, 255, 0.4),
         inset 0 2px 4px rgba(255, 255, 255, 0.25),
         inset 0 -2px 4px rgba(0, 0, 0, 0.2);
     }
+  }
+
+  /* CRITICAL: Disable ALL transitions and animations during drag to prevent lag */
+  .task-dot.task-dot-no-transition {
+    transition: none !important;
+    animation: none !important;
+    will-change: transform;
+  }
+
+  /* The actively-dragged dot: dim it since DragOverlay shows the moving copy */
+  .task-dot.task-dot-dragging {
+    opacity: 0.4;
+    transition: none !important;
+    animation: none !important;
   }
 
   .task-dot.completed {
@@ -334,13 +366,20 @@
   .task-dot.l { @apply w-14 h-14 text-[0.8rem]; }
   .task-dot.xl { @apply w-[72px] h-[72px] text-[0.9rem]; }
 
-  /* Scaled-down task dots on mobile */
+  /* Mobile dots: slightly larger than before so they're easier to grab */
   @media (max-width: 640px) {
-    .task-dot.xs { @apply w-5 h-5 text-[0.4rem]; }
-    .task-dot.s { @apply w-6 h-6 text-[0.5rem]; }
-    .task-dot.m { @apply w-8 h-8 text-[0.55rem]; }
-    .task-dot.l { @apply w-10 h-10 text-[0.65rem]; }
-    .task-dot.xl { @apply w-12 h-12 text-[0.7rem]; }
+    .task-dot.xs { @apply w-6 h-6 text-[0.45rem]; }
+    .task-dot.s { @apply w-7 h-7 text-[0.5rem]; }
+    .task-dot.m { @apply w-9 h-9 text-[0.55rem]; }
+    .task-dot.l { @apply w-11 h-11 text-[0.65rem]; }
+    .task-dot.xl { @apply w-14 h-14 text-[0.75rem]; }
+  }
+
+  /* Dot label text */
+  .dot-text {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   @keyframes popIn {
