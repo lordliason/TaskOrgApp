@@ -231,7 +231,7 @@
      ======================================== */
   .quadrant {
     @apply rounded-3xl m-1 p-4 relative;
-    @apply flex flex-wrap content-start gap-2 min-h-[200px];
+    @apply flex flex-wrap content-start gap-2 min-h-[140px] sm:min-h-[200px];
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -307,6 +307,18 @@
       inset 0 -2px 4px rgba(0, 0, 0, 0.2);
   }
 
+  /* Visual feedback for touch press-and-hold before drag starts */
+  @media (pointer: coarse) {
+    .task-dot:active {
+      transform: scale(1.12);
+      box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.5),
+        0 0 0 3px rgba(74, 158, 255, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.25),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    }
+  }
+
   .task-dot.completed {
     background: rgba(255, 255, 255, 0.9) !important;
     @apply text-black;
@@ -321,6 +333,15 @@
   .task-dot.m { @apply w-11 h-11 text-[0.7rem]; }
   .task-dot.l { @apply w-14 h-14 text-[0.8rem]; }
   .task-dot.xl { @apply w-[72px] h-[72px] text-[0.9rem]; }
+
+  /* Scaled-down task dots on mobile */
+  @media (max-width: 640px) {
+    .task-dot.xs { @apply w-5 h-5 text-[0.4rem]; }
+    .task-dot.s { @apply w-6 h-6 text-[0.5rem]; }
+    .task-dot.m { @apply w-8 h-8 text-[0.55rem]; }
+    .task-dot.l { @apply w-10 h-10 text-[0.65rem]; }
+    .task-dot.xl { @apply w-12 h-12 text-[0.7rem]; }
+  }
 
   @keyframes popIn {
     0% { transform: scale(0); opacity: 0; }

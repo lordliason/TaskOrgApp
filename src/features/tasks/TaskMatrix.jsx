@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, memo } from 'react';
-import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
 import { useAuthStore } from '../../store/authStore';
@@ -28,11 +28,17 @@ function TaskMatrix({ onEditTask }) {
   const [dragPosition, setDragPosition] = useState(null);
   const matrixRef = useRef(null);
 
-  // Configure drag sensor with activation constraint to distinguish from clicks
+  // Configure drag sensors - PointerSensor for mouse, TouchSensor for mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // 8px movement required to start drag
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // Short press-and-hold before drag starts
+        tolerance: 8, // Allow 8px of movement during delay
       },
     })
   );
@@ -111,17 +117,49 @@ function TaskMatrix({ onEditTask }) {
     ? activeTasks 
     : activeTasks.filter((t) => t.assignee_id === filter);
 
-  // Calculate task position as percentage based on urgent/important (1-5 scale)
-  const getTaskPosition = (task) => {
-    // urgent 5 = left, urgent 1 = right
-    // important 5 = top, important 1 = bottom
-    // Add margins: map to 8%-92% instead of 0%-100% to prevent tasks from touching borders
+  // Group tasks by their urgency/importance to detect overlaps
+  const getTaskPositions = useCallback((taskList) => {
     const margin = 8; // 8% margin on each side
     const range = 100 - (2 * margin); // 84% usable range
-    const xPercent = margin + ((5 - task.urgent) / 4) * range;
-    const yPercent = margin + ((5 - task.important) / 4) * range;
-    return { x: xPercent, y: yPercent };
-  };
+    const positionMap = {};
+
+    // Group by (urgent, important) key
+    const groups = {};
+    taskList.forEach((task) => {
+      const key = `${task.urgent}-${task.important}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(task.id);
+    });
+
+    // Spread offset: how far apart to push overlapping tasks (in %)
+    const spread = 4;
+
+    taskList.forEach((task) => {
+      const baseX = margin + ((5 - task.urgent) / 4) * range;
+      const baseY = margin + ((5 - task.important) / 4) * range;
+
+      const key = `${task.urgent}-${task.important}`;
+      const group = groups[key];
+      const count = group.length;
+
+      if (count <= 1) {
+        positionMap[task.id] = { x: baseX, y: baseY };
+      } else {
+        // Spread tasks side by side horizontally, centered on the base position
+        const index = group.indexOf(task.id);
+        const totalWidth = (count - 1) * spread;
+        const offsetX = -totalWidth / 2 + index * spread;
+        positionMap[task.id] = {
+          x: Math.max(2, Math.min(98, baseX + offsetX)),
+          y: baseY,
+        };
+      }
+    });
+
+    return positionMap;
+  }, []);
+
+  const taskPositions = getTaskPositions(filteredTasks);
 
   // Quadrant definitions for labels only
   const quadrants = {
@@ -265,7 +303,7 @@ function TaskMatrix({ onEditTask }) {
 
           {/* Matrix body */}
           <DroppableMatrix matrixRef={matrixRef}>
-          <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[500px]">
+          <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[320px] sm:min-h-[500px]">
             {/* Left axis labels */}
             <div className="row-span-2 flex flex-col">
               <div className="flex-1 flex items-center justify-center">
@@ -294,9 +332,7 @@ function TaskMatrix({ onEditTask }) {
             className="absolute top-0 bottom-0 pointer-events-none"
             style={{ left: '40px', right: 0 }}
           >
-            {filteredTasks.map((task) => {
-              const pos = getTaskPosition(task);
-              return (
+            {filteredTasks.map((task) => (
                 <DraggableTaskDot
                   key={task.id}
                   task={task}
@@ -305,10 +341,9 @@ function TaskMatrix({ onEditTask }) {
                   onHover={handleDotHover}
                   onLeave={handleDotLeave}
                   onClick={handleDotClick}
-                  position={pos}
+                  position={taskPositions[task.id] || { x: 50, y: 50 }}
                 />
-              );
-            })}
+            ))}
           </div>
           </DroppableMatrix>
         </div>
