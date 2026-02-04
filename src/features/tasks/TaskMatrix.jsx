@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, memo } from 'react';
+import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { DndContext, DragOverlay, useDraggable, useDroppable, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useTaskStore } from '../../store/taskStore';
 import { useOrganizationStore } from '../../store/organizationStore';
@@ -28,6 +28,9 @@ function TaskMatrix({ onEditTask }) {
   const [dragPosition, setDragPosition] = useState(null);
   const matrixRef = useRef(null);
 
+  // Track whether a drag is in progress to disable scroll and transitions
+  const [isDraggingActive, setIsDraggingActive] = useState(false);
+
   // Configure drag sensors - PointerSensor for mouse, TouchSensor for mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -37,15 +40,42 @@ function TaskMatrix({ onEditTask }) {
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200, // Short press-and-hold before drag starts
-        tolerance: 8, // Allow 8px of movement during delay
+        delay: 250, // Press-and-hold before drag starts (250ms feels intentional)
+        tolerance: 10, // Allow 10px of finger wobble during delay period
       },
     })
   );
 
+  // Prevent page scrolling on iOS/Android while dragging
+  useEffect(() => {
+    if (!isDraggingActive) return;
+
+    const preventScroll = (e) => {
+      // Only prevent if we're actively dragging
+      if (isDraggingActive) {
+        e.preventDefault();
+      }
+    };
+
+    // Add to document level to catch all scroll attempts
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    // Also prevent body scroll
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+
+    return () => {
+      document.removeEventListener('touchmove', preventScroll);
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [isDraggingActive]);
+
   const handleDragStart = (event) => {
     const task = tasks.find((t) => t.id === event.active.id);
     setActiveTask(task);
+    setIsDraggingActive(true);
     setTooltip({ visible: false, task: null, x: 0, y: 0 });
   };
 
@@ -62,10 +92,17 @@ function TaskMatrix({ onEditTask }) {
     }
   };
 
+  const handleDragCancel = () => {
+    setActiveTask(null);
+    setDragPosition(null);
+    setIsDraggingActive(false);
+  };
+
   const handleDragEnd = async (event) => {
     const { active } = event;
     setActiveTask(null);
     setDragPosition(null);
+    setIsDraggingActive(false);
 
     // Calculate position-based urgency and importance
     // Don't require 'over' - calculate from raw coordinates
@@ -259,6 +296,7 @@ function TaskMatrix({ onEditTask }) {
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div className="space-y-4">
         {/* Assignee Filter */}
@@ -302,7 +340,7 @@ function TaskMatrix({ onEditTask }) {
           </div>
 
           {/* Matrix body */}
-          <DroppableMatrix matrixRef={matrixRef}>
+          <DroppableMatrix matrixRef={matrixRef} isDraggingActive={isDraggingActive}>
           <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[320px] sm:min-h-[500px]">
             {/* Left axis labels */}
             <div className="row-span-2 flex flex-col">
@@ -342,6 +380,7 @@ function TaskMatrix({ onEditTask }) {
                   onLeave={handleDotLeave}
                   onClick={handleDotClick}
                   position={taskPositions[task.id] || { x: 50, y: 50 }}
+                  isDraggingActive={isDraggingActive}
                 />
             ))}
           </div>
@@ -392,7 +431,7 @@ function TaskMatrix({ onEditTask }) {
 }
 
 // Droppable Matrix Component - makes entire matrix droppable
-function DroppableMatrix({ matrixRef, children }) {
+function DroppableMatrix({ matrixRef, isDraggingActive, children }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'matrix' });
 
   return (
@@ -404,7 +443,14 @@ function DroppableMatrix({ matrixRef, children }) {
         }
       }}
       className="relative"
-      style={{ position: 'relative' }}
+      style={{
+        position: 'relative',
+        // Prevent all touch default behaviors (scroll, zoom) on the matrix during drag
+        touchAction: isDraggingActive ? 'none' : 'manipulation',
+        // Prevent text selection during drag
+        userSelect: isDraggingActive ? 'none' : 'auto',
+        WebkitUserSelect: isDraggingActive ? 'none' : 'auto',
+      }}
     >
       {/* Visual grid overlay for 5 levels (1-5 scale) */}
       {/* Position grid only over quadrant area (excluding 40px label column) */}
@@ -451,7 +497,7 @@ function QuadrantBackground({ id, quadrant }) {
 }
 
 // Draggable Task Dot Component
-function DraggableTaskDot({ task, sizeClass, color, onHover, onLeave, onClick, position }) {
+function DraggableTaskDot({ task, sizeClass, color, onHover, onLeave, onClick, position, isDraggingActive }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
   });
@@ -464,7 +510,13 @@ function DraggableTaskDot({ task, sizeClass, color, onHover, onLeave, onClick, p
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`task-dot ${sizeClass} ${isCompleted ? 'completed' : ''} ${isDragging ? 'opacity-50' : ''}`}
+      className={[
+        'task-dot',
+        sizeClass,
+        isCompleted ? 'completed' : '',
+        isDragging ? 'task-dot-dragging' : '',
+        isDraggingActive ? 'task-dot-no-transition' : '',
+      ].filter(Boolean).join(' ')}
       style={{
         backgroundColor: isCompleted ? undefined : color,
         cursor: isDragging ? 'grabbing' : 'grab',
@@ -475,6 +527,12 @@ function DraggableTaskDot({ task, sizeClass, color, onHover, onLeave, onClick, p
         transform: 'translate(-50%, -50%)',
         pointerEvents: 'auto',
         zIndex: isDragging ? 100 : 10,
+        // Kill transitions and animations during any drag to prevent lag
+        ...(isDraggingActive ? {
+          transition: 'none',
+          animation: 'none',
+          willChange: 'transform',
+        } : {}),
       }}
       onMouseEnter={(e) => !isDragging && onHover(task, e)}
       onMouseLeave={onLeave}
