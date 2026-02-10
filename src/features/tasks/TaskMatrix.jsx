@@ -47,28 +47,30 @@ function TaskMatrix({ onEditTask }) {
   );
 
   // Prevent page scrolling on iOS/Android while dragging
+  // IMPORTANT: Do NOT use position:fixed on body - it shifts the viewport on iOS
+  // and causes a vertical offset between finger position and drag overlay.
   useEffect(() => {
     if (!isDraggingActive) return;
 
     const preventScroll = (e) => {
-      // Only prevent if we're actively dragging
-      if (isDraggingActive) {
-        e.preventDefault();
-      }
+      e.preventDefault();
     };
 
-    // Add to document level to catch all scroll attempts
+    // Prevent touchmove at document level to block all scrolling during drag
     document.addEventListener('touchmove', preventScroll, { passive: false });
-    // Also prevent body scroll
+    // Use overflow:hidden on both html and body (no position:fixed!)
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
+    // Prevent overscroll/bounce on iOS
+    document.body.style.overscrollBehavior = 'none';
+    document.documentElement.style.overscrollBehavior = 'none';
 
     return () => {
       document.removeEventListener('touchmove', preventScroll);
+      document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
+      document.body.style.overscrollBehavior = '';
+      document.documentElement.style.overscrollBehavior = '';
     };
   }, [isDraggingActive]);
 
@@ -341,7 +343,7 @@ function TaskMatrix({ onEditTask }) {
 
           {/* Matrix body */}
           <DroppableMatrix matrixRef={matrixRef} isDraggingActive={isDraggingActive}>
-          <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[320px] sm:min-h-[500px]">
+          <div className="grid grid-cols-[40px_1fr_1fr] grid-rows-2 min-h-[55dvh] sm:min-h-[500px]">
             {/* Left axis labels */}
             <div className="row-span-2 flex flex-col">
               <div className="flex-1 flex items-center justify-center">
