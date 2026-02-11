@@ -231,7 +231,7 @@
      ======================================== */
   .quadrant {
     @apply rounded-3xl m-1 p-4 relative;
-    @apply flex flex-wrap content-start gap-2 min-h-[140px] sm:min-h-[200px];
+    @apply flex flex-wrap content-start gap-2 min-h-[25dvh] sm:min-h-[200px];
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -293,10 +293,10 @@
     .task-dot::after {
       content: '';
       position: absolute;
-      top: -8px;
-      left: -8px;
-      right: -8px;
-      bottom: -8px;
+      top: -12px;
+      left: -12px;
+      right: -12px;
+      bottom: -12px;
       border-radius: 50%;
     }
   }
